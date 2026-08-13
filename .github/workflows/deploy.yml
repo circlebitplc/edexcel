@@ -1,5 +1,9 @@
 name: Deploy Kandy Edexcel
 
+# Run JavaScript-based GitHub Actions on Node.js 24
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
 on:
   push:
     branches:
