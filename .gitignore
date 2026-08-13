@@ -1,0 +1,101 @@
+# =========================================================
+# Environment / secrets
+# =========================================================
+.env
+.env.*
+!.env.example
+
+# Local configuration containing credentials
+config/.env
+config/*secret*
+config/*secrets*
+config/*credential*
+config/*credentials*
+
+# =========================================================
+# Database dumps / backups
+# =========================================================
+*.sql
+*.sql.gz
+*.dump
+*.bak
+*.backup
+
+# =========================================================
+# Archives / deployment backups
+# =========================================================
+*.rar
+*.zip
+*.7z
+*.tar
+*.tar.gz
+*.tgz
+
+# =========================================================
+# Logs
+# =========================================================
+*.log
+logs/
+storage/logs/
+
+# =========================================================
+# Temporary files
+# =========================================================
+*.tmp
+*.temp
+*.swp
+*.swo
+*~
+
+# =========================================================
+# OS files
+# =========================================================
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# =========================================================
+# Editor / IDE
+# =========================================================
+.vscode/
+.idea/
+
+# =========================================================
+# Local server / runtime files
+# =========================================================
+node_modules/
+vendor/bin/
+
+# =========================================================
+# Development backups created during live fixes
+# =========================================================
+*.step*.bak
+*.bak
+*.old
+*.orig
+
+# =========================================================
+# PHP generated/cache files
+# =========================================================
+.phpunit.result.cache
+.phpunit.cache/
+
+# =========================================================
+# Composer generated auth
+# =========================================================
+auth.json
+
+# Application cache
+cache/*
+!cache/.htaccess
+
+# Let's Encrypt / ACME temporary files
+.well-known/acme-challenge/*
+
+# Runtime cache / generated files
+*.cache
+
+# Local environment files
+.env
+.env.local
+.env.production

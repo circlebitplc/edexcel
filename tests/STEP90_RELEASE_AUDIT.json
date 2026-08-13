@@ -1,0 +1,11 @@
+{
+  "php_files": 114,
+  "secret_pattern_hits": [
+    "update_passwords.php"
+  ],
+  "debug_function_hits": [],
+  "old_shared_teacher_password_hits": [
+    "update_passwords.php"
+  ],
+  "pdo_mysql_available": false
+}

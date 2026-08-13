@@ -1,0 +1,5 @@
+<IfModule mod_autoindex.c>
+    Options -Indexes
+</IfModule>
+Order deny,allow
+Deny from all

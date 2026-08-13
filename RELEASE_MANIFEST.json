@@ -1,0 +1,18 @@
+{
+  "completed_range": "81-final (release hardening)",
+  "steps": {
+    "81": "PDF export role scoping",
+    "82": "Database restore hardening",
+    "83": "AJAX/API bootstrap and no-store standardization",
+    "84": "CSRF protection for remaining authenticated POST forms",
+    "85": "Unique temporary teacher passwords",
+    "86": "CSV export role scoping and formula-injection protection",
+    "87": "Security regression audit",
+    "88": "Full PHP and timetable mutation audit",
+    "89": "Full regression suite and legacy test contract update",
+    "90": "Final release-readiness audit; unsafe password-reset script removed"
+  },
+  "php_files": 113,
+  "pdo_mysql_available": false,
+  "known_environment_limitation": "pdo_mysql is unavailable in this build environment; live MySQL tests must run on the target/test server."
+}

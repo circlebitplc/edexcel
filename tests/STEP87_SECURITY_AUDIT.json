@@ -1,0 +1,4 @@
+{
+  "post_without_csrf": [],
+  "protected_ajax_api_without_auth": []
+}
