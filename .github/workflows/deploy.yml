@@ -25,14 +25,16 @@ jobs:
         with:
           ssh-private-key: ${{ secrets.KANDY_DEPLOY_KEY }}
 
-      - name: Add production host key
-        env:
-          DEPLOY_HOST: ${{ secrets.KANDY_DEPLOY_HOST }}
+      - name: Configure SSH host verification
         run: |
           set -euo pipefail
           mkdir -p ~/.ssh
           chmod 700 ~/.ssh
-          ssh-keyscan -H "$DEPLOY_HOST" >> ~/.ssh/known_hosts
+
+          cat > ~/.ssh/known_hosts <<'KNOWN_HOSTS'
+          kandy.edexcel.college ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIH/H6e/Q4kIYnn8nc5Mx0gDvg2MbuZe/EEET5jsuGK6H
+          KNOWN_HOSTS
+
           chmod 644 ~/.ssh/known_hosts
 
       - name: Deploy
@@ -40,6 +42,10 @@ jobs:
           DEPLOY_HOST: ${{ secrets.KANDY_DEPLOY_HOST }}
         run: |
           set -euo pipefail
-          ssh -o BatchMode=yes -o StrictHostKeyChecking=yes \
+
+          ssh \
+            -o BatchMode=yes \
+            -o StrictHostKeyChecking=yes \
+            -o UserKnownHostsFile="$HOME/.ssh/known_hosts" \
             github-deploy@"$DEPLOY_HOST" \
             'sudo /usr/local/bin/deploy-kandy-edexcel'
