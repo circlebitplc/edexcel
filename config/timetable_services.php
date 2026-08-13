@@ -2,6 +2,7 @@
 declare(strict_types=1);
 
 require_once __DIR__ . '/../config/database.php';
+require_once __DIR__ . '/payment.php';
 require_once __DIR__ . '/../src/Services/TimetableAuditLogger.php';
 require_once __DIR__ . '/../src/Services/TimetableInputValidator.php';
 require_once __DIR__ . '/../src/Repositories/TimetableRepository.php';

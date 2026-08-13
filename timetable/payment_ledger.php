@@ -32,7 +32,33 @@ if ($teacherId > 0) {
 
 // Ledger dates are based on class date and payment date. Opening balance is the
 // unpaid value carried into each day; same-day payments reduce that day's balance.
-$openingSql = "SELECT COALESCE(SUM(student_count * ?),0)
+$openingSql = "SELECT COALESCE(SUM(
+                   student_count *
+                   CASE
+                       WHEN (
+                           CASE
+                               WHEN TIME_TO_SEC(end_time) >= TIME_TO_SEC(start_time)
+                               THEN (TIME_TO_SEC(end_time) - TIME_TO_SEC(start_time)) / 60
+                               ELSE (TIME_TO_SEC(end_time) + 86400 - TIME_TO_SEC(start_time)) / 60
+                           END
+                       ) <= 150 THEN 500
+                       WHEN (
+                           CASE
+                               WHEN TIME_TO_SEC(end_time) >= TIME_TO_SEC(start_time)
+                               THEN (TIME_TO_SEC(end_time) - TIME_TO_SEC(start_time)) / 60
+                               ELSE (TIME_TO_SEC(end_time) + 86400 - TIME_TO_SEC(start_time)) / 60
+                           END
+                       ) <= 210 THEN 700
+                       WHEN (
+                           CASE
+                               WHEN TIME_TO_SEC(end_time) >= TIME_TO_SEC(start_time)
+                               THEN (TIME_TO_SEC(end_time) - TIME_TO_SEC(start_time)) / 60
+                               ELSE (TIME_TO_SEC(end_time) + 86400 - TIME_TO_SEC(start_time)) / 60
+                           END
+                       ) <= 270 THEN 900
+                       ELSE 1100
+                   END
+               ),0)
                FROM timetable
                WHERE deleted_at IS NULL
                  AND date < ?
@@ -40,28 +66,80 @@ $openingSql = "SELECT COALESCE(SUM(student_count * ?),0)
                  AND (? = 0 OR teacher_id = ?)
                  AND date IS NOT NULL";
 
-$earnedSql = "SELECT date, COALESCE(SUM(student_count * ?),0) AS earned, COUNT(*) AS lessons, COALESCE(SUM(student_count),0) AS students
+$earnedSql = "SELECT date, COALESCE(SUM(
+                       student_count *
+                       CASE
+                           WHEN (
+                               CASE
+                                   WHEN TIME_TO_SEC(end_time) >= TIME_TO_SEC(start_time)
+                                   THEN (TIME_TO_SEC(end_time) - TIME_TO_SEC(start_time)) / 60
+                                   ELSE (TIME_TO_SEC(end_time) + 86400 - TIME_TO_SEC(start_time)) / 60
+                               END
+                           ) <= 150 THEN 500
+                           WHEN (
+                               CASE
+                                   WHEN TIME_TO_SEC(end_time) >= TIME_TO_SEC(start_time)
+                                   THEN (TIME_TO_SEC(end_time) - TIME_TO_SEC(start_time)) / 60
+                                   ELSE (TIME_TO_SEC(end_time) + 86400 - TIME_TO_SEC(start_time)) / 60
+                               END
+                           ) <= 210 THEN 700
+                           WHEN (
+                               CASE
+                                   WHEN TIME_TO_SEC(end_time) >= TIME_TO_SEC(start_time)
+                                   THEN (TIME_TO_SEC(end_time) - TIME_TO_SEC(start_time)) / 60
+                                   ELSE (TIME_TO_SEC(end_time) + 86400 - TIME_TO_SEC(start_time)) / 60
+                               END
+                           ) <= 270 THEN 900
+                           ELSE 1100
+                       END
+                   ),0) AS earned, COUNT(*) AS lessons, COALESCE(SUM(student_count),0) AS students
               FROM timetable
               WHERE deleted_at IS NULL AND date BETWEEN ? AND ?
                 AND (? = 0 OR teacher_id = ?)
               GROUP BY date ORDER BY date";
 
-$paidSql = "SELECT payment_date, COALESCE(SUM(student_count * ?),0) AS paid, COUNT(*) AS payments
+$paidSql = "SELECT payment_date, COALESCE(SUM(
+                     student_count *
+                     CASE
+                         WHEN (
+                             CASE
+                                 WHEN TIME_TO_SEC(end_time) >= TIME_TO_SEC(start_time)
+                                 THEN (TIME_TO_SEC(end_time) - TIME_TO_SEC(start_time)) / 60
+                                 ELSE (TIME_TO_SEC(end_time) + 86400 - TIME_TO_SEC(start_time)) / 60
+                             END
+                         ) <= 150 THEN 500
+                         WHEN (
+                             CASE
+                                 WHEN TIME_TO_SEC(end_time) >= TIME_TO_SEC(start_time)
+                                 THEN (TIME_TO_SEC(end_time) - TIME_TO_SEC(start_time)) / 60
+                                 ELSE (TIME_TO_SEC(end_time) + 86400 - TIME_TO_SEC(start_time)) / 60
+                             END
+                         ) <= 210 THEN 700
+                         WHEN (
+                             CASE
+                                 WHEN TIME_TO_SEC(end_time) >= TIME_TO_SEC(start_time)
+                                 THEN (TIME_TO_SEC(end_time) - TIME_TO_SEC(start_time)) / 60
+                                 ELSE (TIME_TO_SEC(end_time) + 86400 - TIME_TO_SEC(start_time)) / 60
+                             END
+                         ) <= 270 THEN 900
+                         ELSE 1100
+                     END
+                 ),0) AS paid, COUNT(*) AS payments
             FROM timetable
             WHERE deleted_at IS NULL AND payment_status = 'paid' AND payment_date BETWEEN ? AND ?
               AND (? = 0 OR teacher_id = ?)
             GROUP BY payment_date ORDER BY payment_date";
 
 $stmt = $pdo->prepare($openingSql);
-$stmt->execute([$FEE_PER_STUDENT_LIVE, $start, $start, $teacherId, $teacherId]);
+$stmt->execute([$start, $start, $teacherId, $teacherId]);
 $opening = (float)$stmt->fetchColumn();
 
 $stmt = $pdo->prepare($earnedSql);
-$stmt->execute([$FEE_PER_STUDENT_LIVE, $start, $end, $teacherId, $teacherId]);
+$stmt->execute([$start, $end, $teacherId, $teacherId]);
 $earnedRows = $stmt->fetchAll();
 
 $stmt = $pdo->prepare($paidSql);
-$stmt->execute([$FEE_PER_STUDENT_LIVE, $start, $end, $teacherId, $teacherId]);
+$stmt->execute([$start, $end, $teacherId, $teacherId]);
 $paidRows = $stmt->fetchAll();
 
 $earnedByDate = [];
@@ -148,7 +226,11 @@ include __DIR__ . '/../includes/header.php';
     <div class="finance-panel">
         <div class="finance-panel-header"><div><h2>Lesson detail</h2><small class="text-body-secondary">Every class contributing to the selected period.</small></div></div>
         <div class="finance-table-wrap"><table class="table finance-table"><thead><tr><th>Date / Time</th><th>Teacher</th><th>Subject / Class</th><th>Students</th><th>Amount</th><th>Status</th></tr></thead><tbody>
-        <?php if (!$details): ?><tr><td colspan="6"><div class="finance-empty"><i class="bi bi-receipt"></i>No lessons found.</div></td></tr><?php else: foreach ($details as $d): $amount=lesson_amount((int)$d['student_count'],$FEE_PER_STUDENT_LIVE); ?><tr><td><strong><?= date('d M Y',strtotime($d['date'])) ?></strong><small class="d-block text-body-secondary"><?= date('h:i A',strtotime($d['start_time'])) ?>–<?= date('h:i A',strtotime($d['end_time'])) ?></small></td><td><?= htmlspecialchars($d['teacher_name']) ?><small class="d-block text-body-secondary"><?= htmlspecialchars($d['room_name']) ?></small></td><td><strong><?= htmlspecialchars($d['subject_name']) ?></strong><small class="d-block text-body-secondary"><?= htmlspecialchars($d['class_name']) ?></small></td><td><?= number_format((int)$d['student_count']) ?></td><td class="amount"><?= htmlspecialchars($CURRENCY_SYMBOL_LIVE) ?> <?= number_format($amount) ?></td><td><?php if ($d['payment_status']==='paid'): ?><span class="finance-status paid"><i class="bi bi-check-circle-fill"></i> Paid</span><small class="d-block text-body-secondary mt-1"><?= $d['payment_date'] ? date('d M Y',strtotime($d['payment_date'])) : '' ?></small><?php else: ?><span class="finance-status pending"><i class="bi bi-clock-fill"></i> Pending</span><?php endif; ?></td></tr><?php endforeach; endif; ?>
+        <?php if (!$details): ?><tr><td colspan="6"><div class="finance-empty"><i class="bi bi-receipt"></i>No lessons found.</div></td></tr><?php else: foreach ($details as $d): $amount=lesson_amount(
+    (int)$d['student_count'],
+    (string)$d['start_time'],
+    (string)$d['end_time']
+); ?><tr><td><strong><?= date('d M Y',strtotime($d['date'])) ?></strong><small class="d-block text-body-secondary"><?= date('h:i A',strtotime($d['start_time'])) ?>–<?= date('h:i A',strtotime($d['end_time'])) ?></small></td><td><?= htmlspecialchars($d['teacher_name']) ?><small class="d-block text-body-secondary"><?= htmlspecialchars($d['room_name']) ?></small></td><td><strong><?= htmlspecialchars($d['subject_name']) ?></strong><small class="d-block text-body-secondary"><?= htmlspecialchars($d['class_name']) ?></small></td><td><?= number_format((int)$d['student_count']) ?></td><td class="amount"><?= htmlspecialchars($CURRENCY_SYMBOL_LIVE) ?> <?= number_format($amount) ?></td><td><?php if ($d['payment_status']==='paid'): ?><span class="finance-status paid"><i class="bi bi-check-circle-fill"></i> Paid</span><small class="d-block text-body-secondary mt-1"><?= $d['payment_date'] ? date('d M Y',strtotime($d['payment_date'])) : '' ?></small><?php else: ?><span class="finance-status pending"><i class="bi bi-clock-fill"></i> Pending</span><?php endif; ?></td></tr><?php endforeach; endif; ?>
         </tbody></table></div>
     </div>
 </div>

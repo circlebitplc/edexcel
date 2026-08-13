@@ -25,7 +25,9 @@ final class TimetablePaymentService
             if(!empty($entry['deleted_at'])) throw new RuntimeException('This lesson has already been deleted.');
             if(($entry['payment_status']??'')==='paid') throw new RuntimeException('This lesson is already marked as paid.');
             if($authorize) $authorize($entry);
-            $amount=(int)$entry['student_count']*$this->feePerStudent;
+            $duration=\lesson_duration_minutes((string)$entry['start_time'],(string)$entry['end_time']);
+            $rate=\lesson_rate_per_student($duration);
+            $amount=(int)$entry['student_count']*$rate;
             $date=date('Y-m-d');
             $this->repository->markPaid($id,$date);
             if($this->audit) $this->audit->log('mark_paid',$id,$entry,[
@@ -49,7 +51,12 @@ final class TimetablePaymentService
                 if(!$entry || !empty($entry['deleted_at']) || ($entry['payment_status']??'')==='paid') continue;
                 $authorize($entry);
                 $date=date('Y-m-d');
-                $amount=(int)$entry['student_count']*$this->feePerStudent;
+                $duration=\lesson_duration_minutes(
+                    (string)$entry['start_time'],
+                    (string)$entry['end_time']
+                );
+                $rate=\lesson_rate_per_student($duration);
+                $amount=(int)$entry['student_count']*$rate;
                 $this->repository->markPaid((int)$id,$date);
                 if($this->audit) $this->audit->log('mark_paid',(int)$id,$entry,[
                     'payment_status'=>'paid','payment_date'=>$date,'amount'=>$amount

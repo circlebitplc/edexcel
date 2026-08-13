@@ -4,8 +4,58 @@ require_once __DIR__ . '/../config/auth.php';
 require_once __DIR__ . '/../config/payment.php';
 require_admin();
 $year=(int)($_GET['year']??date('Y')); $year=max(2020,min(date('Y'),$year));
-$sql="SELECT MONTH(date) month,COALESCE(SUM(student_count*?),0) revenue,COALESCE(SUM(CASE WHEN payment_status='paid' THEN student_count*? ELSE 0 END),0) paid,COUNT(*) lessons FROM timetable WHERE deleted_at IS NULL AND YEAR(date)=? GROUP BY MONTH(date) ORDER BY month";
-$stmt=$pdo->prepare($sql);$stmt->execute([$FEE_PER_STUDENT_LIVE,$FEE_PER_STUDENT_LIVE,$year]);$rows=$stmt->fetchAll();$months=array_fill(1,12,['revenue'=>0,'paid'=>0,'lessons'=>0]);foreach($rows as $r)$months[(int)$r['month']]=['revenue'=>(float)$r['revenue'],'paid'=>(float)$r['paid'],'lessons'=>(int)$r['lessons']];
+$sql="SELECT MONTH(date) month,COALESCE(SUM(student_count*(
+    CASE
+        WHEN (
+            CASE
+                WHEN TIME_TO_SEC(end_time) >= TIME_TO_SEC(start_time)
+                THEN (TIME_TO_SEC(end_time) - TIME_TO_SEC(start_time)) / 60
+                ELSE (TIME_TO_SEC(end_time) + 86400 - TIME_TO_SEC(start_time)) / 60
+            END
+        ) <= 150 THEN 500
+        WHEN (
+            CASE
+                WHEN TIME_TO_SEC(end_time) >= TIME_TO_SEC(start_time)
+                THEN (TIME_TO_SEC(end_time) - TIME_TO_SEC(start_time)) / 60
+                ELSE (TIME_TO_SEC(end_time) + 86400 - TIME_TO_SEC(start_time)) / 60
+            END
+        ) <= 210 THEN 700
+        WHEN (
+            CASE
+                WHEN TIME_TO_SEC(end_time) >= TIME_TO_SEC(start_time)
+                THEN (TIME_TO_SEC(end_time) - TIME_TO_SEC(start_time)) / 60
+                ELSE (TIME_TO_SEC(end_time) + 86400 - TIME_TO_SEC(start_time)) / 60
+            END
+        ) <= 270 THEN 900
+        ELSE 1100
+    END
+)),0) revenue,COALESCE(SUM(CASE WHEN payment_status='paid' THEN student_count*(
+    CASE
+        WHEN (
+            CASE
+                WHEN TIME_TO_SEC(end_time) >= TIME_TO_SEC(start_time)
+                THEN (TIME_TO_SEC(end_time) - TIME_TO_SEC(start_time)) / 60
+                ELSE (TIME_TO_SEC(end_time) + 86400 - TIME_TO_SEC(start_time)) / 60
+            END
+        ) <= 150 THEN 500
+        WHEN (
+            CASE
+                WHEN TIME_TO_SEC(end_time) >= TIME_TO_SEC(start_time)
+                THEN (TIME_TO_SEC(end_time) - TIME_TO_SEC(start_time)) / 60
+                ELSE (TIME_TO_SEC(end_time) + 86400 - TIME_TO_SEC(start_time)) / 60
+            END
+        ) <= 210 THEN 700
+        WHEN (
+            CASE
+                WHEN TIME_TO_SEC(end_time) >= TIME_TO_SEC(start_time)
+                THEN (TIME_TO_SEC(end_time) - TIME_TO_SEC(start_time)) / 60
+                ELSE (TIME_TO_SEC(end_time) + 86400 - TIME_TO_SEC(start_time)) / 60
+            END
+        ) <= 270 THEN 900
+        ELSE 1100
+    END
+) ELSE 0 END),0) paid,COUNT(*) lessons FROM timetable WHERE deleted_at IS NULL AND YEAR(date)=? GROUP BY MONTH(date) ORDER BY month";
+$stmt=$pdo->prepare($sql);$stmt->execute([$year]);$rows=$stmt->fetchAll();$months=array_fill(1,12,['revenue'=>0,'paid'=>0,'lessons'=>0]);foreach($rows as $r)$months[(int)$r['month']]=['revenue'=>(float)$r['revenue'],'paid'=>(float)$r['paid'],'lessons'=>(int)$r['lessons']];
 $total=array_sum(array_column($months,'revenue'));$paid=array_sum(array_column($months,'paid'));$pending=$total-$paid;$lessons=array_sum(array_column($months,'lessons'));$activeMonths=count(array_filter($months,fn($m)=>$m['revenue']>0));
 include __DIR__ . '/../includes/header.php';
 ?>

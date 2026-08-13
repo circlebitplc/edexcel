@@ -51,7 +51,32 @@ if ($type === 'timetable') {
     $sql = "SELECT t.date, t.start_time, t.end_time, 
                    tc.name as teacher, s.name as subject, 
                    c.name as class, r.name as room,
-                   t.student_count, (t.student_count * $FEE_PER_STUDENT_LIVE) as revenue,
+                   t.student_count, (t.student_count * (
+    CASE
+        WHEN (
+            CASE
+                WHEN TIME_TO_SEC(t.end_time) >= TIME_TO_SEC(t.start_time)
+                THEN (TIME_TO_SEC(t.end_time) - TIME_TO_SEC(t.start_time)) / 60
+                ELSE (TIME_TO_SEC(t.end_time) + 86400 - TIME_TO_SEC(t.start_time)) / 60
+            END
+        ) <= 150 THEN 500
+        WHEN (
+            CASE
+                WHEN TIME_TO_SEC(t.end_time) >= TIME_TO_SEC(t.start_time)
+                THEN (TIME_TO_SEC(t.end_time) - TIME_TO_SEC(t.start_time)) / 60
+                ELSE (TIME_TO_SEC(t.end_time) + 86400 - TIME_TO_SEC(t.start_time)) / 60
+            END
+        ) <= 210 THEN 700
+        WHEN (
+            CASE
+                WHEN TIME_TO_SEC(t.end_time) >= TIME_TO_SEC(t.start_time)
+                THEN (TIME_TO_SEC(t.end_time) - TIME_TO_SEC(t.start_time)) / 60
+                ELSE (TIME_TO_SEC(t.end_time) + 86400 - TIME_TO_SEC(t.start_time)) / 60
+            END
+        ) <= 270 THEN 900
+        ELSE 1100
+    END
+)) as revenue,
                    t.payment_status, t.payment_date
             FROM timetable t
             JOIN teachers tc ON t.teacher_id = tc.id
@@ -80,7 +105,32 @@ if ($type === 'timetable') {
     $sql = "SELECT t.date, t.start_time, t.end_time,
                    tc.name as teacher, s.name as subject,
                    c.name as class, r.name as room,
-                   t.student_count, (t.student_count * $FEE_PER_STUDENT_LIVE) as revenue,
+                   t.student_count, (t.student_count * (
+    CASE
+        WHEN (
+            CASE
+                WHEN TIME_TO_SEC(t.end_time) >= TIME_TO_SEC(t.start_time)
+                THEN (TIME_TO_SEC(t.end_time) - TIME_TO_SEC(t.start_time)) / 60
+                ELSE (TIME_TO_SEC(t.end_time) + 86400 - TIME_TO_SEC(t.start_time)) / 60
+            END
+        ) <= 150 THEN 500
+        WHEN (
+            CASE
+                WHEN TIME_TO_SEC(t.end_time) >= TIME_TO_SEC(t.start_time)
+                THEN (TIME_TO_SEC(t.end_time) - TIME_TO_SEC(t.start_time)) / 60
+                ELSE (TIME_TO_SEC(t.end_time) + 86400 - TIME_TO_SEC(t.start_time)) / 60
+            END
+        ) <= 210 THEN 700
+        WHEN (
+            CASE
+                WHEN TIME_TO_SEC(t.end_time) >= TIME_TO_SEC(t.start_time)
+                THEN (TIME_TO_SEC(t.end_time) - TIME_TO_SEC(t.start_time)) / 60
+                ELSE (TIME_TO_SEC(t.end_time) + 86400 - TIME_TO_SEC(t.start_time)) / 60
+            END
+        ) <= 270 THEN 900
+        ELSE 1100
+    END
+)) as revenue,
                    t.payment_status, t.payment_date
             FROM timetable t
             JOIN teachers tc ON t.teacher_id = tc.id

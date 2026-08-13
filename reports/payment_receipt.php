@@ -39,7 +39,11 @@ $stmt = $pdo->prepare($sql);
 $stmt->execute([$teacher_id, $period_start, $period_end]);
 $payments = $stmt->fetchAll();
 
-$total_amount = array_sum(array_map(function($p) use ($FEE_PER_STUDENT_LIVE) { return lesson_amount((int)$p['student_count'], $FEE_PER_STUDENT_LIVE); }, $payments));
+$total_amount = array_sum(array_map(function($p) use ($FEE_PER_STUDENT_LIVE) { return lesson_amount(
+        (int)$p['student_count'],
+        (string)$p['start_time'],
+        (string)$p['end_time']
+    ); }, $payments));
 
 include __DIR__ . '/../includes/header.php';
 ?>
@@ -83,7 +87,11 @@ include __DIR__ . '/../includes/header.php';
                             <td><?= htmlspecialchars($p['class']) ?></td>
                             <td><?= htmlspecialchars($p['room']) ?></td>
                             <td><?= $p['student_count'] ?></td>
-                            <td><?= htmlspecialchars($CURRENCY_SYMBOL_LIVE) ?> <?= number_format(lesson_amount((int)$p['student_count'], $FEE_PER_STUDENT_LIVE)) ?></td>
+                            <td><?= htmlspecialchars($CURRENCY_SYMBOL_LIVE) ?> <?= number_format(lesson_amount(
+        (int)$p['student_count'],
+        (string)$p['start_time'],
+        (string)$p['end_time']
+    )) ?></td>
                             <td><?= date('d M Y', strtotime($p['payment_date'])) ?></td>
                         </tr>
                     <?php endforeach; ?>

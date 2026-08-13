@@ -98,12 +98,98 @@ $stmt->execute();
 $entries = $stmt->fetchAll();
 
 $totalStmt = $pdo->prepare("SELECT
-    COALESCE(SUM(student_count * ?), 0) AS total,
-    COALESCE(SUM(CASE WHEN payment_status = 'paid' THEN student_count * ? ELSE 0 END), 0) AS paid,
-    COALESCE(SUM(CASE WHEN payment_status = 'pending' THEN student_count * ? ELSE 0 END), 0) AS pending,
+    COALESCE(SUM(
+        student_count *
+        CASE
+            WHEN (
+                CASE
+                    WHEN TIME_TO_SEC(end_time) >= TIME_TO_SEC(start_time)
+                    THEN (TIME_TO_SEC(end_time) - TIME_TO_SEC(start_time)) / 60
+                    ELSE (TIME_TO_SEC(end_time) + 86400 - TIME_TO_SEC(start_time)) / 60
+                END
+            ) <= 150 THEN 500
+            WHEN (
+                CASE
+                    WHEN TIME_TO_SEC(end_time) >= TIME_TO_SEC(start_time)
+                    THEN (TIME_TO_SEC(end_time) - TIME_TO_SEC(start_time)) / 60
+                    ELSE (TIME_TO_SEC(end_time) + 86400 - TIME_TO_SEC(start_time)) / 60
+                END
+            ) <= 210 THEN 700
+            WHEN (
+                CASE
+                    WHEN TIME_TO_SEC(end_time) >= TIME_TO_SEC(start_time)
+                    THEN (TIME_TO_SEC(end_time) - TIME_TO_SEC(start_time)) / 60
+                    ELSE (TIME_TO_SEC(end_time) + 86400 - TIME_TO_SEC(start_time)) / 60
+                END
+            ) <= 270 THEN 900
+            ELSE 1100
+        END
+    ), 0) AS total,
+
+    COALESCE(SUM(
+        CASE WHEN payment_status = 'paid'
+        THEN student_count *
+            CASE
+                WHEN (
+                    CASE
+                        WHEN TIME_TO_SEC(end_time) >= TIME_TO_SEC(start_time)
+                        THEN (TIME_TO_SEC(end_time) - TIME_TO_SEC(start_time)) / 60
+                        ELSE (TIME_TO_SEC(end_time) + 86400 - TIME_TO_SEC(start_time)) / 60
+                    END
+                ) <= 150 THEN 500
+                WHEN (
+                    CASE
+                        WHEN TIME_TO_SEC(end_time) >= TIME_TO_SEC(start_time)
+                        THEN (TIME_TO_SEC(end_time) - TIME_TO_SEC(start_time)) / 60
+                        ELSE (TIME_TO_SEC(end_time) + 86400 - TIME_TO_SEC(start_time)) / 60
+                    END
+                ) <= 210 THEN 700
+                WHEN (
+                    CASE
+                        WHEN TIME_TO_SEC(end_time) >= TIME_TO_SEC(start_time)
+                        THEN (TIME_TO_SEC(end_time) - TIME_TO_SEC(start_time)) / 60
+                        ELSE (TIME_TO_SEC(end_time) + 86400 - TIME_TO_SEC(start_time)) / 60
+                    END
+                ) <= 270 THEN 900
+                ELSE 1100
+            END
+        ELSE 0 END
+    ), 0) AS paid,
+
+    COALESCE(SUM(
+        CASE WHEN payment_status = 'pending'
+        THEN student_count *
+            CASE
+                WHEN (
+                    CASE
+                        WHEN TIME_TO_SEC(end_time) >= TIME_TO_SEC(start_time)
+                        THEN (TIME_TO_SEC(end_time) - TIME_TO_SEC(start_time)) / 60
+                        ELSE (TIME_TO_SEC(end_time) + 86400 - TIME_TO_SEC(start_time)) / 60
+                    END
+                ) <= 150 THEN 500
+                WHEN (
+                    CASE
+                        WHEN TIME_TO_SEC(end_time) >= TIME_TO_SEC(start_time)
+                        THEN (TIME_TO_SEC(end_time) - TIME_TO_SEC(start_time)) / 60
+                        ELSE (TIME_TO_SEC(end_time) + 86400 - TIME_TO_SEC(start_time)) / 60
+                    END
+                ) <= 210 THEN 700
+                WHEN (
+                    CASE
+                        WHEN TIME_TO_SEC(end_time) >= TIME_TO_SEC(start_time)
+                        THEN (TIME_TO_SEC(end_time) - TIME_TO_SEC(start_time)) / 60
+                        ELSE (TIME_TO_SEC(end_time) + 86400 - TIME_TO_SEC(start_time)) / 60
+                    END
+                ) <= 270 THEN 900
+                ELSE 1100
+            END
+        ELSE 0 END
+    ), 0) AS pending,
+
     COUNT(*) AS lessons
     FROM timetable t WHERE $whereSql");
-$totalStmt->execute(array_merge([$FEE_PER_STUDENT_LIVE, $FEE_PER_STUDENT_LIVE, $FEE_PER_STUDENT_LIVE], $params));
+
+$totalStmt->execute($params);
 $totals = $totalStmt->fetch();
 
 $allTeachers = [];
@@ -158,7 +244,11 @@ include __DIR__ . '/../includes/header.php';
                 <thead><tr><th>Date</th><th>Teacher</th><th>Lesson</th><th>Students</th><th>Amount</th><th>Status</th><th class="text-end">Action</th></tr></thead>
                 <tbody>
                 <?php if (!$entries): ?><tr><td colspan="7"><div class="finance-empty"><i class="bi bi-receipt"></i><strong>No payment records found</strong><div>Try changing the filters.</div></div></td></tr>
-                <?php else: foreach ($entries as $e): $amount = lesson_amount((int)$e['student_count'], $FEE_PER_STUDENT_LIVE); ?>
+                <?php else: foreach ($entries as $e): $amount = lesson_amount(
+                    (int)$e['student_count'],
+                    (string)$e['start_time'],
+                    (string)$e['end_time']
+                ); ?>
                     <tr>
                         <td><strong><?= date('d M Y', strtotime($e['date'])) ?></strong><small class="d-block text-body-secondary"><?= date('D', strtotime($e['date'])) ?></small></td>
                         <td class="teacher-cell"><strong><?= htmlspecialchars($e['teacher_name']) ?></strong><small><?= htmlspecialchars($e['room_name']) ?></small></td>

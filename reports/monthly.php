@@ -82,7 +82,32 @@ $sql = "
 
         COALESCE(
             SUM(
-                t.student_count * ?
+                t.student_count * (
+    CASE
+        WHEN (
+            CASE
+                WHEN TIME_TO_SEC(t.end_time) >= TIME_TO_SEC(t.start_time)
+                THEN (TIME_TO_SEC(t.end_time) - TIME_TO_SEC(t.start_time)) / 60
+                ELSE (TIME_TO_SEC(t.end_time) + 86400 - TIME_TO_SEC(t.start_time)) / 60
+            END
+        ) <= 150 THEN 500
+        WHEN (
+            CASE
+                WHEN TIME_TO_SEC(t.end_time) >= TIME_TO_SEC(t.start_time)
+                THEN (TIME_TO_SEC(t.end_time) - TIME_TO_SEC(t.start_time)) / 60
+                ELSE (TIME_TO_SEC(t.end_time) + 86400 - TIME_TO_SEC(t.start_time)) / 60
+            END
+        ) <= 210 THEN 700
+        WHEN (
+            CASE
+                WHEN TIME_TO_SEC(t.end_time) >= TIME_TO_SEC(t.start_time)
+                THEN (TIME_TO_SEC(t.end_time) - TIME_TO_SEC(t.start_time)) / 60
+                ELSE (TIME_TO_SEC(t.end_time) + 86400 - TIME_TO_SEC(t.start_time)) / 60
+            END
+        ) <= 270 THEN 900
+        ELSE 1100
+    END
+)
             ),
             0
         ) AS revenue,
@@ -91,7 +116,32 @@ $sql = "
             SUM(
                 CASE
                     WHEN t.payment_status = 'paid'
-                    THEN t.student_count * ?
+                    THEN t.student_count * (
+    CASE
+        WHEN (
+            CASE
+                WHEN TIME_TO_SEC(t.end_time) >= TIME_TO_SEC(t.start_time)
+                THEN (TIME_TO_SEC(t.end_time) - TIME_TO_SEC(t.start_time)) / 60
+                ELSE (TIME_TO_SEC(t.end_time) + 86400 - TIME_TO_SEC(t.start_time)) / 60
+            END
+        ) <= 150 THEN 500
+        WHEN (
+            CASE
+                WHEN TIME_TO_SEC(t.end_time) >= TIME_TO_SEC(t.start_time)
+                THEN (TIME_TO_SEC(t.end_time) - TIME_TO_SEC(t.start_time)) / 60
+                ELSE (TIME_TO_SEC(t.end_time) + 86400 - TIME_TO_SEC(t.start_time)) / 60
+            END
+        ) <= 210 THEN 700
+        WHEN (
+            CASE
+                WHEN TIME_TO_SEC(t.end_time) >= TIME_TO_SEC(t.start_time)
+                THEN (TIME_TO_SEC(t.end_time) - TIME_TO_SEC(t.start_time)) / 60
+                ELSE (TIME_TO_SEC(t.end_time) + 86400 - TIME_TO_SEC(t.start_time)) / 60
+            END
+        ) <= 270 THEN 900
+        ELSE 1100
+    END
+)
                     ELSE 0
                 END
             ),
@@ -126,8 +176,6 @@ $sql = "
 $stmt = $pdo->prepare($sql);
 
 $stmt->execute([
-    $FEE_PER_STUDENT_LIVE,
-    $FEE_PER_STUDENT_LIVE,
     $monthStart,
     $monthEnd
 ]);
