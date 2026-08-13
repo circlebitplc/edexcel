@@ -1,0 +1,71 @@
+name: Server Maintenance
+
+on:
+  workflow_dispatch:
+    inputs:
+      operation:
+        description: "Select the maintenance operation"
+        required: true
+        type: choice
+        options:
+          - status
+          - php-check
+          - disk
+          - health
+          - payment-test
+          - deploy
+
+permissions:
+  contents: read
+
+concurrency:
+  group: server-maintenance
+  cancel-in-progress: false
+
+jobs:
+  maintenance:
+    name: ${{ inputs.operation }}
+    runs-on: ubuntu-latest
+    environment: production
+
+    steps:
+      - name: Start SSH agent
+        uses: webfactory/ssh-agent@v0.9.1
+        with:
+          ssh-private-key: ${{ secrets.KANDY_DEPLOY_KEY }}
+
+      - name: Configure SSH host verification
+        run: |
+          set -euo pipefail
+
+          mkdir -p ~/.ssh
+          chmod 700 ~/.ssh
+
+          cat > ~/.ssh/known_hosts <<'KNOWN_HOSTS'
+          kandy.edexcel.college ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIH/H6e/Q4kIYnn8nc5Mx0gDvg2MbuZe/EEET5jsuGK6H
+          KNOWN_HOSTS
+
+          chmod 644 ~/.ssh/known_hosts
+
+      - name: Run maintenance operation
+        env:
+          DEPLOY_HOST: ${{ secrets.KANDY_DEPLOY_HOST }}
+          OPERATION: ${{ inputs.operation }}
+        run: |
+          set -euo pipefail
+
+          case "$OPERATION" in
+            status|php-check|disk|health|payment-test|deploy)
+              ;;
+            *)
+              echo "Invalid operation"
+              exit 1
+              ;;
+          esac
+
+          ssh \
+            -o BatchMode=yes \
+            -o StrictHostKeyChecking=yes \
+            -o UserKnownHostsFile="$HOME/.ssh/known_hosts" \
+            github-deploy@"$DEPLOY_HOST" \
+            "sudo /usr/local/bin/kandy-maintenance '$OPERATION'"
