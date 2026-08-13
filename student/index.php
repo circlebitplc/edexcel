@@ -231,13 +231,13 @@ function renderContent($grouped, $classes, $teachersList, $subjectColorMap, $day
                         }
                     ?>
                     <article class="class-card">
-                        <divclass="accent-bar inline-css-67f6ca11af"></div>
+                        <div class="accent-bar"></div>
                         <div class="card-content">
                             <div class="time-section">
                                 <span class="start-time"><?= date('g:i A', $startTs) ?></span>
                                 <span class="end-time">– <?= date('g:i A', $endTs) ?></span>
                                 <div class="duration-bar">
-                                    <divclass="fill inline-css-942f7d52e1"></div>
+                                    <div class="fill"></div>
                                 </div>
                             </div>
                             <div class="subject-section">
@@ -289,6 +289,535 @@ function renderContent($grouped, $classes, $teachersList, $subjectColorMap, $day
     <link href="https://fonts.googleapis.com/css2?family=Inter:opsz@14..32&display=swap" rel="stylesheet">
     <!-- External CSS -->
     <link rel="stylesheet" href="<?= BASE_URL ?>assets/css/dashboard.css">
+
+<style>
+/* KANDY STUDENT TIMETABLE LAYOUT FIX v1 */
+
+#app-container {
+    width: min(1420px, calc(100% - 32px));
+    margin: 0 auto;
+    padding: 24px 0 70px;
+}
+
+/* Navigation */
+.glass-nav {
+    position: sticky;
+    top: 0;
+    z-index: 1050;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 18px;
+    min-height: 68px;
+    padding: 12px max(20px, calc((100vw - 1420px) / 2));
+    background: rgba(255,255,255,.95);
+    border-bottom: 1px solid rgba(23,32,51,.09);
+    box-shadow: 0 8px 28px rgba(23,32,51,.08);
+    backdrop-filter: blur(16px);
+}
+
+[data-bs-theme="dark"] .glass-nav {
+    background: rgba(25,30,43,.95);
+    border-color: rgba(255,255,255,.08);
+}
+
+.glass-nav .navbar-brand {
+    display: flex;
+    align-items: center;
+    gap: 9px;
+    font-size: 1.08rem;
+    font-weight: 800;
+    color: var(--text,#172033);
+    white-space: nowrap;
+}
+
+.glass-nav .navbar-brand i {
+    color: var(--primary,#5161ce);
+}
+
+.nav-links {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    flex-wrap: wrap;
+    gap: 7px;
+}
+
+.nav-links > a,
+.dark-toggle-nav {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 7px;
+    min-height: 40px;
+    padding: 8px 12px;
+    border: 1px solid transparent;
+    border-radius: 10px;
+    background: transparent;
+    color: var(--text,#172033);
+    font-size: .86rem;
+    font-weight: 600;
+    text-decoration: none;
+    white-space: nowrap;
+}
+
+.nav-links > a:hover,
+.dark-toggle-nav:hover {
+    background: var(--primary-soft,rgba(81,97,206,.1));
+    color: var(--primary,#5161ce);
+}
+
+.dark-toggle-nav {
+    cursor: pointer;
+    border-color: var(--panel-border,#e7eaf3);
+}
+
+.hotline-link i,
+.whatsapp-group-link i {
+    color: #16a36a;
+}
+
+/* Filters */
+.filter-bar {
+    display: flex;
+    width: 100%;
+    padding: 18px;
+    margin: 0 0 20px;
+    border: 1px solid var(--panel-border,rgba(23,32,51,.08));
+    border-radius: 20px;
+    background: var(--surface,#fff);
+    box-shadow: 0 12px 35px rgba(23,32,51,.08);
+}
+
+.filter-bar form {
+    width: 100%;
+    display: grid !important;
+    grid-template-columns: minmax(0,1fr) minmax(0,1fr) auto;
+    gap: 14px;
+    align-items: end;
+}
+
+.filter-bar .form-label {
+    display: block;
+    margin: 0 0 6px;
+    color: var(--muted,#65718a);
+    font-size: .72rem;
+    font-weight: 800;
+    letter-spacing: .08em;
+    text-transform: uppercase;
+}
+
+.filter-bar .form-select {
+    width: 100%;
+    min-height: 48px;
+    border-radius: 12px;
+}
+
+.filter-bar .btn {
+    min-height: 48px;
+    padding-inline: 18px;
+    border-radius: 12px;
+}
+
+/* Week navigation */
+.week-nav {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    flex-wrap: wrap;
+    margin: 6px 0 24px;
+}
+
+.week-nav .btn {
+    min-height: 42px;
+    border-radius: 11px;
+}
+
+.week-label {
+    min-width: 220px;
+    text-align: center;
+    color: var(--text,#172033);
+    font-size: 1rem;
+    font-weight: 700;
+}
+
+/* Day sections */
+.day-section {
+    margin: 0 0 28px;
+}
+
+.day-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 15px;
+    margin-bottom: 12px;
+    padding: 0 4px;
+}
+
+.day-title-wrap {
+    display: flex;
+    align-items: baseline;
+    gap: 10px;
+}
+
+.day-header h3 {
+    margin: 0;
+    color: var(--text,#172033);
+    font-size: 1.45rem;
+    font-weight: 800;
+}
+
+.day-date {
+    color: var(--muted,#65718a);
+    font-size: .84rem;
+    font-weight: 600;
+}
+
+.day-badge,
+.count-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    min-height: 30px;
+    padding: 5px 10px;
+    border-radius: 999px;
+    font-size: .72rem;
+    font-weight: 800;
+}
+
+.day-badge {
+    background: var(--primary-soft,rgba(81,97,206,.1));
+    color: var(--primary,#5161ce);
+}
+
+.day-badge.today {
+    background: rgba(22,163,106,.11);
+    color: #138455;
+}
+
+.count-badge {
+    margin-left: 6px;
+    background: var(--surface-soft,#f3f5fb);
+    color: var(--muted,#65718a);
+}
+
+/* Class cards */
+.class-list {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 12px;
+}
+
+.class-card {
+    position: relative;
+    display: block;
+    overflow: hidden;
+    border: 1px solid var(--panel-border,rgba(23,32,51,.08));
+    border-radius: 18px;
+    background: var(--surface,#fff);
+    box-shadow: 0 9px 28px rgba(23,32,51,.065);
+    transition: transform .2s ease, box-shadow .2s ease;
+}
+
+.class-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 16px 38px rgba(23,32,51,.11);
+}
+
+.accent-bar {
+    position: absolute;
+    inset: 0 auto 0 0;
+    width: 5px;
+    background: var(--class-accent,#4A6CF7);
+}
+
+.card-content {
+    display: grid;
+    grid-template-columns: 190px minmax(220px,1.1fr) minmax(280px,1.5fr);
+    align-items: center;
+    gap: 22px;
+    padding: 18px 22px 18px 26px;
+}
+
+.time-section {
+    min-width: 0;
+}
+
+.start-time,
+.time-main {
+    color: var(--text,#172033);
+    font-size: 1.12rem;
+    font-weight: 800;
+    white-space: nowrap;
+}
+
+.end-time,
+.time-end {
+    margin-top: 2px;
+    color: var(--muted,#65718a);
+    font-size: .78rem;
+    font-weight: 600;
+}
+
+.duration-bar {
+    width: 100%;
+    max-width: 155px;
+    height: 5px;
+    margin-top: 10px;
+    overflow: hidden;
+    border-radius: 999px;
+    background: var(--surface-soft,#f3f5fb);
+}
+
+.duration-bar .fill {
+    height: 100%;
+    border-radius: inherit;
+    background: var(--class-accent,#4A6CF7);
+}
+
+.subject-section {
+    min-width: 0;
+}
+
+.class-name {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    color: var(--text,#172033);
+    font-size: 1rem;
+    font-weight: 800;
+    line-height: 1.3;
+}
+
+.subject-name {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    margin-top: 7px;
+    color: var(--muted,#65718a);
+    font-size: .8rem;
+    font-weight: 600;
+}
+
+.meta-section {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 7px;
+    flex-wrap: wrap;
+}
+
+.teacher-pill,
+.pill,
+.today-tag,
+.live-indicator,
+.whatsapp-community-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    min-height: 34px;
+    padding: 7px 10px;
+    border-radius: 999px;
+    font-size: .73rem;
+    font-weight: 700;
+    text-decoration: none;
+    white-space: nowrap;
+}
+
+.teacher-pill {
+    background: rgba(22,163,106,.1);
+    color: #138455;
+}
+
+.pill {
+    background: var(--surface-soft,#f3f5fb);
+    color: var(--muted,#65718a);
+}
+
+.today-tag {
+    background: rgba(81,97,206,.1);
+    color: var(--primary,#5161ce);
+}
+
+.live-indicator {
+    background: rgba(220,76,100,.1);
+    color: #c83b53;
+}
+
+.whatsapp-community-btn {
+    background: #16a36a;
+    color: #fff;
+}
+
+.whatsapp-community-btn:hover {
+    background: #128b59;
+    color: #fff;
+}
+
+/* Empty state */
+.empty-state {
+    padding: 65px 20px;
+    text-align: center;
+    border: 1px dashed var(--panel-border-strong,rgba(23,32,51,.13));
+    border-radius: 20px;
+    background: var(--surface,#fff);
+}
+
+.empty-state .big-icon,
+.empty-icon {
+    display: block;
+    margin-bottom: 14px;
+    font-size: 2.2rem;
+    color: var(--primary,#5161ce);
+}
+
+/* Tablet */
+@media (max-width: 1000px) {
+    .card-content {
+        grid-template-columns: 150px minmax(190px,1fr);
+        gap: 16px;
+    }
+
+    .meta-section {
+        grid-column: 1 / -1;
+        justify-content: flex-start;
+        padding-top: 10px;
+        border-top: 1px solid var(--panel-border);
+    }
+}
+
+/* Mobile */
+@media (max-width: 720px) {
+    #app-container {
+        width: calc(100% - 20px);
+        padding-top: 14px;
+    }
+
+    .glass-nav {
+        position: relative;
+        padding: 10px;
+        align-items: flex-start;
+        flex-direction: column;
+        gap: 7px;
+    }
+
+    .nav-links {
+        width: 100%;
+        justify-content: flex-start;
+        overflow-x: auto;
+        flex-wrap: nowrap;
+    }
+
+    .nav-links > a,
+    .dark-toggle-nav {
+        flex: 0 0 auto;
+        min-height: 38px;
+        padding: 7px 10px;
+        font-size: .76rem;
+    }
+
+    .filter-bar {
+        padding: 13px;
+        border-radius: 16px;
+    }
+
+    .filter-bar form {
+        grid-template-columns: 1fr;
+        gap: 10px;
+    }
+
+    .filter-bar .btn {
+        width: 100%;
+    }
+
+    .week-nav {
+        justify-content: space-between;
+        gap: 7px;
+    }
+
+    .week-nav .btn {
+        flex: 1;
+        min-width: 0;
+        padding-inline: 9px;
+        font-size: .75rem;
+    }
+
+    .week-label {
+        order: -1;
+        width: 100%;
+        min-width: 0;
+        font-size: .9rem;
+    }
+
+    .day-header {
+        align-items: flex-start;
+    }
+
+    .day-header h3 {
+        font-size: 1.2rem;
+    }
+
+    .card-content {
+        grid-template-columns: 1fr;
+        gap: 12px;
+        padding: 16px 15px 16px 19px;
+    }
+
+    .time-section {
+        display: grid;
+        grid-template-columns: auto auto;
+        align-items: baseline;
+        column-gap: 8px;
+    }
+
+    .start-time {
+        font-size: 1rem;
+    }
+
+    .duration-bar {
+        grid-column: 1 / -1;
+        max-width: none;
+        margin-top: 7px;
+    }
+
+    .class-name {
+        font-size: .94rem;
+    }
+
+    .meta-section {
+        grid-column: auto;
+        padding-top: 0;
+        border-top: 0;
+        justify-content: flex-start;
+    }
+
+    .teacher-pill,
+    .pill,
+    .today-tag,
+    .live-indicator,
+    .whatsapp-community-btn {
+        white-space: normal;
+    }
+}
+
+@media (max-width: 420px) {
+    .day-header {
+        flex-direction: column;
+        gap: 7px;
+    }
+
+    .day-badges {
+        justify-content: flex-start;
+    }
+
+    .meta-section {
+        gap: 6px;
+    }
+}
+</style>
+
 </head>
 <body>
 
@@ -358,7 +887,7 @@ function renderContent($grouped, $classes, $teachersList, $subjectColorMap, $day
 <!-- ===== MODAL ===== -->
 <div class="modal fade" id="classModal" tabindex="-1">
     <div class="modal-dialog modal-dialog-centered">
-        <divclass="modal-content inline-css-e03e6b68ed">
+        <div class="modal-content">
             <div class="modal-header">
                 <h5 class="modal-title" id="modalTitle">Class Details</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
