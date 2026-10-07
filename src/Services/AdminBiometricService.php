@@ -107,6 +107,113 @@ final class AdminBiometricService
     }
 
     /**
+     * Validates that the given user ID belongs to an active, non-deleted user account of any role.
+     */
+    public function validateUser(int $userId): bool
+    {
+        if ($userId <= 0) {
+            return false;
+        }
+        try {
+            $stmt = $this->pdo->prepare("
+                SELECT id FROM users
+                WHERE id = ?
+                  AND (is_active = 1 OR is_active IS NULL)
+                  AND deleted_at IS NULL
+                LIMIT 1
+            ");
+            $stmt->execute([$userId]);
+            return (bool)$stmt->fetchColumn();
+        } catch (Throwable) {
+            return false;
+        }
+    }
+
+    /**
+     * Retrieves an active user account by ID with linked teacher data if applicable.
+     *
+     * @param int $userId
+     * @return array<string,mixed>
+     * @throws RuntimeException If user not found or inactive
+     */
+    public function getUserAccount(int $userId): array
+    {
+        $stmt = $this->pdo->prepare("
+            SELECT u.*, t.name AS teacher_name, t.phone AS teacher_phone
+            FROM users u
+            LEFT JOIN teachers t ON t.id = u.teacher_id AND t.deleted_at IS NULL
+            WHERE u.id = ?
+              AND (u.is_active = 1 OR u.is_active IS NULL)
+              AND u.deleted_at IS NULL
+            LIMIT 1
+        ");
+        $stmt->execute([$userId]);
+        $user = $stmt->fetch(PDO::FETCH_ASSOC);
+
+        if (!$user) {
+            throw new RuntimeException('User account not found or inactive.');
+        }
+
+        return $user;
+    }
+
+    /**
+     * Finds an active user account by username, Google email, or associated phone number.
+     *
+     * @param string $identifier
+     * @return array<string,mixed>|null
+     */
+    public function findUserByIdentifier(string $identifier): ?array
+    {
+        $clean = trim($identifier);
+        if ($clean === '') {
+            return null;
+        }
+
+        // 1. Direct match on username or google_email
+        $stmt = $this->pdo->prepare("
+            SELECT u.*, t.name AS teacher_name, t.phone AS teacher_phone
+            FROM users u
+            LEFT JOIN teachers t ON t.id = u.teacher_id AND t.deleted_at IS NULL
+            WHERE (u.username = ? OR u.google_email = ?)
+              AND (u.is_active = 1 OR u.is_active IS NULL)
+              AND u.deleted_at IS NULL
+            LIMIT 1
+        ");
+        $stmt->execute([$clean, $clean]);
+        $user = $stmt->fetch(PDO::FETCH_ASSOC);
+        if ($user) {
+            return $user;
+        }
+
+        // 2. Normalized phone lookup if input looks like a phone number
+        $cleanPhone = preg_replace('/[^\d+]/', '', $clean) ?? '';
+        if (strlen($cleanPhone) >= 9) {
+            try {
+                $pStmt = $this->pdo->prepare("
+                    SELECT u.*, t.name AS teacher_name, t.phone AS teacher_phone
+                    FROM users u
+                    LEFT JOIN teachers t ON t.id = u.teacher_id AND t.deleted_at IS NULL
+                    LEFT JOIN student_profiles sp ON sp.user_id = u.id
+                    WHERE (sp.whatsapp_number LIKE ? OR t.phone LIKE ? OR u.username LIKE ?)
+                      AND (u.is_active = 1 OR u.is_active IS NULL)
+                      AND u.deleted_at IS NULL
+                    LIMIT 1
+                ");
+                $like = '%' . substr($cleanPhone, -9);
+                $pStmt->execute([$like, $like, $like]);
+                $user = $pStmt->fetch(PDO::FETCH_ASSOC);
+                if ($user) {
+                    return $user;
+                }
+            } catch (Throwable) {
+            }
+        }
+
+        return null;
+    }
+
+    /**
      * Strictly verifies that the given user ID belongs to the authorized administrator account.
      * Throws RuntimeException if not authorized.
      */
@@ -211,17 +318,18 @@ final class AdminBiometricService
     }
 
     /**
-     * Checks if biometric attempts from the client IP / admin user are locked or throttled.
+     * Checks if biometric attempts from the client IP / user account are locked or throttled.
      *
      * @param string $username
+     * @param int|null $userId
      * @return array{is_locked:bool, delay_seconds:int, attempts_recent:int}
      */
-    public function checkThrottling(string $username): array
+    public function checkThrottling(string $username, ?int $userId = null): array
     {
         $ip = function_exists('eck_client_ip') ? eck_client_ip() : ($_SERVER['REMOTE_ADDR'] ?? '');
         $cutoff = date('Y-m-d H:i:s', time() - (self::LOCKOUT_MINUTES * 60));
 
-        // 1. Hard lockout strictly enforced against the client IP address (prevents external DoS targeting user_id 1)
+        // 1. Hard lockout strictly enforced against the client IP address
         $stmtIp = $this->pdo->prepare("
             SELECT COUNT(*) FROM authentication_audit
             WHERE ip_address = ?
@@ -239,14 +347,15 @@ final class AdminBiometricService
             ];
         }
 
-        // 2. Global failures on admin account to introduce progressive delays against distributed attacks
+        // 2. Failures on targeted user account to introduce progressive delays against distributed attacks
+        $targetUserId = ($userId !== null && $userId > 0) ? $userId : 1;
         $stmtUser = $this->pdo->prepare("
             SELECT COUNT(*) FROM authentication_audit
-            WHERE user_id = 1
+            WHERE user_id = ?
               AND success = 0
               AND created_at >= ?
         ");
-        $stmtUser->execute([$cutoff]);
+        $stmtUser->execute([$targetUserId, $cutoff]);
         $userFailures = (int)$stmtUser->fetchColumn();
 
         $delay = 0;
@@ -386,6 +495,128 @@ final class AdminBiometricService
             'has_teacher_permissions' => true,
             'teacher_id' => $teacherId,
         ]);
+    }
+
+    /**
+     * Establishes a verified authentication session for any user role (admin, teacher, student).
+     *
+     * @param array<string,mixed> $user
+     * @param string $authMethod passkey|face
+     * @return string Redirect destination URL
+     */
+    public function establishSession(array $user, string $authMethod): string
+    {
+        $role = strtolower(trim((string)($user['role'] ?? 'student')));
+        $userId = (int)$user['id'];
+
+        if ($role === 'admin') {
+            $this->establishAdminSession($user, $authMethod);
+            return (string)BASE_URL . 'dashboard.php';
+        }
+
+        if (session_status() === PHP_SESSION_ACTIVE && !headers_sent()) {
+            if (function_exists('regenerate_session')) {
+                regenerate_session();
+            } else {
+                session_regenerate_id(true);
+            }
+        }
+
+        if ($role === 'teacher') {
+            if (function_exists('clear_cross_portal_session')) {
+                clear_cross_portal_session('staff');
+            }
+
+            $teacherId = !empty($user['teacher_id']) ? (int)$user['teacher_id'] : null;
+
+            $_SESSION['user_id'] = $userId;
+            $_SESSION['role'] = 'teacher';
+            $_SESSION['username'] = (string)$user['username'];
+            if ($teacherId !== null) {
+                $_SESSION['teacher_id'] = $teacherId;
+            }
+            $_SESSION['auth_method'] = $authMethod;
+            $_SESSION['last_activity'] = time();
+            $_SESSION['login_time'] = time();
+
+            if (function_exists('app_theme_on_login')) {
+                app_theme_on_login($this->pdo, $user);
+            }
+
+            $this->recordAudit($authMethod, true, $userId, null, [
+                'role' => 'teacher',
+                'teacher_id' => $teacherId,
+            ]);
+
+            return (string)BASE_URL . 'dashboard.php';
+        }
+
+        // Student role
+        if (function_exists('clear_cross_portal_session')) {
+            clear_cross_portal_session('student');
+        }
+
+        $_SESSION['user_id'] = $userId;
+        $_SESSION['student_id'] = $userId;
+        $_SESSION['role'] = 'student';
+        $_SESSION['username'] = (string)$user['username'];
+        $_SESSION['auth_method'] = $authMethod;
+        $_SESSION['last_activity'] = time();
+        $_SESSION['login_time'] = time();
+
+        try {
+            if (!function_exists('record_student_portal_login')) {
+                $helpers = dirname(__DIR__, 2) . '/student/otp_helpers.php';
+                if (is_file($helpers)) {
+                    require_once $helpers;
+                }
+            }
+            if (function_exists('record_student_portal_login')) {
+                record_student_portal_login($this->pdo, $userId);
+            } else {
+                $this->pdo->prepare('UPDATE users SET last_login_at = NOW() WHERE id = ?')->execute([$userId]);
+            }
+        } catch (Throwable) {
+        }
+
+        // Student trusted device binding
+        try {
+            if (!function_exists('student_devices')) {
+                $helpers = dirname(__DIR__, 2) . '/student/device_helpers.php';
+                if (is_file($helpers)) {
+                    require_once $helpers;
+                }
+            }
+            $svc = function_exists('student_devices') ? student_devices($this->pdo) : null;
+            if ($svc) {
+                $gate = $svc->beginLogin($userId, 'face');
+                $gateStatus = (string)($gate['status'] ?? '');
+                if ($gateStatus === 'device_limit' || $gateStatus === 'device_blocked') {
+                    $_SESSION['student_device_choice'] = $gateStatus;
+                    $_SESSION['student_device_blocked_until'] = (string)($gate['blocked_until'] ?? '');
+                    return '/student/device_gate.php';
+                }
+                if ($gateStatus === 'ok' && !empty($gate['device_id'])) {
+                    $svc->activateSession($userId, (int)$gate['device_id']);
+                    $svc->clearPending();
+                    $svc->onSignedIn($userId, (int)$gate['device_id'], 'face', !empty($gate['new_device']));
+                }
+            }
+        } catch (Throwable $e) {
+            error_log('Biometric student device bind error: ' . $e->getMessage());
+        }
+
+        if (function_exists('app_theme_on_login')) {
+            app_theme_on_login($this->pdo, $user);
+        }
+
+        $this->recordAudit($authMethod, true, $userId, null, [
+            'role' => 'student',
+        ]);
+
+        return function_exists('student_post_login_url')
+            ? student_post_login_url()
+            : (rtrim((string)BASE_URL, '/') . '/student/dashboard.php');
     }
 
     /**

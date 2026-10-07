@@ -37,10 +37,17 @@ final class AdminBiometricUnitTest extends TestCase
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 username TEXT UNIQUE NOT NULL,
                 password_hash TEXT NOT NULL,
+                google_email TEXT NULL,
                 role TEXT NOT NULL DEFAULT 'student',
                 teacher_id INTEGER NULL,
                 is_active INTEGER NOT NULL DEFAULT 1,
+                last_login_at TEXT NULL,
                 deleted_at TEXT NULL
+            );
+            CREATE TABLE student_profiles (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                user_id INTEGER NOT NULL,
+                whatsapp_number TEXT NULL
             );
             CREATE TABLE teachers (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -127,11 +134,19 @@ final class AdminBiometricUnitTest extends TestCase
             );
         ");
 
-        // Seed single administrator account who also has teacher duties
+        // Seed administrator, teacher, and student accounts
         $this->pdo->exec("
             INSERT INTO teachers (id, name, phone, email) VALUES (1, 'Admin Teacher', '0771234567', 'admin@edexcel.college');
             INSERT INTO users (id, username, password_hash, role, teacher_id, is_active)
             VALUES (1, 'local.test.admin', '\$2y\$10\$xyz', 'admin', 1, 1);
+
+            INSERT INTO teachers (id, name, phone, email) VALUES (2, 'Math Teacher', '0779998888', 'math@edexcel.college');
+            INSERT INTO users (id, username, password_hash, role, teacher_id, is_active)
+            VALUES (2, 'math.teacher', '\$2y\$10\$xyz', 'teacher', 2, 1);
+
+            INSERT INTO users (id, username, password_hash, google_email, role, is_active)
+            VALUES (3, 'student.john', '\$2y\$10\$xyz', 'john@gmail.com', 'student', 1);
+            INSERT INTO student_profiles (user_id, whatsapp_number) VALUES (3, '+94711223344');
         ");
 
         $this->bio = new AdminBiometricService($this->pdo);
@@ -507,5 +522,639 @@ final class AdminBiometricUnitTest extends TestCase
         $this->expectException(RuntimeException::class);
         $this->expectExceptionMessage('Unauthorized');
         $this->passkey->getRegistrationOptions(999, 'student_test');
+    }
+
+    // ==============================================================
+    // 8. AUTOMATIC ENROLLMENT STATE MACHINE & CAPTURE VALIDATION
+    // ==============================================================
+
+    public function testPoseStateMachineEnforcesAllFivePoses(): void
+    {
+        $ch = $this->face->createEnrollmentChallenge(1, true);
+        $token = $ch['challenge_token'];
+        $this->assertSame(['neutral', 'turn_left', 'turn_right', 'look_up', 'look_down'], $ch['required_poses']);
+
+        // Missing one required pose ('look_down')
+        $incompleteSamples = [];
+        foreach (['neutral', 'turn_left', 'turn_right', 'look_up'] as $pose) {
+            $incompleteSamples[$pose] = [
+                'descriptor' => array_fill(0, 128, 0.088),
+                'quality' => ['face_count' => 1, 'box_ratio' => 0.45, 'brightness' => 120.0],
+            ];
+        }
+
+        $this->expectException(RuntimeException::class);
+        $this->expectExceptionMessage("Missing required enrollment pose sample: look_down");
+        $this->face->processEnrollment(1, $token, $incompleteSamples);
+    }
+
+    public function testDuplicateCapturePreventionAndReplayLock(): void
+    {
+        $ch = $this->face->createEnrollmentChallenge(1, true);
+        $token = $ch['challenge_token'];
+
+        $samples = [];
+        foreach (['neutral', 'turn_left', 'turn_right', 'look_up', 'look_down'] as $pose) {
+            $samples[$pose] = [
+                'descriptor' => array_fill(0, 128, 0.088),
+                'quality' => ['face_count' => 1, 'box_ratio' => 0.45, 'brightness' => 120.0],
+            ];
+        }
+
+        // First submission succeeds
+        $res = $this->face->processEnrollment(1, $token, $samples);
+        $this->assertTrue($res['ok']);
+
+        // Second submission with same token MUST throw (replay lock / single-use challenge consumption)
+        $this->expectException(RuntimeException::class);
+        $this->expectExceptionMessage('This biometric challenge has already been used.');
+        $this->face->processEnrollment(1, $token, $samples);
+    }
+
+    public function testCaptureQualityGateRejectsMultipleFaces(): void
+    {
+        $ch = $this->face->createEnrollmentChallenge(1, true);
+        $token = $ch['challenge_token'];
+
+        $samples = [];
+        foreach (['neutral', 'turn_left', 'turn_right', 'look_up', 'look_down'] as $pose) {
+            $samples[$pose] = [
+                'descriptor' => array_fill(0, 128, 0.088),
+                'quality' => [
+                    'face_count' => ($pose === 'turn_right') ? 2 : 1, // 2 faces injected
+                    'box_ratio' => 0.45,
+                    'brightness' => 120.0,
+                ],
+            ];
+        }
+
+        $this->expectException(RuntimeException::class);
+        $this->expectExceptionMessage("Enrollment rejected: sample 'turn_right' detected 2 faces");
+        $this->face->processEnrollment(1, $token, $samples);
+    }
+
+    public function testCaptureQualityGateRejectsInvalidDescriptorDimensions(): void
+    {
+        $ch = $this->face->createEnrollmentChallenge(1, true);
+        $token = $ch['challenge_token'];
+
+        $samples = [];
+        foreach (['neutral', 'turn_left', 'turn_right', 'look_up', 'look_down'] as $pose) {
+            $samples[$pose] = [
+                'descriptor' => ($pose === 'neutral') ? array_fill(0, 64, 0.088) : array_fill(0, 128, 0.088), // Only 64 dimensions
+                'quality' => ['face_count' => 1, 'box_ratio' => 0.45, 'brightness' => 120.0],
+            ];
+        }
+
+        $this->expectException(RuntimeException::class);
+        $this->expectExceptionMessage("Invalid descriptor vector dimension for sample 'neutral'");
+        $this->face->processEnrollment(1, $token, $samples);
+    }
+
+    public function testCaptureQualityGateRejectsPoorLightingOrDistance(): void
+    {
+        $ch = $this->face->createEnrollmentChallenge(1, true);
+        $token = $ch['challenge_token'];
+
+        $samples = [];
+        foreach (['neutral', 'turn_left', 'turn_right', 'look_up', 'look_down'] as $pose) {
+            $samples[$pose] = [
+                'descriptor' => array_fill(0, 128, 0.088),
+                'quality' => [
+                    'face_count' => 1,
+                    'box_ratio' => ($pose === 'neutral') ? 0.10 : 0.45, // Face too far (0.10 < 0.18)
+                    'brightness' => 120.0,
+                ],
+            ];
+        }
+
+        $this->expectException(RuntimeException::class);
+        $this->expectExceptionMessage("face in sample 'neutral' is too far or too close to frame");
+        $this->face->processEnrollment(1, $token, $samples);
+    }
+
+    // ==============================================================
+    // 9. FAST 3-STEP LOGIN & ADAPTIVE ESCALATION
+    // ==============================================================
+
+    public function testFast3StepLivenessChallengeGenerationAndVerification(): void
+    {
+        // Enrol administrator first
+        $chEnrol = $this->face->createEnrollmentChallenge(1, true);
+        $baseVector = array_fill(0, 128, 0.088);
+        $samples = [];
+        foreach (['neutral', 'turn_left', 'turn_right', 'look_up', 'look_down'] as $p) {
+            $samples[$p] = [
+                'descriptor' => $baseVector,
+                'quality' => ['face_count' => 1, 'box_ratio' => 0.45, 'brightness' => 120.0],
+            ];
+        }
+        $this->face->processEnrollment(1, $chEnrol['challenge_token'], $samples);
+
+        // 1. Fast 2-of-3 Challenge Generation
+        $ch = $this->face->createAuthLivenessChallenge(1, false);
+        $this->assertSame('fast_2of3', $ch['mode']);
+        $this->assertCount(3, $ch['sequence']);
+        $this->assertSame(['CHECK_FACE', 'TURN_LEFT', 'TURN_RIGHT'], $ch['sequence']);
+
+        // 2. Case: Face + Left (2 of 3 checks passed)
+        $stepsFaceLeft = [
+            [
+                'action' => 'CHECK_FACE',
+                'yaw' => 0.5,
+                'pitch' => -0.5,
+                'ear' => 0.31,
+                'face_count' => 1,
+                'box_ratio' => 0.45,
+                'brightness' => 125.0,
+            ],
+            [
+                'action' => 'TURN_LEFT',
+                'yaw' => -14.0,
+                'pitch' => 0.0,
+                'ear' => 0.30,
+                'face_count' => 1,
+                'box_ratio' => 0.45,
+                'brightness' => 125.0,
+            ],
+        ];
+        $res = $this->face->processVerification(1, $ch['challenge_token'], $baseVector, [
+            'steps' => $stepsFaceLeft,
+            'motion_score' => 0.018,
+        ]);
+        $this->assertTrue($res['matched']);
+        $this->assertTrue($res['liveness_passed']);
+        $this->assertContains('face', $res['passed_checks']);
+        $this->assertContains('left', $res['passed_checks']);
+    }
+
+    private function enrolTestFace(): void
+    {
+        $chEnrol = $this->face->createEnrollmentChallenge(1, true);
+        $baseVector = array_fill(0, 128, 0.088);
+        $samples = [];
+        foreach (['neutral', 'turn_left', 'turn_right', 'look_up', 'look_down'] as $p) {
+            $samples[$p] = [
+                'descriptor' => $baseVector,
+                'quality' => ['face_count' => 1, 'box_ratio' => 0.45, 'brightness' => 120.0],
+            ];
+        }
+        $this->face->processEnrollment(1, $chEnrol['challenge_token'], $samples);
+    }
+
+    public function testFast2Of3VerificationFaceAndRight(): void
+    {
+        $this->enrolTestFace();
+        $ch = $this->face->createAuthLivenessChallenge(1, false);
+        $steps = [
+            [
+                'action' => 'CHECK_FACE',
+                'yaw' => 0.0,
+                'pitch' => 0.0,
+                'ear' => 0.31,
+                'face_count' => 1,
+                'box_ratio' => 0.45,
+                'brightness' => 125.0,
+            ],
+            [
+                'action' => 'TURN_RIGHT',
+                'yaw' => 14.0,
+                'pitch' => 0.0,
+                'ear' => 0.30,
+                'face_count' => 1,
+                'box_ratio' => 0.45,
+                'brightness' => 125.0,
+            ],
+        ];
+        $res = $this->face->processVerification(1, $ch['challenge_token'], array_fill(0, 128, 0.088), [
+            'steps' => $steps,
+            'motion_score' => 0.02,
+        ]);
+        $this->assertTrue($res['matched']);
+        $this->assertTrue($res['liveness_passed']);
+        $this->assertContains('face', $res['passed_checks']);
+        $this->assertContains('right', $res['passed_checks']);
+    }
+
+    public function testFast2Of3VerificationLeftAndRight(): void
+    {
+        $this->enrolTestFace();
+        $ch = $this->face->createAuthLivenessChallenge(1, false);
+        $steps = [
+            [
+                'action' => 'TURN_LEFT',
+                'yaw' => -15.0,
+                'pitch' => 0.0,
+                'ear' => 0.30,
+                'face_count' => 1,
+                'box_ratio' => 0.45,
+                'brightness' => 125.0,
+            ],
+            [
+                'action' => 'TURN_RIGHT',
+                'yaw' => 15.0,
+                'pitch' => 0.0,
+                'ear' => 0.30,
+                'face_count' => 1,
+                'box_ratio' => 0.45,
+                'brightness' => 125.0,
+            ],
+        ];
+        $res = $this->face->processVerification(1, $ch['challenge_token'], array_fill(0, 128, 0.088), [
+            'steps' => $steps,
+            'motion_score' => 0.02,
+        ]);
+        $this->assertTrue($res['matched']);
+        $this->assertTrue($res['liveness_passed']);
+        $this->assertContains('left', $res['passed_checks']);
+        $this->assertContains('right', $res['passed_checks']);
+    }
+
+    public function testFast2Of3RejectionOnlyFace(): void
+    {
+        $this->enrolTestFace();
+        $ch = $this->face->createAuthLivenessChallenge(1, false);
+        $steps = [
+            [
+                'action' => 'CHECK_FACE',
+                'yaw' => 0.0,
+                'pitch' => 0.0,
+                'ear' => 0.31,
+                'face_count' => 1,
+                'box_ratio' => 0.45,
+                'brightness' => 125.0,
+            ],
+        ];
+        $this->expectException(RuntimeException::class);
+        $this->expectExceptionMessage('We could not verify your face. Please try again or use Passkey.');
+        $this->face->processVerification(1, $ch['challenge_token'], array_fill(0, 128, 0.088), [
+            'steps' => $steps,
+            'motion_score' => 0.02,
+        ]);
+    }
+
+    public function testFast2Of3RejectionOnlyLeft(): void
+    {
+        $this->enrolTestFace();
+        $ch = $this->face->createAuthLivenessChallenge(1, false);
+        $steps = [
+            [
+                'action' => 'TURN_LEFT',
+                'yaw' => -15.0,
+                'pitch' => 0.0,
+                'ear' => 0.30,
+                'face_count' => 1,
+                'box_ratio' => 0.45,
+                'brightness' => 125.0,
+            ],
+        ];
+        $this->expectException(RuntimeException::class);
+        $this->expectExceptionMessage('We could not verify your face. Please try again or use Passkey.');
+        $this->face->processVerification(1, $ch['challenge_token'], array_fill(0, 128, 0.088), [
+            'steps' => $steps,
+            'motion_score' => 0.02,
+        ]);
+    }
+
+    public function testFast2Of3RejectionDuplicatePose(): void
+    {
+        $this->enrolTestFace();
+        $ch = $this->face->createAuthLivenessChallenge(1, false);
+        // Duplicate TURN_LEFT does not count as 2 distinct checks
+        $steps = [
+            [
+                'action' => 'TURN_LEFT',
+                'yaw' => -15.0,
+                'pitch' => 0.0,
+                'ear' => 0.30,
+                'face_count' => 1,
+                'box_ratio' => 0.45,
+                'brightness' => 125.0,
+            ],
+            [
+                'action' => 'TURN_LEFT',
+                'yaw' => -16.0,
+                'pitch' => 0.0,
+                'ear' => 0.30,
+                'face_count' => 1,
+                'box_ratio' => 0.45,
+                'brightness' => 125.0,
+            ],
+        ];
+        $this->expectException(RuntimeException::class);
+        $this->expectExceptionMessage('We could not verify your face. Please try again or use Passkey.');
+        $this->face->processVerification(1, $ch['challenge_token'], array_fill(0, 128, 0.088), [
+            'steps' => $steps,
+            'motion_score' => 0.02,
+        ]);
+    }
+
+    public function testFast2Of3RejectionMultipleFaces(): void
+    {
+        $this->enrolTestFace();
+        $ch = $this->face->createAuthLivenessChallenge(1, false);
+        $steps = [
+            [
+                'action' => 'CHECK_FACE',
+                'yaw' => 0.0,
+                'pitch' => 0.0,
+                'ear' => 0.31,
+                'face_count' => 2, // Multiple faces
+                'box_ratio' => 0.45,
+                'brightness' => 125.0,
+            ],
+            [
+                'action' => 'TURN_LEFT',
+                'yaw' => -15.0,
+                'pitch' => 0.0,
+                'ear' => 0.30,
+                'face_count' => 1,
+                'box_ratio' => 0.45,
+                'brightness' => 125.0,
+            ],
+        ];
+        $this->expectException(RuntimeException::class);
+        $this->expectExceptionMessage('We could not verify your face. Please try again or use Passkey.');
+        $this->face->processVerification(1, $ch['challenge_token'], array_fill(0, 128, 0.088), [
+            'steps' => $steps,
+            'motion_score' => 0.02,
+        ]);
+    }
+
+    public function testFast2Of3RejectionWrongPerson(): void
+    {
+        $this->enrolTestFace();
+        $ch = $this->face->createAuthLivenessChallenge(1, false);
+        $steps = [
+            [
+                'action' => 'CHECK_FACE',
+                'yaw' => 0.0,
+                'pitch' => 0.0,
+                'ear' => 0.31,
+                'face_count' => 1,
+                'box_ratio' => 0.45,
+                'brightness' => 125.0,
+            ],
+            [
+                'action' => 'TURN_LEFT',
+                'yaw' => -15.0,
+                'pitch' => 0.0,
+                'ear' => 0.30,
+                'face_count' => 1,
+                'box_ratio' => 0.45,
+                'brightness' => 125.0,
+            ],
+        ];
+        // Inverted descriptor
+        $imposter = array_fill(0, 128, -0.088);
+        $this->expectException(RuntimeException::class);
+        $this->expectExceptionMessage('We could not verify your face. Please try again or use Passkey.');
+        $this->face->processVerification(1, $ch['challenge_token'], $imposter, [
+            'steps' => $steps,
+            'motion_score' => 0.02,
+        ]);
+    }
+
+    public function testFast2Of3RejectionReplayedChallenge(): void
+    {
+        $this->enrolTestFace();
+        $ch = $this->face->createAuthLivenessChallenge(1, false);
+        $steps = [
+            [
+                'action' => 'CHECK_FACE',
+                'yaw' => 0.0,
+                'pitch' => 0.0,
+                'ear' => 0.31,
+                'face_count' => 1,
+                'box_ratio' => 0.45,
+                'brightness' => 125.0,
+            ],
+            [
+                'action' => 'TURN_LEFT',
+                'yaw' => -15.0,
+                'pitch' => 0.0,
+                'ear' => 0.30,
+                'face_count' => 1,
+                'box_ratio' => 0.45,
+                'brightness' => 125.0,
+            ],
+        ];
+        // Consume once
+        $res = $this->face->processVerification(1, $ch['challenge_token'], array_fill(0, 128, 0.088), [
+            'steps' => $steps,
+            'motion_score' => 0.02,
+        ]);
+        $this->assertTrue($res['matched']);
+
+        // Replay same token
+        $this->expectException(RuntimeException::class);
+        $this->face->processVerification(1, $ch['challenge_token'], array_fill(0, 128, 0.088), [
+            'steps' => $steps,
+            'motion_score' => 0.02,
+        ]);
+    }
+
+    public function testAdaptiveEscalationProduces6StepChallenge(): void
+    {
+        $this->enrolTestFace();
+        $chEsc = $this->face->createAuthLivenessChallenge(1, true);
+        $this->assertSame('escalated', $chEsc['mode']);
+        $this->assertCount(6, $chEsc['sequence']);
+        $this->assertSame('LOOK_STRAIGHT', $chEsc['sequence'][0]);
+        $this->assertSame('RETURN_CENTER', $chEsc['sequence'][5]);
+    }
+
+    public function testFast2Of3StaticPhotoPadRejection(): void
+    {
+        $this->enrolTestFace();
+        $ch = $this->face->createAuthLivenessChallenge(1, false);
+        $steps = [
+            [
+                'action' => 'CHECK_FACE',
+                'yaw' => 0.0,
+                'pitch' => 0.0,
+                'ear' => 0.31,
+                'face_count' => 1,
+                'box_ratio' => 0.45,
+                'brightness' => 125.0,
+            ],
+            [
+                'action' => 'TURN_LEFT',
+                'yaw' => -15.0,
+                'pitch' => 0.0,
+                'ear' => 0.30,
+                'face_count' => 1,
+                'box_ratio' => 0.45,
+                'brightness' => 125.0,
+            ],
+        ];
+
+        // motion_score near zero triggers static photo rejection
+        $this->expectException(RuntimeException::class);
+        $this->expectExceptionMessage('We could not verify your face. Please try again or use Passkey.');
+        $this->face->processVerification(1, $ch['challenge_token'], array_fill(0, 128, 0.088), [
+            'steps' => $steps,
+            'motion_score' => 0.0001,
+        ]);
+    }
+
+    // ==============================================================
+    // 10. MULTI-ROLE BIOMETRIC VERIFICATION (TEACHER & STUDENT)
+    // ==============================================================
+
+    public function testMultiRoleUserValidation(): void
+    {
+        $this->assertTrue($this->bio->validateUser(1)); // Admin
+        $this->assertTrue($this->bio->validateUser(2)); // Teacher
+        $this->assertTrue($this->bio->validateUser(3)); // Student
+        $this->assertFalse($this->bio->validateUser(999)); // Non-existent user
+    }
+
+    public function testMultiRoleUserAccountRetrieval(): void
+    {
+        $teacher = $this->bio->getUserAccount(2);
+        $this->assertSame('teacher', $teacher['role']);
+        $this->assertSame('Math Teacher', $teacher['teacher_name']);
+        $this->assertSame('0779998888', $teacher['teacher_phone']);
+
+        $student = $this->bio->getUserAccount(3);
+        $this->assertSame('student', $student['role']);
+        $this->assertSame('student.john', $student['username']);
+
+        $this->expectException(RuntimeException::class);
+        $this->bio->getUserAccount(999);
+    }
+
+    public function testFindUserByIdentifierAcrossRoles(): void
+    {
+        // By admin username
+        $byAdminUser = $this->bio->findUserByIdentifier('local.test.admin');
+        $this->assertNotNull($byAdminUser);
+        $this->assertSame(1, (int)$byAdminUser['id']);
+
+        // By teacher username
+        $byTeacherUser = $this->bio->findUserByIdentifier('math.teacher');
+        $this->assertNotNull($byTeacherUser);
+        $this->assertSame(2, (int)$byTeacherUser['id']);
+
+        // By teacher phone
+        $byTeacherPhone = $this->bio->findUserByIdentifier('0779998888');
+        $this->assertNotNull($byTeacherPhone);
+        $this->assertSame(2, (int)$byTeacherPhone['id']);
+
+        // By student username
+        $byStudentUser = $this->bio->findUserByIdentifier('student.john');
+        $this->assertNotNull($byStudentUser);
+        $this->assertSame(3, (int)$byStudentUser['id']);
+
+        // By student google email
+        $byStudentEmail = $this->bio->findUserByIdentifier('john@gmail.com');
+        $this->assertNotNull($byStudentEmail);
+        $this->assertSame(3, (int)$byStudentEmail['id']);
+
+        // By student whatsapp phone
+        $byStudentPhone = $this->bio->findUserByIdentifier('+94711223344');
+        $this->assertNotNull($byStudentPhone);
+        $this->assertSame(3, (int)$byStudentPhone['id']);
+
+        // Non-existent identifier
+        $this->assertNull($this->bio->findUserByIdentifier('nonexistent_user_123'));
+    }
+
+    public function testSessionEstablishmentRedirectsPerRole(): void
+    {
+        // Admin session redirect
+        $admin = $this->bio->getUserAccount(1);
+        $adminRedirect = $this->bio->establishSession($admin, AdminBiometricService::METHOD_FACE);
+        $this->assertStringContainsString('dashboard.php', $adminRedirect);
+        $this->assertSame('admin', $_SESSION['role']);
+
+        // Teacher session redirect
+        $teacher = $this->bio->getUserAccount(2);
+        $teacherRedirect = $this->bio->establishSession($teacher, AdminBiometricService::METHOD_FACE);
+        $this->assertStringContainsString('dashboard.php', $teacherRedirect);
+        $this->assertSame('teacher', $_SESSION['role']);
+        $this->assertSame(2, (int)$_SESSION['teacher_id']);
+
+        // Student session redirect
+        $student = $this->bio->getUserAccount(3);
+        $studentRedirect = $this->bio->establishSession($student, AdminBiometricService::METHOD_FACE);
+        $this->assertStringContainsString('student/dashboard.php', $studentRedirect);
+        $this->assertSame('student', $_SESSION['role']);
+        $this->assertSame(3, (int)$_SESSION['student_id']);
+    }
+
+    public function testTeacherAndStudentFaceEnrollmentAndVerification(): void
+    {
+        // 1. Enroll Teacher (User ID 2)
+        $chTeacher = $this->face->createEnrollmentChallenge(2, true);
+        $this->assertNotEmpty($chTeacher['challenge_token']);
+        $teacherVector = array_fill(0, 128, 0.055);
+        $samplesTeacher = [];
+        foreach (['neutral', 'turn_left', 'turn_right', 'look_up', 'look_down'] as $p) {
+            $samplesTeacher[$p] = [
+                'descriptor' => $teacherVector,
+                'quality' => ['face_count' => 1, 'box_ratio' => 0.45, 'brightness' => 120.0],
+            ];
+        }
+        $teacherEnrolled = $this->face->processEnrollment(2, $chTeacher['challenge_token'], $samplesTeacher);
+        $this->assertTrue($teacherEnrolled['ok']);
+        $teacherStatus = $this->face->getEnrollmentStatus(2);
+        $this->assertNotNull($teacherStatus);
+        $this->assertSame('active', $teacherStatus['status']);
+
+        // 2. Enroll Student (User ID 3)
+        $chStudent = $this->face->createEnrollmentChallenge(3, true);
+        $this->assertNotEmpty($chStudent['challenge_token']);
+        $studentVector = array_map(fn($i) => ($i % 2 === 0 ? 0.088 : -0.088), range(0, 127));
+        $samplesStudent = [];
+        foreach (['neutral', 'turn_left', 'turn_right', 'look_up', 'look_down'] as $p) {
+            $samplesStudent[$p] = [
+                'descriptor' => $studentVector,
+                'quality' => ['face_count' => 1, 'box_ratio' => 0.45, 'brightness' => 120.0],
+            ];
+        }
+        $studentEnrolled = $this->face->processEnrollment(3, $chStudent['challenge_token'], $samplesStudent);
+        $this->assertTrue($studentEnrolled['ok']);
+        $studentStatus = $this->face->getEnrollmentStatus(3);
+        $this->assertNotNull($studentStatus);
+        $this->assertSame('active', $studentStatus['status']);
+
+        // 3. Verify Teacher
+        $authChTeacher = $this->face->createAuthLivenessChallenge(2, false);
+        $steps = [
+            [
+                'action' => 'CHECK_FACE',
+                'yaw' => 0.0,
+                'pitch' => 0.0,
+                'ear' => 0.31,
+                'face_count' => 1,
+                'box_ratio' => 0.45,
+                'brightness' => 125.0,
+            ],
+            [
+                'action' => 'TURN_LEFT',
+                'yaw' => -15.0,
+                'pitch' => 0.0,
+                'ear' => 0.30,
+                'face_count' => 1,
+                'box_ratio' => 0.45,
+                'brightness' => 125.0,
+            ],
+        ];
+        $resTeacher = $this->face->processVerification(2, $authChTeacher['challenge_token'], $teacherVector, [
+            'steps' => $steps,
+            'motion_score' => 0.02,
+        ]);
+        $this->assertTrue($resTeacher['matched']);
+        $this->assertTrue($resTeacher['liveness_passed']);
+
+        // Cross-verify: Teacher vector used against student challenge must be rejected
+        $authChStudent = $this->face->createAuthLivenessChallenge(3, false);
+        $this->expectException(RuntimeException::class);
+        $this->face->processVerification(3, $authChStudent['challenge_token'], $teacherVector, [
+            'steps' => $steps,
+            'motion_score' => 0.02,
+        ]);
     }
 }

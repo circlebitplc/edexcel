@@ -44,12 +44,17 @@ final class AdminFaceService
      */
     public function isEnrolled(int $userId): bool
     {
-        $stmt = $this->pdo->prepare("
-            SELECT COUNT(*) FROM admin_face_credentials
-            WHERE user_id = ? AND status = 'active'
-        ");
-        $stmt->execute([$userId]);
-        return (int)$stmt->fetchColumn() > 0;
+        try {
+            $stmt = $this->pdo->prepare("
+                SELECT COUNT(*) FROM admin_face_credentials
+                WHERE user_id = ? AND status = 'active'
+            ");
+            $stmt->execute([$userId]);
+            return (int)$stmt->fetchColumn() > 0;
+        } catch (Throwable $e) {
+            error_log('AdminFaceService: isEnrolled error: ' . $e->getMessage());
+            return false;
+        }
     }
 
     /**
@@ -60,15 +65,20 @@ final class AdminFaceService
      */
     public function getEnrollmentStatus(int $userId): ?array
     {
-        $stmt = $this->pdo->prepare("
-            SELECT id, user_id, sample_count, status, enrolled_at, last_verified_at, last_verification_ip, created_at, updated_at
-            FROM admin_face_credentials
-            WHERE user_id = ?
-            LIMIT 1
-        ");
-        $stmt->execute([$userId]);
-        $row = $stmt->fetch(PDO::FETCH_ASSOC);
-        return $row ?: null;
+        try {
+            $stmt = $this->pdo->prepare("
+                SELECT id, user_id, sample_count, status, enrolled_at, last_verified_at, last_verification_ip, created_at, updated_at
+                FROM admin_face_credentials
+                WHERE user_id = ?
+                LIMIT 1
+            ");
+            $stmt->execute([$userId]);
+            $row = $stmt->fetch(PDO::FETCH_ASSOC);
+            return $row ?: null;
+        } catch (Throwable $e) {
+            error_log('AdminFaceService: getEnrollmentStatus error: ' . $e->getMessage());
+            return null;
+        }
     }
 
     /**
@@ -77,42 +87,55 @@ final class AdminFaceService
      * Returns an unpredictable sequence of micro-challenges to test physiological liveness.
      *
      * @param int $userId
-     * @return array{challenge_token:string, sequence:list<string>, timeout_seconds:int}
+     * @param bool $escalated If true, generates stronger 6-step multi-challenge for suspicious attempts
+     * @return array{challenge_token:string, sequence:list<string>, mode:string, timeout_seconds:int}
      */
-    public function createAuthLivenessChallenge(int $userId): array
+    public function createAuthLivenessChallenge(int $userId, bool $escalated = false, ?string $mode = null): array
     {
-        $this->ensureAdminUser($userId);
+        $this->ensureValidUser($userId);
 
         if (!$this->isEnrolled($userId)) {
-            throw new RuntimeException('Face authentication is not enrolled for this administrator.');
+            throw new RuntimeException('Face authentication is not enrolled for this account.');
         }
 
-        // Generate an unpredictable dynamic gesture challenge
-        // Pick random turning direction and random sequence variation
-        $turnFirst = (random_int(0, 1) === 0) ? 'TURN_LEFT' : 'TURN_RIGHT';
-        $turnSecond = ($turnFirst === 'TURN_LEFT') ? 'TURN_RIGHT' : 'TURN_LEFT';
-        $nodOrBlink = (random_int(0, 1) === 0) ? 'BLINK' : 'NOD_UP';
-        $secondAction = ($nodOrBlink === 'BLINK') ? 'NOD_UP' : 'BLINK';
+        if ($escalated || $mode === 'escalated') {
+            // Enhanced 6-step security fallback challenge for suspicious attempts
+            $turnFirst = (random_int(0, 1) === 0) ? 'TURN_LEFT' : 'TURN_RIGHT';
+            $turnSecond = ($turnFirst === 'TURN_LEFT') ? 'TURN_RIGHT' : 'TURN_LEFT';
+            $nodOrBlink = (random_int(0, 1) === 0) ? 'BLINK' : 'NOD_UP';
+            $secondAction = ($nodOrBlink === 'BLINK') ? 'NOD_UP' : 'BLINK';
 
-        $sequence = [
-            'LOOK_STRAIGHT',
-            $turnFirst,
-            $turnSecond,
-            $nodOrBlink,
-            $secondAction,
-            'RETURN_CENTER',
-        ];
+            $sequence = [
+                'LOOK_STRAIGHT',
+                $turnFirst,
+                $turnSecond,
+                $nodOrBlink,
+                $secondAction,
+                'RETURN_CENTER',
+            ];
+            $selectedMode = 'escalated';
+        } else {
+            // 3-check fast mode with 2-of-3 rule: CHECK_FACE, TURN_LEFT, TURN_RIGHT
+            $sequence = [
+                'CHECK_FACE',
+                'TURN_LEFT',
+                'TURN_RIGHT'
+            ];
+            $selectedMode = $mode ?? 'fast_2of3';
+        }
 
         $nonce = bin2hex(random_bytes(16));
         $token = $this->biometricService->createChallenge('face_auth', $userId, [
             'sequence' => $sequence,
             'nonce' => $nonce,
+            'mode' => $selectedMode,
             'created_at' => time(),
         ]);
 
         return [
             'challenge_token' => $token,
             'sequence' => $sequence,
+            'mode' => $selectedMode,
             'timeout_seconds' => 90,
         ];
     }
@@ -126,7 +149,7 @@ final class AdminFaceService
      */
     public function createEnrollmentChallenge(int $userId, bool $hasExplicitConsent): array
     {
-        $this->ensureAdminUser($userId);
+        $this->ensureValidUser($userId);
 
         if (!$hasExplicitConsent) {
             throw new RuntimeException('Biometric enrollment requires explicit user consent.');
@@ -160,7 +183,7 @@ final class AdminFaceService
      */
     public function processEnrollment(int $userId, string $challengeToken, array $samples): array
     {
-        $this->ensureAdminUser($userId);
+        $this->ensureValidUser($userId);
 
         // Validate and consume enrollment challenge
         $stored = $this->biometricService->consumeChallenge('face_enrol', $userId, $challengeToken);
@@ -295,11 +318,12 @@ final class AdminFaceService
         array $verificationDescriptor,
         array $livenessTelemetry
     ): array {
-        $this->ensureAdminUser($userId);
+        $this->ensureValidUser($userId);
 
         // 1. Consume challenge token (single-use guarantee)
         $challengeData = $this->biometricService->consumeChallenge('face_auth', $userId, $challengeToken);
         $expectedSequence = $challengeData['sequence'] ?? [];
+        $challengeMode = $challengeData['mode'] ?? 'fast_2of3';
 
         // 2. Validate descriptor dimensions and numeric validity
         if (count($verificationDescriptor) !== 128) {
@@ -324,7 +348,7 @@ final class AdminFaceService
         }
 
         // 3. Presentation Attack Detection (PAD) & Liveness Validation
-        $livenessResult = $this->validateLivenessTelemetry($expectedSequence, $livenessTelemetry);
+        $livenessResult = $this->validateLivenessTelemetry($expectedSequence, $livenessTelemetry, $challengeMode);
         if (!$livenessResult['ok']) {
             $this->biometricService->recordAudit(
                 AdminBiometricService::METHOD_FACE,
@@ -395,6 +419,8 @@ final class AdminFaceService
             'matched' => true,
             'similarity_score_passed' => true,
             'liveness_passed' => true,
+            'mode' => $challengeMode,
+            'passed_checks' => $livenessResult['passed_checks'] ?? [],
         ];
     }
 
@@ -403,7 +429,7 @@ final class AdminFaceService
      */
     public function disableFace(int $userId): void
     {
-        $this->ensureAdminUser($userId);
+        $this->ensureValidUser($userId);
         $this->pdo->prepare("
             UPDATE admin_face_credentials
             SET status = 'disabled', updated_at = CURRENT_TIMESTAMP
@@ -420,11 +446,11 @@ final class AdminFaceService
     }
 
     /**
-     * Completely purges the administrator's face credential and template.
+     * Completely purges the user's face credential and template.
      */
     public function clearFaceData(int $userId): void
     {
-        $this->ensureAdminUser($userId);
+        $this->ensureValidUser($userId);
         $this->pdo->prepare('DELETE FROM admin_face_credentials WHERE user_id = ?')->execute([$userId]);
 
         $this->biometricService->recordAudit(
@@ -446,30 +472,25 @@ final class AdminFaceService
      *
      * @param list<string> $expectedSequence
      * @param array<string,mixed> $telemetry
-     * @return array{ok:bool, reason:string}
+     * @param string $mode
+     * @return array{ok:bool, reason:string, passed_checks?:list<string>}
      */
-    private function validateLivenessTelemetry(array $expectedSequence, array $telemetry): array
+    private function validateLivenessTelemetry(array $expectedSequence, array $telemetry, string $mode = 'fast_2of3'): array
     {
         $steps = $telemetry['steps'] ?? [];
         if (!is_array($steps) || empty($steps)) {
             return ['ok' => false, 'reason' => 'Missing liveness challenge telemetry.'];
         }
 
-        // 1. Validate sequence completion in order
-        $completedActions = [];
+        // Shared Presentation Attack Checks across all modes:
+        // A. Single face constraint and optical quality across every telemetry frame
         foreach ($steps as $step) {
             $action = (string)($step['action'] ?? '');
-            if ($action !== '') {
-                $completedActions[] = $action;
-            }
-
-            // A. Single face constraint across every telemetry frame
             $faceCount = (int)($step['face_count'] ?? 0);
             if ($faceCount !== 1) {
-                return ['ok' => false, 'reason' => "Multiple or no faces detected ({$faceCount}) during action {$action}."];
+                return ['ok' => false, 'reason' => "Multiple or no faces detected ({$faceCount}) during biometric check."];
             }
 
-            // B. Quality bounds
             $brightness = (float)($step['brightness'] ?? 128.0);
             if ($brightness < 20.0 || $brightness > 245.0) {
                 return ['ok' => false, 'reason' => "Lighting out of acceptable range ({$brightness})."];
@@ -481,7 +502,58 @@ final class AdminFaceService
             }
         }
 
-        // Verify that the telemetry steps match the expected challenge sequence exactly (count, actions, and order)
+        // B. Anti-static photo PAD: Physiological tremor variance
+        $motionScore = (float)($telemetry['motion_score'] ?? 0.0);
+        if ($motionScore < 0.003 && count($steps) >= 2) {
+            return ['ok' => false, 'reason' => 'Absence of natural physiological motion (static photograph suspected).'];
+        }
+
+        // Branch 1: Fast 3-Check Verification with 2-of-3 Gate
+        if ($mode === 'fast_2of3') {
+            if (count($steps) < 2) {
+                return ['ok' => false, 'reason' => 'Liveness check failed: at least 2 of 3 checks must be verified.'];
+            }
+
+            $passedChecks = [];
+            foreach ($steps as $step) {
+                $act = (string)($step['action'] ?? '');
+                $yaw = (float)($step['yaw'] ?? 0.0);
+                $pitch = (float)($step['pitch'] ?? 0.0);
+
+                if (!in_array($act, ['CHECK_FACE', 'LOOK_STRAIGHT', 'TURN_LEFT', 'TURN_RIGHT'], true)) {
+                    return ['ok' => false, 'reason' => "Unknown gesture identifier {$act}."];
+                }
+
+                if (($act === 'CHECK_FACE' || $act === 'LOOK_STRAIGHT') && abs($yaw) <= 10.0 && abs($pitch) <= 12.0) {
+                    $passedChecks['face'] = true;
+                } elseif ($act === 'TURN_LEFT' && $yaw <= -9.0) {
+                    $passedChecks['left'] = true;
+                } elseif ($act === 'TURN_RIGHT' && $yaw >= 9.0) {
+                    $passedChecks['right'] = true;
+                }
+            }
+
+            $passedCount = count($passedChecks);
+            if ($passedCount < 2) {
+                return ['ok' => false, 'reason' => "Liveness gate failed: at least 2 of 3 checks must pass (verified {$passedCount}/3)."];
+            }
+
+            return [
+                'ok' => true,
+                'reason' => 'Liveness verified (2 of 3 checks passed).',
+                'passed_checks' => array_keys($passedChecks),
+            ];
+        }
+
+        // Branch 2: Escalated / Sequential Fallback Mode (Strict 6-step verification)
+        $completedActions = [];
+        foreach ($steps as $step) {
+            $act = (string)($step['action'] ?? '');
+            if ($act !== '') {
+                $completedActions[] = $act;
+            }
+        }
+
         $totalExpected = count($expectedSequence);
         if (count($completedActions) !== $totalExpected) {
             return ['ok' => false, 'reason' => "Telemetry action count does not match the required sequence count ({$totalExpected})."];
@@ -493,7 +565,6 @@ final class AdminFaceService
             }
         }
 
-        // 2. Head pose dynamics check (anti-static photo)
         $turnLeftObserved = false;
         $turnRightObserved = false;
         $nodObserved = false;
@@ -514,7 +585,6 @@ final class AdminFaceService
             if ($act === 'NOD_UP' && $pitch >= 6.0) {
                 $nodObserved = true;
             }
-            // EAR check for blink: Eye Aspect Ratio drops during blink
             if ($act === 'BLINK' && $ear <= 0.22) {
                 $blinkObserved = true;
             }
@@ -533,19 +603,26 @@ final class AdminFaceService
             return ['ok' => false, 'reason' => 'Natural eye blink curve not detected.'];
         }
 
-        // 3. Natural landmark physiological tremor (variance > 0 to reject static paper photo)
-        $motionScore = (float)($telemetry['motion_score'] ?? 0.0);
-        if ($motionScore < 0.003 && count($steps) > 3) {
-            return ['ok' => false, 'reason' => 'Absence of natural physiological motion (static photograph suspected).'];
-        }
-
         return ['ok' => true, 'reason' => 'Liveness verified.'];
+    }
+
+    /**
+     * Guards that the operation targets a valid, active user account (admin, teacher, student).
+     */
+    public function ensureValidUser(int $userId): void
+    {
+        if ($userId <= 0) {
+            throw new RuntimeException('Unauthorized: Invalid user ID provided.');
+        }
+        if (!$this->biometricService->validateUser($userId)) {
+            throw new RuntimeException('Unauthorized: User account not found, deactivated, or deleted.');
+        }
     }
 
     /**
      * Guards that the operation only targets the single authorized admin account.
      */
-    private function ensureAdminUser(int $userId): void
+    public function ensureAdminUser(int $userId): void
     {
         if (!$this->biometricService->validateIsAdminUser($userId)) {
             throw new RuntimeException('Unauthorized: Biometric operations are restricted to the administrator account.');

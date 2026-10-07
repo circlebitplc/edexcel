@@ -102,6 +102,10 @@ $googleParent = '/auth/google/start.php?intent=parent' . ($invite !== '' ? ('&in
         </div>
 
         <div class="portal-panel" data-role-panel="student" <?= $role === 'student' ? '' : 'hidden' ?>>
+            <button type="button" id="btnStudentFaceLogin" class="btn btn-outline-primary btn-lg w-100 d-flex align-items-center justify-content-center gap-2 rounded-3 shadow-sm mb-2" style="font-weight:600;">
+                <i class="bi bi-person-bounding-box fs-5"></i>
+                <span>Sign in with Face ID</span>
+            </button>
             <?php if ($googleReady): ?>
                 <a class="btn google-btn btn-lg w-100" href="<?= $h($googleStudent) ?>">
                     <i class="bi bi-google"></i> Continue with Google
@@ -124,7 +128,57 @@ $googleParent = '/auth/google/start.php?intent=parent' . ($invite !== '' ? ('&in
         </div>
     </section>
 </main>
+
+<!-- Face Login Modal -->
+<div class="modal fade" id="faceLoginModal" tabindex="-1" aria-labelledby="faceLoginModalLabel" aria-hidden="true" data-bs-backdrop="static">
+    <div class="modal-dialog modal-dialog-centered" style="max-width: 480px;">
+        <div class="modal-content rounded-4 border-0 shadow">
+            <div class="modal-header border-0 pb-0">
+                <h5 class="modal-title fw-bold" id="faceLoginModalLabel">
+                    <i class="bi bi-person-bounding-box text-primary me-2"></i>Face ID Sign-In
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body text-center p-4">
+                <div class="alert alert-danger d-none js-face-alert small py-2 text-start" data-ui-keep="1"></div>
+
+                <div class="position-relative mx-auto rounded-4 overflow-hidden shadow-sm" style="width: 100%; max-width: 420px; aspect-ratio: 4/3; background: #000;">
+                    <video class="js-face-video w-100 h-100 object-fit-cover" playsinline autoplay muted></video>
+                    <canvas class="js-face-canvas position-absolute top-0 start-0 w-100 h-100" style="pointer-events:none;"></canvas>
+                    <div class="position-absolute top-50 start-50 translate-middle" style="width: 200px; height: 260px; border: 2px dashed rgba(255,255,255,0.35); border-radius: 50%; pointer-events:none;"></div>
+                </div>
+
+                <div class="mt-3">
+                    <div class="js-face-status text-muted small mb-2">Position your face inside the frame.</div>
+                    <div class="js-face-step-indicator d-flex justify-content-center gap-2 mb-2"></div>
+                    <div class="js-face-spinner spinner-border text-primary spinner-border-sm mt-1" role="status"></div>
+                </div>
+            </div>
+            <div class="modal-footer border-0 pt-0 justify-content-center">
+                <button type="button" class="btn btn-outline-secondary btn-sm px-4 rounded-pill" data-bs-dismiss="modal">Cancel</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 <?php if (function_exists('app_theme_js_link')) { app_theme_js_link(); } ?>
 <?php ui_feedback_js(); ?>
+<script>
+window.BASE_URL = '<?= BASE_URL ?>';
+</script>
+<script src="/assets/vendor/face-api/face-api.min.js"></script>
+<script src="/assets/js/admin-biometrics.js?v=<?= filemtime(__DIR__ . '/../assets/js/admin-biometrics.js') ?>"></script>
+<script src="/assets/js/admin-face-ui.js?v=<?= filemtime(__DIR__ . '/../assets/js/admin-face-ui.js') ?>"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    var btn = document.getElementById('btnStudentFaceLogin');
+    if (btn) {
+        btn.addEventListener('click', function() {
+            AdminFaceUI.startLoginModal();
+        });
+    }
+});
+</script>
 </body>
 </html>

@@ -81,7 +81,7 @@ $makeItem = function(string $act): array {
 // ------------------------------------------------------------------
 echo "--- 1. GESTURE SEQUENCE SECURITY & PAD ATTACKS ---\n";
 
-$authCh = $face->createAuthLivenessChallenge($adminId);
+$authCh = $face->createAuthLivenessChallenge($adminId, true);
 $seq = $authCh['sequence'];
 $token = $authCh['challenge_token'];
 
@@ -103,7 +103,7 @@ try {
 assertPen($reorderFailed, "Reordered gestures strictly rejected by server");
 
 // B. Missing gesture
-$ch2 = $face->createAuthLivenessChallenge($adminId);
+$ch2 = $face->createAuthLivenessChallenge($adminId, true);
 $missingSteps = [];
 for ($i = 0; $i < count($ch2['sequence']) - 1; $i++) {
     $missingSteps[] = $makeItem($ch2['sequence'][$i]);
@@ -120,7 +120,7 @@ try {
 assertPen($missingFailed, "Missing gesture in challenge sequence strictly rejected");
 
 // C. Extra / Injected gesture
-$ch3 = $face->createAuthLivenessChallenge($adminId);
+$ch3 = $face->createAuthLivenessChallenge($adminId, true);
 $extraSteps = [];
 foreach ($ch3['sequence'] as $act) {
     $extraSteps[] = $makeItem($act);
@@ -138,7 +138,7 @@ try {
 assertPen($extraFailed, "Extra/injected gesture strictly rejected");
 
 // D. Unknown / Malicious gesture name
-$ch4 = $face->createAuthLivenessChallenge($adminId);
+$ch4 = $face->createAuthLivenessChallenge($adminId, true);
 $unknownSteps = [];
 foreach ($ch4['sequence'] as $act) {
     $unknownSteps[] = $makeItem('MALICIOUS_INJECTION');

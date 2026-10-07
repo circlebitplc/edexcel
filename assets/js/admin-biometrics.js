@@ -96,10 +96,10 @@
             return !!(window.PublicKeyCredential && navigator.credentials && navigator.credentials.create);
         },
 
-        async loadFaceApiModels() {
+        async loadFaceApiModels(onProgress) {
             if (this.modelsLoaded) return true;
             if (typeof faceapi === 'undefined') {
-                throw new Error('Face recognition engine is not loaded on this page.');
+                throw new Error('Face recognition engine is not loaded on this page. Please refresh the page.');
             }
             if (this.modelsLoading) {
                 while (this.modelsLoading) {
@@ -109,18 +109,32 @@
             }
 
             this.modelsLoading = true;
+            if (typeof onProgress === 'function') {
+                try { onProgress('Loading face recognition models...'); } catch (e) {}
+            }
             try {
-                const modelPath = '/assets/models/face';
+                const base = (typeof window.BASE_URL === 'string' && window.BASE_URL) ? window.BASE_URL : '/';
+                const modelPath = base.replace(/\/+$/, '') + '/assets/models/face';
                 await Promise.all([
                     faceapi.nets.tinyFaceDetector.loadFromUri(modelPath),
                     faceapi.nets.faceLandmark68Net.loadFromUri(modelPath),
                     faceapi.nets.faceRecognitionNet.loadFromUri(modelPath),
                 ]);
+
+                // Warm up detector so the first video frame processes instantaneously
+                try {
+                    const dummyCanvas = document.createElement('canvas');
+                    dummyCanvas.width = 64; dummyCanvas.height = 64;
+                    await faceapi.detectSingleFace(dummyCanvas, new faceapi.TinyFaceDetectorOptions({ inputSize: 224, scoreThreshold: 0.5 }));
+                } catch (warmupErr) {
+                    // Non-fatal warmup notice
+                }
+
                 this.modelsLoaded = true;
                 return true;
             } catch (err) {
                 console.error('Error loading face-api models:', err);
-                throw new Error('Failed to load face recognition models. Ensure assets are available.');
+                throw new Error('Face recognition models could not be loaded. Please refresh the page and try again.');
             } finally {
                 this.modelsLoading = false;
             }
@@ -262,8 +276,11 @@
         // WEBCAM STREAM CONTROLS
         // ==============================================================
         async startCamera(videoElement) {
+            if (typeof window.isSecureContext === 'boolean' && !window.isSecureContext) {
+                throw new Error('Webcam access requires a secure HTTPS connection. Please ensure you are browsing via https://edexcel.college.');
+            }
             if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-                throw new Error('Webcam access is not supported by your browser.');
+                throw new Error('Webcam access is not supported by your browser or environment. Please ensure camera access is supported and permitted.');
             }
 
             try {
@@ -276,14 +293,42 @@
                     audio: false
                 });
                 videoElement.srcObject = stream;
-                await videoElement.play();
+
+                // Wait for video metadata to avoid AbortError on play()
+                await new Promise((resolve) => {
+                    if (videoElement.readyState >= 1) {
+                        resolve();
+                    } else {
+                        videoElement.onloadedmetadata = () => resolve();
+                        setTimeout(resolve, 600);
+                    }
+                });
+
+                try {
+                    await videoElement.play();
+                } catch (playErr) {
+                    console.warn('Video play() non-fatal notice:', playErr);
+                }
+
                 return stream;
             } catch (err) {
                 if (err.name === 'NotAllowedError' || err.name === 'PermissionDeniedError') {
-                    throw new Error('Camera access permission was denied. Please allow camera access in your browser settings.');
+                    throw new Error('Camera permission was denied. Please allow camera access for edexcel.college and try again.');
                 }
                 if (err.name === 'NotFoundError' || err.name === 'DevicesNotFoundError') {
-                    throw new Error('No webcam camera device was found on this system.');
+                    throw new Error('No usable camera was detected on this device.');
+                }
+                if (err.name === 'NotReadableError' || err.name === 'TrackStartError') {
+                    throw new Error('The webcam is currently unavailable or in use by another application. Please close other camera apps and retry.');
+                }
+                if (err.name === 'OverconstrainedError') {
+                    throw new Error('The camera resolution requirements could not be satisfied by this device.');
+                }
+                if (err.name === 'SecurityError') {
+                    throw new Error('Camera access was blocked by browser security policy. Please access via HTTPS.');
+                }
+                if (err.name === 'AbortError') {
+                    throw new Error('Camera initialization was interrupted. Please try again.');
                 }
                 throw new Error('Camera initialization error: ' + (err.message || err.name));
             }

@@ -583,6 +583,17 @@ if ($tab === 'settings') {
         $studentDevices = [];
         $studentLoginEvents = [];
     }
+
+    $studentFaceEnrolled = false;
+    $studentFaceInfo = null;
+    try {
+        $bioSvc = new \Edexcel\Services\AdminBiometricService($pdo);
+        $faceSvc = new \Edexcel\Services\AdminFaceService($pdo, $bioSvc);
+        $studentFaceEnrolled = $faceSvc->isEnrolled((int)$studentId);
+        $studentFaceInfo = $faceSvc->getEnrollmentStatus((int)$studentId);
+    } catch (Throwable $e) {
+        $studentFaceEnrolled = false;
+    }
 }
 
 $showGoogleReviewPrompt = false;

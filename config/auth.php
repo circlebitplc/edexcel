@@ -179,6 +179,16 @@ function require_login() {
                 student_device_remember_classroom_return();
             }
         }
+        if (is_ajax_request()) {
+            http_response_code(401);
+            header('Content-Type: application/json; charset=utf-8');
+            echo json_encode([
+                'ok' => false,
+                'error' => 'Authentication required. Please sign in.',
+                'redirect' => (BASE_URL . 'login.php')
+            ]);
+            exit();
+        }
         $goStudent = str_contains($script, '/student/');
         header('Location: ' . ($goStudent ? student_login_url() : (BASE_URL . 'login.php')));
         exit();

@@ -538,17 +538,17 @@ if (!empty($_SESSION['staff_login_otp_phone']) || !empty($_SESSION['staff_pendin
         <div class="modal-content rounded-4 border-0 shadow">
             <div class="modal-header border-0 pb-0">
                 <h5 class="modal-title fw-bold" id="faceLoginModalLabel">
-                    <i class="bi bi-person-bounding-box text-primary me-2"></i>Admin Face Login
+                    <i class="bi bi-person-bounding-box text-primary me-2"></i>Face ID Sign-In
                 </h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body text-center p-4">
-                <div class="alert alert-danger d-none js-face-alert small py-2 text-start"></div>
+                <div class="alert alert-danger d-none js-face-alert small py-2 text-start" data-ui-keep="1"></div>
 
                 <div class="position-relative mx-auto rounded-4 overflow-hidden shadow-sm" style="width: 100%; max-width: 420px; aspect-ratio: 4/3; background: #000;">
                     <video class="js-face-video w-100 h-100 object-fit-cover" playsinline autoplay muted></video>
                     <canvas class="js-face-canvas position-absolute top-0 start-0 w-100 h-100" style="pointer-events:none;"></canvas>
-                    <div class="position-absolute top-50 start-50 translate-middle" style="width: 200px; height: 260px; border: 2px dashed rgba(255,255,255,0.7); border-radius: 50%; pointer-events:none;"></div>
+                    <div class="position-absolute top-50 start-50 translate-middle" style="width: 200px; height: 260px; border: 2px dashed rgba(255,255,255,0.35); border-radius: 50%; pointer-events:none;"></div>
                 </div>
 
                 <div class="mt-3">
@@ -567,6 +567,9 @@ if (!empty($_SESSION['staff_login_otp_phone']) || !empty($_SESSION['staff_pendin
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 <?php if (function_exists('app_theme_js_link')) { app_theme_js_link(); } ?>
 <?php ui_feedback_js(); ?>
+<script>
+window.BASE_URL = '<?= BASE_URL ?>';
+</script>
 <script src="<?= BASE_URL ?>assets/vendor/face-api/face-api.min.js"></script>
 <script src="<?= BASE_URL ?>assets/js/admin-biometrics.js?v=<?= filemtime(__DIR__ . '/assets/js/admin-biometrics.js') ?>"></script>
 <script src="<?= BASE_URL ?>assets/js/admin-face-ui.js?v=<?= filemtime(__DIR__ . '/assets/js/admin-face-ui.js') ?>"></script>
@@ -610,7 +613,8 @@ document.addEventListener('DOMContentLoaded', function() {
     var btnFace = document.getElementById('btnFaceLogin');
     if (btnFace) {
         btnFace.addEventListener('click', function() {
-            AdminFaceUI.startLoginModal();
+            var userVal = (document.getElementById('username')?.value || '').trim();
+            AdminFaceUI.startLoginModal(false, userVal);
         });
     }
 });

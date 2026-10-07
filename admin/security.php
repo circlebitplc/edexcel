@@ -153,20 +153,43 @@ $googleLinked = false;
 try {
     $events = $sec->search($filters);
     $eventTypes = $sec->eventTypes();
+} catch (Throwable $e) {
+    $error = $error !== '' ? $error : ('Unable to load security events: ' . $e->getMessage());
+}
+
+try {
     $totpOn = $totp->isEnabledForUser($userId);
     $totpRequired = $totp->isRequiredGlobally();
     $pendingSetup = !empty($_SESSION['admin_totp_setup_pending']) && !$totpOn;
+} catch (Throwable $e) {
+    error_log('admin/security: TOTP lookup error: ' . $e->getMessage());
+}
 
+try {
     $passkeys = $passkeyService->listPasskeys($userId);
+} catch (Throwable $e) {
+    error_log('admin/security: passkeys lookup error: ' . $e->getMessage());
+    $passkeys = [];
+}
+
+try {
     $faceStatus = $faceService->getEnrollmentStatus($userId);
     $faceEnrolled = $faceService->isEnrolled($userId);
+} catch (Throwable $e) {
+    error_log('admin/security: face status error: ' . $e->getMessage());
+}
 
+try {
     // Check Google OAuth status for this admin
     $stmt = $pdo->prepare('SELECT google_id, google_email FROM users WHERE id = ? LIMIT 1');
     $stmt->execute([$userId]);
     $uRow = $stmt->fetch(PDO::FETCH_ASSOC);
     $googleLinked = !empty($uRow['google_id']);
+} catch (Throwable $e) {
+    error_log('admin/security: google status error: ' . $e->getMessage());
+}
 
+try {
     // Fetch recent authentication audit records
     $stmtAudit = $pdo->prepare("
         SELECT * FROM authentication_audit
@@ -176,7 +199,8 @@ try {
     $stmtAudit->execute();
     $authAuditEvents = $stmtAudit->fetchAll(PDO::FETCH_ASSOC) ?: [];
 } catch (Throwable $e) {
-    $error = $error !== '' ? $error : ('Unable to load security events: ' . $e->getMessage());
+    error_log('admin/security: auth audit error: ' . $e->getMessage());
+    $authAuditEvents = [];
 }
 
 include __DIR__ . '/../includes/header.php';
@@ -321,7 +345,7 @@ include __DIR__ . '/../includes/header.php';
                     </p>
 
                     <?php if ($faceEnrolled): ?>
-                        <div class="alert alert-info py-2 small mb-3">
+                        <div class="alert alert-info py-2 small mb-3" data-ui-keep="1">
                             <i class="bi bi-info-circle me-1"></i>
                             Enrolled on <strong><?= e($faceStatus['enrolled_at'] ?? 'N/A') ?></strong>
                             (<?= (int)($faceStatus['sample_count'] ?? 5) ?> pose samples).
@@ -331,7 +355,7 @@ include __DIR__ . '/../includes/header.php';
                         </div>
 
                         <div class="d-flex flex-wrap gap-2">
-                            <button type="button" class="btn btn-outline-primary btn-sm js-btn-enrol-face">
+                            <button type="button" class="btn btn-outline-primary btn-sm js-btn-enrol-face" id="reEnrollFaceBtn" data-consent="1">
                                 <i class="bi bi-arrow-repeat me-1"></i> Re-enrol Face
                             </button>
                             <form method="post" class="d-inline" onsubmit="return confirm('Disable face login for your account?');">
@@ -350,11 +374,11 @@ include __DIR__ . '/../includes/header.php';
                             </form>
                         </div>
                     <?php else: ?>
-                        <div class="alert alert-light border small mb-3">
+                        <div class="alert alert-light border small mb-3" data-ui-keep="1">
                             <div class="fw-semibold mb-1"><i class="bi bi-shield-lock me-1"></i> Biometric Enrollment Consent</div>
                             By enrolling, your webcam will calibrate 5 facial poses (straight, left, right, up, down). Descriptors are mathematically hashed and encrypted on the server for 1:1 administrator verification.
                         </div>
-                        <button type="button" class="btn btn-primary btn-sm px-4 js-btn-enrol-face">
+                        <button type="button" class="btn btn-primary btn-sm px-4 js-btn-enrol-face" id="enrollFaceBtn" data-consent="1">
                             <i class="bi bi-camera-fill me-1"></i> Enrol Face Now
                         </button>
                     <?php endif; ?>
@@ -625,7 +649,7 @@ include __DIR__ . '/../includes/header.php';
                     <label class="form-label small fw-semibold">Authenticator / Device Name</label>
                     <input type="text" class="form-control" id="passkeyDeviceName" placeholder="e.g. Windows Hello Laptop" value="Windows Hello">
                 </div>
-                <div class="alert alert-danger d-none js-passkey-alert small py-2"></div>
+                <div class="alert alert-danger d-none js-passkey-alert small py-2" data-ui-keep="1"></div>
             </div>
             <div class="modal-footer border-0 pt-0">
                 <button type="button" class="btn btn-outline-secondary btn-sm" data-bs-dismiss="modal">Cancel</button>
@@ -646,82 +670,145 @@ include __DIR__ . '/../includes/header.php';
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body text-center p-4">
-                <div class="alert alert-danger d-none js-enrol-alert small py-2 text-start"></div>
+                <div class="alert alert-danger d-none js-enrol-alert small py-2 text-start" data-ui-keep="1"></div>
 
                 <div class="position-relative mx-auto rounded-4 overflow-hidden shadow-sm mb-3" style="width: 100%; max-width: 440px; aspect-ratio: 4/3; background: #000;">
                     <video class="js-enrol-video w-100 h-100 object-fit-cover" playsinline autoplay muted></video>
                     <canvas class="js-enrol-canvas position-absolute top-0 start-0 w-100 h-100 pointer-events-none"></canvas>
-                    <div class="position-absolute top-50 start-50 translate-middle pointer-events-none" style="width: 200px; height: 260px; border: 2px dashed rgba(255,255,255,0.7); border-radius: 50%;"></div>
+                    <div class="position-absolute top-50 start-50 translate-middle pointer-events-none" style="width: 200px; height: 260px; border: 2px dashed rgba(255,255,255,0.35); border-radius: 50%;"></div>
                 </div>
 
                 <div class="js-enrol-steps d-flex justify-content-center flex-wrap mb-2"></div>
-                <div class="js-enrol-status text-muted small mb-3">Position your face inside the frame.</div>
+                <div class="js-enrol-status text-muted small mb-2">Position your face inside the frame.</div>
                 <div class="js-enrol-spinner spinner-border text-primary spinner-border-sm mb-2" role="status"></div>
 
-                <button type="button" class="btn btn-primary w-100 py-2 rounded-3 js-enrol-capture-btn" disabled>
-                    <i class="bi bi-camera-fill me-1"></i> Capture Sample
+                <!-- Automatic capture indicator & hold progress pill -->
+                <div class="card border-0 bg-light p-2 mb-2 rounded-3 shadow-sm js-enrol-auto-pill text-start" data-ui-keep="1">
+                    <div class="d-flex align-items-center justify-content-between">
+                        <div class="d-flex align-items-center gap-2 text-start ps-1">
+                            <span class="js-enrol-status-dot spinner-grow spinner-grow-sm text-primary" role="status" style="width: 0.85rem; height: 0.85rem;"></span>
+                            <div>
+                                <div class="small fw-bold text-dark js-enrol-auto-title">Detecting face...</div>
+                                <div class="text-muted js-enrol-auto-subtitle" style="font-size: 0.75rem;">Center face inside oval</div>
+                            </div>
+                        </div>
+                        <div class="pe-1 text-end" style="min-width: 95px;">
+                            <div class="progress" style="height: 7px; width: 90px; background-color: #e2e8f0; border-radius: 4px;">
+                                <div class="progress-bar progress-bar-striped progress-bar-animated bg-success js-enrol-hold-bar" role="progressbar" style="width: 0%; transition: width 0.15s ease;"></div>
+                            </div>
+                            <span class="text-muted extra-small js-enrol-hold-percent" style="font-size: 0.70rem;">0% hold</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Secondary Manual Capture Fallback (hidden by default) -->
+                <button type="button" class="btn btn-outline-primary btn-sm w-100 py-1 rounded-3 js-enrol-capture-btn d-none">
+                    <i class="bi bi-camera-fill me-1"></i> Manual Capture Fallback
                 </button>
             </div>
-            <div class="modal-footer border-0 pt-0 justify-content-center">
-                <button type="button" class="btn btn-outline-secondary btn-sm px-4 rounded-pill" data-bs-dismiss="modal">Close</button>
+            <div class="modal-footer border-0 pt-0 d-flex justify-content-between align-items-center">
+                <button type="button" class="btn btn-link text-muted text-decoration-none btn-sm p-0 js-enrol-toggle-manual" style="font-size: 0.75rem;">
+                    <i class="bi bi-sliders me-1"></i> Manual fallback
+                </button>
+                <button type="button" class="btn btn-outline-secondary btn-sm px-4 rounded-pill" data-bs-dismiss="modal">Cancel</button>
             </div>
         </div>
     </div>
 </div>
 
+<?php include __DIR__ . '/../includes/footer.php'; ?>
+
+<script>
+window.BASE_URL = '<?= BASE_URL ?>';
+</script>
 <script src="<?= BASE_URL ?>assets/vendor/face-api/face-api.min.js"></script>
 <script src="<?= BASE_URL ?>assets/js/admin-biometrics.js?v=<?= filemtime(__DIR__ . '/../assets/js/admin-biometrics.js') ?>"></script>
 <script src="<?= BASE_URL ?>assets/js/admin-face-ui.js?v=<?= filemtime(__DIR__ . '/../assets/js/admin-face-ui.js') ?>"></script>
 <script>
-document.addEventListener('DOMContentLoaded', function() {
-    var csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '';
+(function() {
+    'use strict';
 
-    // Passkey Add Modal
-    var addPasskeyModalEl = document.getElementById('addPasskeyModal');
-    var addPasskeyModal = addPasskeyModalEl ? new bootstrap.Modal(addPasskeyModalEl) : null;
-    var btnAddPasskeys = document.querySelectorAll('.js-btn-add-passkey');
+    function initBiometrics() {
+        var csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '';
 
-    btnAddPasskeys.forEach(function(btn) {
-        btn.addEventListener('click', function() {
-            if (addPasskeyModal) {
-                addPasskeyModal.show();
-            }
+        // Passkey Add Modal
+        var addPasskeyModalEl = document.getElementById('addPasskeyModal');
+        var addPasskeyModal = (addPasskeyModalEl && typeof bootstrap !== 'undefined' && bootstrap.Modal)
+            ? bootstrap.Modal.getOrCreateInstance(addPasskeyModalEl)
+            : null;
+
+        var btnAddPasskeys = document.querySelectorAll('.js-btn-add-passkey');
+        btnAddPasskeys.forEach(function(btn) {
+            btn.addEventListener('click', function() {
+                if (addPasskeyModal) {
+                    addPasskeyModal.show();
+                } else if (addPasskeyModalEl) {
+                    addPasskeyModalEl.style.display = 'block';
+                    addPasskeyModalEl.classList.add('show');
+                }
+            });
         });
-    });
 
-    var btnSavePasskey = document.querySelector('.js-btn-save-passkey');
-    if (btnSavePasskey) {
-        btnSavePasskey.addEventListener('click', async function() {
-            var origContent = this.innerHTML;
-            var deviceName = document.getElementById('passkeyDeviceName')?.value || 'Passkey';
-            var alertBox = document.querySelector('.js-passkey-alert');
-            alertBox.classList.add('d-none');
-            this.disabled = true;
-            this.innerHTML = '<span class="spinner-border spinner-border-sm me-2" role="status"></span>Connecting to authenticator...';
+        var btnSavePasskey = document.querySelector('.js-btn-save-passkey');
+        if (btnSavePasskey) {
+            btnSavePasskey.addEventListener('click', async function() {
+                var origContent = this.innerHTML;
+                var deviceName = document.getElementById('passkeyDeviceName')?.value || 'Passkey';
+                var alertBox = document.querySelector('.js-passkey-alert');
+                if (alertBox) alertBox.classList.add('d-none');
+                this.disabled = true;
+                this.innerHTML = '<span class="spinner-border spinner-border-sm me-2" role="status"></span>Connecting to authenticator...';
 
-            try {
-                var res = await AdminBiometrics.registerPasskey(deviceName, csrfToken);
-                this.innerHTML = '<span class="text-success"><i class="bi bi-check-circle-fill me-1"></i> Registered!</span>';
-                setTimeout(function() {
-                    window.location.reload();
-                }, 800);
-            } catch (err) {
-                alertBox.textContent = err.message || 'Passkey registration error.';
-                alertBox.classList.remove('d-none');
-                this.disabled = false;
-                this.innerHTML = origContent;
+                try {
+                    var res = await AdminBiometrics.registerPasskey(deviceName, csrfToken);
+                    this.innerHTML = '<span class="text-success"><i class="bi bi-check-circle-fill me-1"></i> Registered!</span>';
+                    setTimeout(function() {
+                        try {
+                            window.location.replace(window.location.pathname);
+                        } catch (e) {
+                            window.location.href = window.location.pathname;
+                        }
+                    }, 800);
+                } catch (err) {
+                    if (alertBox) {
+                        alertBox.textContent = err.message || 'Passkey registration error.';
+                        alertBox.classList.remove('d-none');
+                    }
+                    this.disabled = false;
+                    this.innerHTML = origContent;
+                }
+            });
+        }
+
+        // Single unified handler for face enrollment buttons
+        var isLaunchingModal = false;
+        var handleEnrollClick = function(e) {
+            var enrolBtn = e.target.closest('.js-btn-enrol-face, #enrollFaceBtn, #reEnrollFaceBtn');
+            if (!enrolBtn || enrolBtn.disabled || isLaunchingModal) {
+                return;
             }
-        });
+            e.preventDefault();
+            e.stopPropagation();
+            if (e.stopImmediatePropagation) e.stopImmediatePropagation();
+
+            isLaunchingModal = true;
+            var token = csrfToken || document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '';
+            if (window.AdminFaceUI && typeof window.AdminFaceUI.startEnrollmentModal === 'function') {
+                window.AdminFaceUI.startEnrollmentModal(token, enrolBtn).finally(function() {
+                    setTimeout(function() { isLaunchingModal = false; }, 500);
+                });
+            } else {
+                isLaunchingModal = false;
+            }
+        };
+
+        document.addEventListener('click', handleEnrollClick, true);
     }
 
-    // Face Enrol Modal
-    var btnEnrolFaces = document.querySelectorAll('.js-btn-enrol-face');
-    btnEnrolFaces.forEach(function(btn) {
-        btn.addEventListener('click', function() {
-            AdminFaceUI.startEnrollmentModal(csrfToken);
-        });
-    });
-});
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', initBiometrics);
+    } else {
+        initBiometrics();
+    }
+})();
 </script>
-
-<?php include __DIR__ . '/../includes/footer.php'; ?>

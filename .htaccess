@@ -83,6 +83,9 @@ LimitRequestBody 41943040
     <FilesMatch "\.(css|js|mjs|woff2?|ttf|otf|eot|png|jpe?g|gif|webp|svg|ico)$">
         Header set Cache-Control "public, max-age=604800"
     </FilesMatch>
+    <FilesMatch "(-shard\d+$|\.json$)">
+        Header set Cache-Control "public, max-age=604800"
+    </FilesMatch>
     <FilesMatch "^(service-worker\.js|sw\.js|manifest\.json)$">
         Header set Cache-Control "no-cache"
     </FilesMatch>
@@ -90,6 +93,12 @@ LimitRequestBody 41943040
     Header set X-Frame-Options "SAMEORIGIN"
     Header set Referrer-Policy "strict-origin-when-cross-origin"
 </IfModule>
+
+<FilesMatch "-shard\d+$">
+    <IfModule mod_mime.c>
+        ForceType application/octet-stream
+    </IfModule>
+</FilesMatch>
 
 <FilesMatch "(^\.env|\.sql$|\.log$|official_exams\.json$|\.zip$|^(SYSTEM|DEPLOYMENT_NOTES|SYSTEM_AUDIT)\.md$)">
     Require all denied

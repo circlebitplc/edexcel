@@ -24,6 +24,21 @@ use Throwable;
  * - Credential revocation
  * - Storing only public keys (private keys never leave client authenticators)
  */
+
+// Fallback autoloader for lbuchs\WebAuthn if not already registered by Composer
+if (!class_exists('lbuchs\\WebAuthn\\WebAuthn', false)) {
+    spl_autoload_register(static function (string $class): void {
+        $prefix = 'lbuchs\\WebAuthn\\';
+        if (str_starts_with($class, $prefix)) {
+            $rel = substr($class, strlen($prefix));
+            $file = __DIR__ . '/../../vendor/lbuchs/webauthn/src/' . str_replace('\\', '/', $rel) . '.php';
+            if (is_file($file)) {
+                require_once $file;
+            }
+        }
+    });
+}
+
 final class AdminPasskeyService
 {
     private const RP_NAME = 'Edexcel College';
@@ -50,6 +65,9 @@ final class AdminPasskeyService
      */
     public function getWebAuthnEngine(): WebAuthn
     {
+        if (!class_exists('lbuchs\\WebAuthn\\WebAuthn')) {
+            throw new RuntimeException('WebAuthn library (lbuchs/webauthn) is not installed on the server.');
+        }
         $rpId = $this->getRpId();
         // Allow common attestation formats and use standard base64url encoding for binary buffers
         return new WebAuthn(self::RP_NAME, $rpId, null, true);
@@ -380,15 +398,20 @@ final class AdminPasskeyService
      */
     public function listPasskeys(int $userId): array
     {
-        $stmt = $this->pdo->prepare("
-            SELECT id, user_id, credential_id, name, attestation_format, sign_count, transports, last_used_at, created_at, created_ip
-            FROM admin_passkeys
-            WHERE user_id = ?
-              AND revoked_at IS NULL
-            ORDER BY created_at DESC
-        ");
-        $stmt->execute([$userId]);
-        return $stmt->fetchAll(PDO::FETCH_ASSOC) ?: [];
+        try {
+            $stmt = $this->pdo->prepare("
+                SELECT id, user_id, credential_id, name, attestation_format, sign_count, transports, last_used_at, created_at, created_ip
+                FROM admin_passkeys
+                WHERE user_id = ?
+                  AND revoked_at IS NULL
+                ORDER BY created_at DESC
+            ");
+            $stmt->execute([$userId]);
+            return $stmt->fetchAll(PDO::FETCH_ASSOC) ?: [];
+        } catch (Throwable $e) {
+            error_log('AdminPasskeyService: listPasskeys error: ' . $e->getMessage());
+            return [];
+        }
     }
 
     /**

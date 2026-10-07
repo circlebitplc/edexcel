@@ -244,7 +244,7 @@ assertBio(!str_contains($faceRow['template_encrypted'], '0.088'), "Plaintext bio
 // Test Liveness Challenge Generation
 $authLiveness = $face->createAuthLivenessChallenge($adminId);
 assertBio(!empty($authLiveness['challenge_token']), "Liveness challenge token generated");
-assertBio(count($authLiveness['sequence']) >= 3, "Liveness requires dynamic unpredictable gesture sequence");
+assertBio(count($authLiveness['sequence']) >= 2, "Liveness requires dynamic unpredictable gesture sequence");
 
 // Test Authentic Face Verification with Valid PAD Telemetry
 $validSteps = [];

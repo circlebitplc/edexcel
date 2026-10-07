@@ -69,19 +69,54 @@ try {
         // ==============================================================
         case 'status':
             try {
-                $admin = $bioService->getAdminAccount();
-                $adminId = (int)$admin['id'];
-                $passkeys = $passkeyService->listPasskeys($adminId);
-                $faceEnrolled = $faceService->isEnrolled($adminId);
-                $throttle = $bioService->checkThrottling($admin['username']);
+                $identifier = $getParam('identifier');
+                $targetUser = null;
+                if ($identifier !== '') {
+                    $targetUser = $bioService->findUserByIdentifier($identifier);
+                } elseif (function_exists('is_logged_in') && is_logged_in() && !empty($_SESSION['user_id'])) {
+                    $targetUser = $bioService->getUserAccount((int)$_SESSION['user_id']);
+                }
+
+                if ($targetUser) {
+                    $targetId = (int)$targetUser['id'];
+                    $faceEnrolled = $faceService->isEnrolled($targetId);
+                    $throttle = $bioService->checkThrottling((string)$targetUser['username'], $targetId);
+
+                    echo json_encode([
+                        'ok' => true,
+                        'user_found' => true,
+                        'face_available' => $faceEnrolled,
+                        'is_throttled' => $throttle['is_locked'],
+                        'role' => (string)($targetUser['role'] ?? 'student'),
+                        'display_name' => (string)($targetUser['teacher_name'] ?? $targetUser['username']),
+                    ]);
+                    exit;
+                }
+
+                // General status check
+                $admin = null;
+                try {
+                    $admin = $bioService->getAdminAccount();
+                } catch (Throwable) {}
+
+                $adminId = $admin ? (int)$admin['id'] : 0;
+                $passkeys = ($adminId > 0) ? $passkeyService->listPasskeys($adminId) : [];
+                $faceEnrolled = ($adminId > 0) ? $faceService->isEnrolled($adminId) : false;
+                $throttle = $admin ? $bioService->checkThrottling($admin['username'], $adminId) : ['is_locked' => false];
+
+                $anyFaceEnrolled = false;
+                try {
+                    $stmtCount = $pdo->query("SELECT COUNT(*) FROM admin_face_credentials WHERE status = 'active'");
+                    $anyFaceEnrolled = ((int)$stmtCount->fetchColumn()) > 0;
+                } catch (Throwable) {}
 
                 echo json_encode([
                     'ok' => true,
                     'passkey_available' => !empty($passkeys),
                     'passkey_count' => count($passkeys),
-                    'face_available' => $faceEnrolled,
+                    'face_available' => $faceEnrolled || $anyFaceEnrolled,
                     'is_throttled' => $throttle['is_locked'],
-                    'admin_exists' => true,
+                    'admin_exists' => $admin !== null,
                 ]);
             } catch (Throwable) {
                 echo json_encode([
@@ -155,8 +190,45 @@ try {
         // 3. WEBCAM FACE LOGIN (AUTHENTICATION)
         // ==============================================================
         case 'face_auth_challenge':
-            $admin = $bioService->getAdminAccount();
-            $throttle = $bioService->checkThrottling($admin['username']);
+            $identifier = $getParam('identifier');
+            $targetUser = null;
+
+            if ($identifier !== '') {
+                $targetUser = $bioService->findUserByIdentifier($identifier);
+                if (!$targetUser) {
+                    http_response_code(404);
+                    echo json_encode(['ok' => false, 'error' => 'No account found matching "' . htmlspecialchars($identifier) . '".']);
+                    exit;
+                }
+            } elseif (function_exists('is_logged_in') && is_logged_in() && !empty($_SESSION['user_id'])) {
+                $targetUser = $bioService->getUserAccount((int)$_SESSION['user_id']);
+            } else {
+                // Check enrolled count: if exactly 1 user in the system is enrolled in Face ID, automatically use that user
+                $stmtEnrolled = $pdo->query("SELECT user_id FROM admin_face_credentials WHERE status = 'active' LIMIT 2");
+                $enrolledRows = $stmtEnrolled->fetchAll(PDO::FETCH_COLUMN);
+                if (count($enrolledRows) === 1) {
+                    $targetUser = $bioService->getUserAccount((int)$enrolledRows[0]);
+                } else {
+                    // Multiple or 0 users enrolled: request identifier
+                    http_response_code(400);
+                    echo json_encode([
+                        'ok' => false,
+                        'require_identifier' => true,
+                        'error' => 'Please enter your username, email, or mobile number to continue with Face ID.'
+                    ]);
+                    exit;
+                }
+            }
+
+            $targetId = (int)$targetUser['id'];
+
+            if (!$faceService->isEnrolled($targetId)) {
+                http_response_code(400);
+                echo json_encode(['ok' => false, 'error' => 'Face ID is not enrolled for this account. Please sign in and enroll in settings.']);
+                exit;
+            }
+
+            $throttle = $bioService->checkThrottling((string)$targetUser['username'], $targetId);
             if ($throttle['is_locked']) {
                 http_response_code(429);
                 echo json_encode(['ok' => false, 'error' => 'Too many failed sign-in attempts. Please wait 15 minutes and try again.']);
@@ -166,19 +238,25 @@ try {
                 sleep($throttle['delay_seconds']);
             }
 
-            $challengeData = $faceService->createAuthLivenessChallenge((int)$admin['id']);
+            $escalate = !empty($_GET['escalate']) || !empty($_POST['escalate']) || !empty($input['escalate']) || ($throttle['attempts_recent'] > 0);
+            $challengeData = $faceService->createAuthLivenessChallenge($targetId, (bool)$escalate);
+
+            $displayName = !empty($targetUser['teacher_name'])
+                ? (string)$targetUser['teacher_name']
+                : (string)$targetUser['username'];
+
             echo json_encode([
                 'ok' => true,
                 'challenge_token' => $challengeData['challenge_token'],
                 'sequence' => $challengeData['sequence'],
+                'mode' => $challengeData['mode'] ?? ($escalate ? 'escalated' : 'fast_3step'),
                 'timeout_seconds' => $challengeData['timeout_seconds'],
+                'user_name' => $displayName,
+                'role' => (string)($targetUser['role'] ?? 'student'),
             ]);
             exit;
 
         case 'face_auth_verify':
-            $admin = $bioService->getAdminAccount();
-            $adminId = (int)$admin['id'];
-
             $challengeToken = $getParam('challenge_token');
             $descriptor = $_POST['descriptor'] ?? $input['descriptor'] ?? [];
             $telemetry = $_POST['telemetry'] ?? $input['telemetry'] ?? [];
@@ -187,24 +265,39 @@ try {
                 throw new RuntimeException('Missing facial verification response parameters.');
             }
 
+            // Look up challenge to resolve which user ID was assigned to this token
+            $chStmt = $pdo->prepare("
+                SELECT user_id FROM admin_biometric_challenges
+                WHERE challenge_token = ? AND challenge_type = 'face_auth'
+                LIMIT 1
+            ");
+            $chStmt->execute([$challengeToken]);
+            $targetUserId = (int)$chStmt->fetchColumn();
+
+            if ($targetUserId <= 0) {
+                throw new RuntimeException('Invalid or expired facial verification challenge.');
+            }
+
+            $targetUser = $bioService->getUserAccount($targetUserId);
+
             $verifyResult = $faceService->processVerification(
-                $adminId,
+                $targetUserId,
                 $challengeToken,
                 $descriptor,
                 $telemetry
             );
 
             if (empty($verifyResult['matched'])) {
-                throw new RuntimeException('We could not verify your face. Please try again or use Passkey.');
+                throw new RuntimeException('We could not verify your face. Please try again.');
             }
 
-            // Establish full admin + teacher session
-            $bioService->establishAdminSession($admin, AdminBiometricService::METHOD_FACE);
+            // Establish role-appropriate session (admin, teacher, student)
+            $redirectUrl = $bioService->establishSession($targetUser, AdminBiometricService::METHOD_FACE);
 
             echo json_encode([
                 'ok' => true,
                 'message' => 'Face verified successfully.',
-                'redirect' => (string)BASE_URL . 'dashboard.php',
+                'redirect' => $redirectUrl,
             ]);
             exit;
 
@@ -288,10 +381,10 @@ try {
             exit;
 
         // ==============================================================
-        // 5. FACE ENROLLMENT & MANAGEMENT (ADMIN ONLY)
+        // 5. FACE ENROLLMENT & MANAGEMENT (ALL AUTHENTICATED USERS)
         // ==============================================================
         case 'face_enrol_challenge':
-            require_admin();
+            require_login();
             $csrf = $getParam('csrf_token', (string)($_SERVER['HTTP_X_CSRF_TOKEN'] ?? ''));
             if (!verify_csrf_token($csrf)) {
                 http_response_code(403);
@@ -316,7 +409,7 @@ try {
             exit;
 
         case 'face_enrol_submit':
-            require_admin();
+            require_login();
             $csrf = $getParam('csrf_token', (string)($_SERVER['HTTP_X_CSRF_TOKEN'] ?? ''));
             if (!verify_csrf_token($csrf)) {
                 http_response_code(403);
@@ -341,7 +434,7 @@ try {
             exit;
 
         case 'face_disable':
-            require_admin();
+            require_login();
             $csrf = $getParam('csrf_token', (string)($_SERVER['HTTP_X_CSRF_TOKEN'] ?? ''));
             if (!verify_csrf_token($csrf)) {
                 http_response_code(403);
@@ -355,7 +448,7 @@ try {
             exit;
 
         case 'face_clear':
-            require_admin();
+            require_login();
             $csrf = $getParam('csrf_token', (string)($_SERVER['HTTP_X_CSRF_TOKEN'] ?? ''));
             if (!verify_csrf_token($csrf)) {
                 http_response_code(403);
@@ -364,12 +457,15 @@ try {
             }
 
             $userId = (int)$_SESSION['user_id'];
-            $totp = new AdminTotpService($pdo);
-            $recentReauth = $totp->hasValidReauth($userId, 'sensitive') || $totp->hasValidReauth($userId, 'biometrics');
-            if (!$recentReauth) {
-                http_response_code(403);
-                echo json_encode(['ok' => false, 'error' => 'Clearing biometric face data requires recent password re-authentication. Please re-authenticate on the security page.']);
-                exit;
+            $role = current_role();
+            if ($role === 'admin') {
+                $totp = new AdminTotpService($pdo);
+                $recentReauth = $totp->hasValidReauth($userId, 'sensitive') || $totp->hasValidReauth($userId, 'biometrics');
+                if (!$recentReauth) {
+                    http_response_code(403);
+                    echo json_encode(['ok' => false, 'error' => 'Clearing biometric face data requires recent password re-authentication. Please re-authenticate on the security page.']);
+                    exit;
+                }
             }
 
             $faceService->clearFaceData($userId);
