@@ -1,0 +1,10 @@
+# Same API key/secret as livekit.yaml and the college PHP settings.
+# ws_url is the Docker service name, not the public wss:// host.
+
+log_level: info
+api_key: REPLACE_API_KEY
+api_secret: REPLACE_API_SECRET
+ws_url: ws://livekit:7880
+insecure: true
+redis:
+  address: redis:6379

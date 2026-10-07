@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"
+        xmlns:image="http://www.google.com/schemas/sitemap-image/1.1">
+  <url>
+    <loc>https://edexcel.college/</loc>
+    <image:image>
+      <image:loc>https://edexcel.college/assets/icons/icon-512.png</image:loc>
+      <image:title>Edexcel College</image:title>
+    </image:image>
+    <image:image>
+      <image:loc>https://edexcel.college/favicon.ico</image:loc>
+      <image:title>Edexcel College favicon</image:title>
+    </image:image>
+  </url>
+  <url>
+    <loc>https://edexcel.college/about</loc>
+    <image:image>
+      <image:loc>https://edexcel.college/assets/icons/icon-512.png</image:loc>
+      <image:title>Edexcel College organization mark</image:title>
+    </image:image>
+  </url>
+  <url>
+    <loc>https://edexcel.college/edexcel-classes</loc>
+    <image:image>
+      <image:loc>https://edexcel.college/assets/icons/icon-512.png</image:loc>
+      <image:title>Edexcel Classes — Kandy, Online &amp; Sri Lanka</image:title>
+    </image:image>
+  </url>
+  <url>
+    <loc>https://edexcel.college/pearson-exams</loc>
+    <image:image>
+      <image:loc>https://edexcel.college/assets/icons/icon-512.png</image:loc>
+      <image:title>Pearson Edexcel Exam Services — Edexcel College</image:title>
+    </image:image>
+  </url>
+  <url>
+    <loc>https://edexcel.college/edexcel-o-level</loc>
+    <image:image>
+      <image:loc>https://edexcel.college/assets/icons/icon-512.png</image:loc>
+      <image:title>Edexcel IGCSE / O Level Pathway — Edexcel College</image:title>
+    </image:image>
+  </url>
+  <url>
+    <loc>https://edexcel.college/edexcel-a-level</loc>
+    <image:image>
+      <image:loc>https://edexcel.college/assets/icons/icon-512.png</image:loc>
+      <image:title>Edexcel A Level / IAL Pathway — Edexcel College</image:title>
+    </image:image>
+  </url>
+  <url>
+    <loc>https://edexcel.college/locations/kandy</loc>
+    <image:image>
+      <image:loc>https://edexcel.college/assets/icons/icon-512.png</image:loc>
+      <image:title>Edexcel College — Kandy Campus, Sri Lanka</image:title>
+    </image:image>
+  </url>
+</urlset>

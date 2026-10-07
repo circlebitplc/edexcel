@@ -1,9 +1,9 @@
 <?php
 declare(strict_types=1);
 
-namespace App\Services;
+namespace Edexcel\Services;
 
-use App\Repositories\TimetableRepository;
+use Edexcel\Repositories\TimetableRepository;
 use RuntimeException;
 
 final class TimetableConflictService
@@ -12,7 +12,8 @@ final class TimetableConflictService
 
     public function message(
         int $teacherId,int $roomId,int $classId,
-        string $date,string $start,string $end,int $excludeId=0
+        string $date,string $start,string $end,int $excludeId=0,
+        bool $skipRoom=false
     ): ?string {
         if ($row=$this->repository->conflict(
             'teacher_id',$teacherId,$date,$start,$end,$excludeId
@@ -21,7 +22,7 @@ final class TimetableConflictService
                 .date('h:i A',strtotime($row['start_time']))
                 ." to ".date('h:i A',strtotime($row['end_time']));
         }
-        if ($row=$this->repository->conflict(
+        if (!$skipRoom && $row=$this->repository->conflict(
             'room_id',$roomId,$date,$start,$end,$excludeId
         )) {
             return "Room '{$row['room_name']}' is already occupied on this date from "
@@ -43,7 +44,7 @@ final class TimetableConflictService
         string $date,string $start,string $end,int $excludeId=0
     ): bool {
         return $this->message(
-            $teacherId,$roomId,$classId,$date,$start,$end,$excludeId
+            $teacherId,$roomId,$classId,$date,$start,$end,$excludeId,false
         ) !== null;
     }
 }

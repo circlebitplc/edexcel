@@ -3,19 +3,23 @@ require_once __DIR__ . '/../config/database.php';
 require_once __DIR__ . '/../config/auth.php';
 require_once __DIR__ . '/../config/security.php';
 require_once __DIR__ . '/../config/payment.php';
-require_login();
+require_once __DIR__ . '/../vendor/autoload.php';
+require_staff();
+\Edexcel\Services\ClassSessionFeeCalculator::ensureSchema($pdo);
 
 $is_admin = is_admin();
 $loggedTeacherId = (int)($_SESSION['teacher_id'] ?? 0);
 
 $teacherId = $is_admin ? (int)($_GET['teacher_id'] ?? 0) : $loggedTeacherId;
+$today = date('Y-m-d');
 $defaultStart = date('Y-m-01');
-$defaultEnd = date('Y-m-t');
+$defaultEnd = $today;
 $start = $_GET['date_from'] ?? $defaultStart;
 $end = $_GET['date_to'] ?? $defaultEnd;
 
 if (!preg_match('/^\d{4}-\d{2}-\d{2}$/', $start)) $start = $defaultStart;
 if (!preg_match('/^\d{4}-\d{2}-\d{2}$/', $end)) $end = $defaultEnd;
+if ($end > $today) $end = $today;
 if ($start > $end) [$start, $end] = [$end, $start];
 
 $teachers = [];
@@ -30,35 +34,9 @@ if ($teacherId > 0) {
     $teacherName = $stmt->fetchColumn() ?: 'Teacher not found';
 }
 
-// Ledger dates are based on class date and payment date. Opening balance is the
-// unpaid value carried into each day; same-day payments reduce that day's balance.
-$openingSql = "SELECT COALESCE(SUM(
-                   student_count *
-                   CASE
-                       WHEN (
-                           CASE
-                               WHEN TIME_TO_SEC(end_time) >= TIME_TO_SEC(start_time)
-                               THEN (TIME_TO_SEC(end_time) - TIME_TO_SEC(start_time)) / 60
-                               ELSE (TIME_TO_SEC(end_time) + 86400 - TIME_TO_SEC(start_time)) / 60
-                           END
-                       ) <= 150 THEN 500
-                       WHEN (
-                           CASE
-                               WHEN TIME_TO_SEC(end_time) >= TIME_TO_SEC(start_time)
-                               THEN (TIME_TO_SEC(end_time) - TIME_TO_SEC(start_time)) / 60
-                               ELSE (TIME_TO_SEC(end_time) + 86400 - TIME_TO_SEC(start_time)) / 60
-                           END
-                       ) <= 210 THEN 700
-                       WHEN (
-                           CASE
-                               WHEN TIME_TO_SEC(end_time) >= TIME_TO_SEC(start_time)
-                               THEN (TIME_TO_SEC(end_time) - TIME_TO_SEC(start_time)) / 60
-                               ELSE (TIME_TO_SEC(end_time) + 86400 - TIME_TO_SEC(start_time)) / 60
-                           END
-                       ) <= 270 THEN 900
-                       ELSE 1100
-                   END
-               ),0)
+$amountSql = \Edexcel\Services\ClassSessionFeeCalculator::instituteAmountSql();
+
+$openingSql = "SELECT COALESCE(SUM({$amountSql}),0)
                FROM timetable
                WHERE deleted_at IS NULL
                  AND date < ?
@@ -66,65 +44,13 @@ $openingSql = "SELECT COALESCE(SUM(
                  AND (? = 0 OR teacher_id = ?)
                  AND date IS NOT NULL";
 
-$earnedSql = "SELECT date, COALESCE(SUM(
-                       student_count *
-                       CASE
-                           WHEN (
-                               CASE
-                                   WHEN TIME_TO_SEC(end_time) >= TIME_TO_SEC(start_time)
-                                   THEN (TIME_TO_SEC(end_time) - TIME_TO_SEC(start_time)) / 60
-                                   ELSE (TIME_TO_SEC(end_time) + 86400 - TIME_TO_SEC(start_time)) / 60
-                               END
-                           ) <= 150 THEN 500
-                           WHEN (
-                               CASE
-                                   WHEN TIME_TO_SEC(end_time) >= TIME_TO_SEC(start_time)
-                                   THEN (TIME_TO_SEC(end_time) - TIME_TO_SEC(start_time)) / 60
-                                   ELSE (TIME_TO_SEC(end_time) + 86400 - TIME_TO_SEC(start_time)) / 60
-                               END
-                           ) <= 210 THEN 700
-                           WHEN (
-                               CASE
-                                   WHEN TIME_TO_SEC(end_time) >= TIME_TO_SEC(start_time)
-                                   THEN (TIME_TO_SEC(end_time) - TIME_TO_SEC(start_time)) / 60
-                                   ELSE (TIME_TO_SEC(end_time) + 86400 - TIME_TO_SEC(start_time)) / 60
-                               END
-                           ) <= 270 THEN 900
-                           ELSE 1100
-                       END
-                   ),0) AS earned, COUNT(*) AS lessons, COALESCE(SUM(student_count),0) AS students
+$earnedSql = "SELECT date, COALESCE(SUM({$amountSql}),0) AS earned, COUNT(*) AS lessons, COALESCE(SUM(student_count),0) AS students
               FROM timetable
               WHERE deleted_at IS NULL AND date BETWEEN ? AND ?
                 AND (? = 0 OR teacher_id = ?)
               GROUP BY date ORDER BY date";
 
-$paidSql = "SELECT payment_date, COALESCE(SUM(
-                     student_count *
-                     CASE
-                         WHEN (
-                             CASE
-                                 WHEN TIME_TO_SEC(end_time) >= TIME_TO_SEC(start_time)
-                                 THEN (TIME_TO_SEC(end_time) - TIME_TO_SEC(start_time)) / 60
-                                 ELSE (TIME_TO_SEC(end_time) + 86400 - TIME_TO_SEC(start_time)) / 60
-                             END
-                         ) <= 150 THEN 500
-                         WHEN (
-                             CASE
-                                 WHEN TIME_TO_SEC(end_time) >= TIME_TO_SEC(start_time)
-                                 THEN (TIME_TO_SEC(end_time) - TIME_TO_SEC(start_time)) / 60
-                                 ELSE (TIME_TO_SEC(end_time) + 86400 - TIME_TO_SEC(start_time)) / 60
-                             END
-                         ) <= 210 THEN 700
-                         WHEN (
-                             CASE
-                                 WHEN TIME_TO_SEC(end_time) >= TIME_TO_SEC(start_time)
-                                 THEN (TIME_TO_SEC(end_time) - TIME_TO_SEC(start_time)) / 60
-                                 ELSE (TIME_TO_SEC(end_time) + 86400 - TIME_TO_SEC(start_time)) / 60
-                             END
-                         ) <= 270 THEN 900
-                         ELSE 1100
-                     END
-                 ),0) AS paid, COUNT(*) AS payments
+$paidSql = "SELECT payment_date, COALESCE(SUM({$amountSql}),0) AS paid, COUNT(*) AS payments
             FROM timetable
             WHERE deleted_at IS NULL AND payment_status = 'paid' AND payment_date BETWEEN ? AND ?
               AND (? = 0 OR teacher_id = ?)
@@ -203,7 +129,7 @@ include __DIR__ . '/../includes/header.php';
         <form method="get" class="row g-3 align-items-end">
             <?php if ($is_admin): ?><div class="col-lg-3 col-md-6"><label class="form-label" for="teacher_id">Teacher</label><select class="form-select" id="teacher_id" name="teacher_id"><option value="0">All teachers</option><?php foreach ($teachers as $t): ?><option value="<?= $t['id'] ?>" <?= $teacherId === (int)$t['id'] ? 'selected' : '' ?>><?= htmlspecialchars($t['name']) ?></option><?php endforeach; ?></select></div><?php endif; ?>
             <div class="col-lg-3 col-md-6"><label class="form-label" for="date_from">Period start</label><input class="form-control" type="date" id="date_from" name="date_from" value="<?= htmlspecialchars($start) ?>"></div>
-            <div class="col-lg-3 col-md-6"><label class="form-label" for="date_to">Period end</label><input class="form-control" type="date" id="date_to" name="date_to" value="<?= htmlspecialchars($end) ?>"></div>
+            <div class="col-lg-3 col-md-6"><label class="form-label" for="date_to">Period end</label><input class="form-control" type="date" id="date_to" name="date_to" max="<?= htmlspecialchars($today) ?>" value="<?= htmlspecialchars($end) ?>"></div>
             <div class="col-lg-3 col-md-6 d-flex gap-2"><button class="btn btn-primary flex-fill"><i class="bi bi-search"></i> Generate</button><a class="btn btn-outline-secondary" href="payment_ledger.php"><i class="bi bi-calendar-month"></i> This month</a></div>
         </form>
     </div>

@@ -3,8 +3,8 @@
  * Public timetable – external CSS/JS, uses class_teacher_whatsapp for group links.
  * MAIN GROUP LINK: https://chat.whatsapp.com/HG3Vqyn5CCACDEuN8UlGaZ
  */
-error_reporting(E_ALL);
-ini_set('display_errors', 1);
+error_reporting(0);
+ini_set('display_errors', '0');
 
 // 1. Load configuration
 require_once __DIR__ . '/../config/database.php';
@@ -14,7 +14,15 @@ require_once __DIR__ . '/../config/config.php'; // defines BASE_URL
 $selectedClass = isset($_GET['class_id']) ? (int)$_GET['class_id'] : 0;
 $teacherFilter = isset($_GET['teacher']) ? trim($_GET['teacher']) : '';
 $weekOffset    = isset($_GET['week_offset']) ? (int)$_GET['week_offset'] : 0;
+$searchQuery   = isset($_GET['q']) ? trim((string)$_GET['q']) : '';
 $isAjax        = isset($_GET['ajax']) || ($_SERVER['HTTP_X_REQUESTED_WITH'] ?? '') === 'XMLHttpRequest';
+
+if (!empty($_GET['reset'])) {
+    $selectedClass = 0;
+    $teacherFilter = '';
+    $searchQuery = '';
+    $weekOffset = 0;
+}
 
 if ($selectedClass < 0) $selectedClass = 0;
 
@@ -57,16 +65,11 @@ if (!empty($classIds)) {
             JOIN teachers tc ON t.teacher_id = tc.id
             JOIN subjects s ON t.subject_id = s.id
             JOIN student_classes c ON t.class_id = c.id
-            JOIN rooms r ON t.room_id = r.id
+            LEFT JOIN rooms r ON t.room_id = r.id
             WHERE t.class_id IN ($placeholders)
               AND t.deleted_at IS NULL
-              AND t.date BETWEEN ? AND ?";
-
-    if (!empty($teacherFilter)) {
-        $sql .= " AND tc.name = ?";
-        $params[] = $teacherFilter;
-    }
-    $sql .= " ORDER BY t.date, t.start_time";
+              AND t.date BETWEEN ? AND ?
+            ORDER BY t.date, t.start_time";
 
     $stmt = $pdo->prepare($sql);
     $stmt->execute($params);
@@ -75,6 +78,30 @@ if (!empty($classIds)) {
     $teacherNames = array_unique(array_column($entries, 'teacher_name'));
     sort($teacherNames);
     $teachersList = $teacherNames;
+
+    if ($teacherFilter !== '') {
+        $entries = array_values(array_filter($entries, static function ($e) use ($teacherFilter) {
+            return ($e['teacher_name'] ?? '') === $teacherFilter;
+        }));
+    }
+
+    if ($searchQuery !== '') {
+        $tokens = preg_split('/\s+/', strtolower($searchQuery)) ?: [];
+        $entries = array_values(array_filter($entries, static function ($e) use ($tokens) {
+            $hay = strtolower(
+                ($e['teacher_name'] ?? '') . ' ' .
+                ($e['subject_name'] ?? '') . ' ' .
+                ($e['room_name'] ?? '') . ' ' .
+                ($e['class_name'] ?? '')
+            );
+            foreach ($tokens as $token) {
+                if ($token !== '' && strpos($hay, $token) === false) {
+                    return false;
+                }
+            }
+            return true;
+        }));
+    }
 }
 
 // 6. Fetch WhatsApp links – treat NULL subject_id as wildcard
@@ -253,7 +280,7 @@ function renderContent($grouped, $classes, $teachersList, $subjectColorMap, $day
                                 <a href="<?= $waUrl ?>" class="teacher-pill" target="_blank">
                                     <i class="bi bi-whatsapp"></i> <?= htmlspecialchars($e['teacher_name']) ?>
                                 </a>
-                                <span class="pill"><i class="bi bi-door-open"></i> <?= htmlspecialchars($e['room_name']) ?></span>
+                                <span class="pill"><i class="bi bi-door-open"></i> <?= htmlspecialchars((string)($e['room_name'] ?? '')) ?></span>
                                 <?php if ($e['date'] === $today): ?>
                                     <span class="today-tag"><i class="bi bi-dot"></i> Today</span>
                                 <?php endif; ?>
@@ -278,10 +305,11 @@ function renderContent($grouped, $classes, $teachersList, $subjectColorMap, $day
 
 // 13. Start HTML
 ?><!DOCTYPE html>
-<html lang="en">
+<html lang="en" <?= function_exists('app_theme_html_attrs') ? app_theme_html_attrs() : 'data-theme="dark" data-bs-theme="dark"' ?>>
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <?php if (function_exists('app_theme_boot_script')) { app_theme_boot_script(); } ?>
     <title><?= htmlspecialchars($appName) ?> – Timetable</title>
     <!-- Bootstrap & Icons (CDN) -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css">
@@ -289,6 +317,7 @@ function renderContent($grouped, $classes, $teachersList, $subjectColorMap, $day
     <link href="https://fonts.googleapis.com/css2?family=Inter:opsz@14..32&display=swap" rel="stylesheet">
     <!-- External CSS -->
     <link rel="stylesheet" href="<?= BASE_URL ?>assets/css/dashboard.css">
+    <?php if (function_exists('app_theme_css_link')) { app_theme_css_link(); } ?>
 
 <style>
 /* KANDY STUDENT TIMETABLE LAYOUT FIX v1 */
@@ -316,9 +345,10 @@ function renderContent($grouped, $classes, $teachersList, $subjectColorMap, $day
     backdrop-filter: blur(16px);
 }
 
-[data-bs-theme="dark"] .glass-nav {
-    background: rgba(25,30,43,.95);
-    border-color: rgba(255,255,255,.08);
+[data-bs-theme="dark"] .glass-nav,
+[data-theme]:not([data-theme="light"]) .glass-nav {
+    background: var(--nav-bg, rgba(25,30,43,.95));
+    border-color: var(--panel-border, rgba(255,255,255,.08));
 }
 
 .glass-nav .navbar-brand {
@@ -833,10 +863,7 @@ function renderContent($grouped, $classes, $teachersList, $subjectColorMap, $day
         <a href="<?= htmlspecialchars($mainWhatsAppGroupLink) ?>" class="whatsapp-group-link" target="_blank" rel="noopener">
             <i class="bi bi-people"></i> Join Group
         </a>
-        <button class="dark-toggle-nav" id="darkModeToggle">
-            <i class="bi bi-moon-fill" id="darkIcon"></i>
-            <span id="darkLabel">Dark</span>
-        </button>
+        <?php if (function_exists('app_theme_render_picker')) { app_theme_render_picker('header'); } ?>
         <a href="#"><i class="bi bi-box-arrow-in-right"></i> Login</a>
         <a href="#"><i class="bi bi-person-plus"></i> Register</a>
     </div>
@@ -849,6 +876,10 @@ function renderContent($grouped, $classes, $teachersList, $subjectColorMap, $day
         <form method="GET" id="filterForm" class="d-flex">
             <input type="hidden" name="week_offset" value="<?= $weekOffset ?>">
 
+            <div class="flex-grow-1">
+                <label class="form-label">Search</label>
+                <input type="search" name="q" class="form-control form-control-sm" placeholder="Subject, teacher, room..." value="<?= htmlspecialchars($searchQuery) ?>" onchange="this.form.submit()">
+            </div>
             <div class="flex-grow-1">
                 <label class="form-label">Class</label>
                 <select name="class_id" class="form-select form-select-sm" onchange="this.form.submit()">
@@ -919,5 +950,126 @@ function renderContent($grouped, $classes, $teachersList, $subjectColorMap, $day
 <script src="<?= BASE_URL ?>assets/js/dashboard.js" defer></script>
 <!-- Bootstrap JS (CDN) -->
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+
+<!-- Student timetable JavaScript -->
+
+<script>
+/* KANDY STUDENT THEME CONTROLLER v1 */
+(function () {
+    'use strict';
+
+    function initStudentTheme() {
+        if (window.EckTheme) {
+            return;
+        }
+        const toggle = document.getElementById('darkModeToggle');
+        const icon = document.getElementById('darkIcon');
+        const label = document.getElementById('darkLabel');
+        const root = document.documentElement;
+
+        if (!toggle) {
+            return;
+        }
+
+        function applyTheme(isDark) {
+            const theme = isDark ? 'dark' : 'light';
+
+            root.setAttribute('data-bs-theme', theme);
+
+            // Keep compatibility with any existing theme code.
+            root.classList.toggle('dark', isDark);
+
+            // Remember the preference.
+            try {
+                localStorage.setItem('darkMode', isDark ? 'true' : 'false');
+            } catch (e) {}
+
+            // Keep the existing server-side theme cookie compatible.
+            document.cookie =
+                'dark_mode=' +
+                (isDark ? 'true' : 'false') +
+                ';path=/;max-age=31536000;SameSite=Lax';
+
+            if (icon) {
+                icon.className = isDark
+                    ? 'bi bi-sun-fill'
+                    : 'bi bi-moon-fill';
+            }
+
+            if (label) {
+                label.textContent = isDark
+                    ? 'Light'
+                    : 'Dark';
+            }
+
+            toggle.setAttribute(
+                'aria-label',
+                isDark
+                    ? 'Switch to light mode'
+                    : 'Switch to dark mode'
+            );
+
+            toggle.setAttribute(
+                'aria-pressed',
+                isDark ? 'true' : 'false'
+            );
+        }
+
+        function getSavedTheme() {
+            try {
+                const saved = localStorage.getItem('darkMode');
+
+                if (saved === 'true') {
+                    return true;
+                }
+
+                if (saved === 'false') {
+                    return false;
+                }
+            } catch (e) {}
+
+            const current =
+                root.getAttribute('data-bs-theme');
+
+            if (current === 'dark') {
+                return true;
+            }
+
+            if (current === 'light') {
+                return false;
+            }
+
+            return window.matchMedia &&
+                window.matchMedia(
+                    '(prefers-color-scheme: dark)'
+                ).matches;
+        }
+
+        // Apply saved preference immediately.
+        applyTheme(getSavedTheme());
+
+        // The student page uses a BUTTON, so use click.
+        toggle.addEventListener('click', function (event) {
+            event.preventDefault();
+
+            const currentlyDark =
+                root.getAttribute('data-bs-theme') === 'dark';
+
+            applyTheme(!currentlyDark);
+        });
+    }
+
+    if (document.readyState === 'loading') {
+        document.addEventListener(
+            'DOMContentLoaded',
+            initStudentTheme
+        );
+    } else {
+        initStudentTheme();
+    }
+})();
+</script>
+<?php if (function_exists('app_theme_js_link')) { app_theme_js_link(); } ?>
+
 </body>
 </html>

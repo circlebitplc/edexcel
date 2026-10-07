@@ -1,0 +1,26 @@
+# Same VPS as kandy.edexcel.college (CyberPanel / OpenLiteSpeed)
+#
+# OpenLiteSpeed already uses 80/443, so this overlay:
+# - does not start Caddy
+# - publishes LiveKit only on 127.0.0.1:7880 for the reverse proxy
+#
+# On the VPS, in this folder:
+#   docker compose stop caddy
+#   docker compose -f docker-compose.yml -f docker-compose.cyberpanel.yml up -d
+# Then follow CYBERPANEL.md
+
+services:
+  caddy:
+    profiles:
+      - dedicated-vps
+
+  livekit:
+    ports:
+      - "127.0.0.1:7880:7880"
+      - "7881:7881"
+      - "3478:3478/udp"
+      - "50000-50100:50000-50100/udp"
+
+  minio:
+    ports:
+      - "127.0.0.1:9000:9000"

@@ -1,0 +1,10 @@
+<?php
+declare(strict_types=1);
+require_once __DIR__ . '/../config/bootstrap.php';
+require_once __DIR__ . '/../vendor/autoload.php';
+use Edexcel\Services\AcademicAdvisorService;
+use Edexcel\Services\ExamReadinessService;
+require_student();$studentId=(int)$_SESSION['user_id'];$advisor=new AcademicAdvisorService($pdo);$result=null;$error='';
+if($_SERVER['REQUEST_METHOD']==='POST'){if(!verify_csrf_token($_POST['csrf_token']??''))$error='Session expired.';else try{$result=$advisor->recommend($studentId,['user_id'=>$studentId,'role'=>'student']);}catch(Throwable $e){$error=$e->getMessage();}}
+$readiness=(new ExamReadinessService($pdo))->forStudent($studentId);include __DIR__ . '/../includes/header.php';?>
+<div class="container py-4"><h1 class="h3"><i class="bi bi-lightbulb"></i> Academic advisor</h1><p class="text-muted">Database facts and recommendations are shown separately. Recommendations do not change your records.</p><?php if($error):?><div class="alert alert-danger"><?=e($error)?></div><?php endif;?><?php if($result):?><div class="card border-0 shadow-sm mb-3"><div class="card-body"><h2 class="h5">AI recommendation</h2><div class="mb-3"><?=nl2br(e($result['recommendation']))?></div><details><summary>Database facts used</summary><pre class="small mt-2"><?=e(json_encode($result['facts'],JSON_PRETTY_PRINT|JSON_UNESCAPED_UNICODE))?></pre></details></div></div><?php endif;?><div class="card border-0 shadow-sm mb-3"><div class="card-body"><h2 class="h5">Exam readiness</h2><div class="display-6"><?=e((string)($readiness['readiness_score']??'—'))?>%</div><p class="small text-muted"><?=e((string)($readiness['disclaimer']??'Exam readiness is a learning indicator, not a guaranteed examination result.'))?></p><?php foreach(($readiness['components']??[]) as $key=>$value):?><div class="d-flex justify-content-between border-bottom py-1"><span><?=e(ucwords(str_replace('_',' ',$key)))?></span><span><?= $value===null?'—':e((string)$value).'%'?></span></div><?php endforeach;?></div></div><form method="post"><?=csrf_field()?><button class="btn btn-primary">Generate recommendation</button></form></div><?php include __DIR__ . '/../includes/footer.php';?>

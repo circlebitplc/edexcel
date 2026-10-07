@@ -1424,21 +1424,15 @@
         function () {
 
             /*
-             * Theme.
+             * Theme is owned by assets/js/theme.js (EckTheme).
              */
-            loadTheme();
+            if (!window.EckTheme) {
+                loadTheme();
 
-
-            if (
-                themeToggle
-            ) {
-
-                themeToggle.addEventListener(
-                    'click',
-                    toggleTheme
-                );
-
-                updateThemeButton();
+                if (themeToggle) {
+                    themeToggle.addEventListener('click', toggleTheme);
+                    updateThemeButton();
+                }
             }
 
 

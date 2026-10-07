@@ -1,8 +1,15 @@
 <?php
 require_once __DIR__ . '/../config/database.php';
 require_once __DIR__ . '/../config/auth.php';
+require_once __DIR__ . '/../config/campus.php';
+require_once __DIR__ . '/../config/bunny.php';
+require_once __DIR__ . '/../vendor/autoload.php';
 
 require_admin();
+
+if ($pdo instanceof PDO) {
+    ensure_recordings_schema($pdo);
+}
 
 $id = $_GET['id'] ?? 0;
 
@@ -80,7 +87,10 @@ try {
             username,
             role,
             teacher_id,
-            is_active
+            is_active,
+            google_email,
+            google_id,
+            teacher_oauth_status
         FROM users
         WHERE teacher_id = ?
           AND role = 'teacher'
@@ -114,6 +124,15 @@ try {
 
 $error = '';
 $success = '';
+
+if ($success === '' && !empty($_SESSION['success'])) {
+    $success = (string)$_SESSION['success'];
+    unset($_SESSION['success']);
+}
+if ($error === '' && !empty($_SESSION['error'])) {
+    $error = (string)$_SESSION['error'];
+    unset($_SESSION['error']);
+}
 
 
 /* ============================================================
@@ -159,6 +178,41 @@ if (
             'Invalid security token. Please try again.';
 
     } else {
+
+        $bunnyAction = trim((string)($_POST['bunny_action'] ?? ''));
+        $skipTeacherUpdate = false;
+
+        if ($bunnyAction === 'create_library' || $bunnyAction === 'test_library') {
+            $skipTeacherUpdate = true;
+            try {
+                $bunnyLibraries = new \Edexcel\Services\TeacherBunnyLibraryService($pdo);
+                if ($bunnyAction === 'create_library') {
+                    $created = $bunnyLibraries->createOnBunny((int)$id);
+                    $success = 'Bunny Stream library created. Library ID: ' . (string)($created['library_id'] ?? '');
+                    log_audit($pdo, 'teacher_bunny_library_create', 'teachers', (int)$id, null, [
+                        'bunny_library_id' => (string)($created['library_id'] ?? ''),
+                    ]);
+                } else {
+                    $bunnyClient = \Edexcel\Services\BunnyVideoService::forTeacher($pdo, (int)$id);
+                    $test = $bunnyClient->testConnection();
+                    if ($test['ok']) {
+                        $success = $test['message'];
+                    } else {
+                        $error = $test['message'];
+                    }
+                }
+                $reload = $pdo->prepare('SELECT * FROM teachers WHERE id = ? LIMIT 1');
+                $reload->execute([$id]);
+                $reloaded = $reload->fetch();
+                if ($reloaded) {
+                    $teacher = $reloaded;
+                }
+            } catch (Throwable $e) {
+                $error = $e->getMessage();
+            }
+        }
+
+        if (!$skipTeacherUpdate) {
 
         /* ----------------------------------------------------
            BASIC TEACHER INFORMATION
@@ -208,16 +262,115 @@ if (
 
 
         /* ----------------------------------------------------
+           USERNAME INFORMATION
+           ---------------------------------------------------- */
+
+        $posted_username =
+            trim(
+                (string)($_POST['username'] ?? '')
+            );
+
+        $change_username = false;
+        $new_username = '';
+
+        if (
+            $teacher_user
+        ) {
+
+            $current_username =
+                (string)($teacher_user['username'] ?? '');
+
+            if (
+                $posted_username === ''
+            ) {
+
+                $error =
+                    'Username is required.';
+
+            } elseif (
+                strcasecmp(
+                    $posted_username,
+                    $current_username
+                ) !== 0
+            ) {
+
+                $change_username = true;
+                $new_username =
+                    strtolower(
+                        $posted_username
+                    );
+            }
+        }
+
+
+        /* ----------------------------------------------------
            VALIDATE BASIC INFORMATION
            ---------------------------------------------------- */
 
         if (
-            empty($name) ||
-            empty($email)
+            empty($error) &&
+            (
+                empty($name) ||
+                empty($email)
+            )
         ) {
 
             $error =
                 'Name and email are required.';
+        }
+
+
+        /* ----------------------------------------------------
+           VALIDATE USERNAME
+           ---------------------------------------------------- */
+
+        if (
+            empty($error) &&
+            $change_username
+        ) {
+
+            if (
+                strlen($new_username) < 3 ||
+                strlen($new_username) > 64
+            ) {
+
+                $error =
+                    'Username must be between 3 and 64 characters.';
+
+            } elseif (
+                !preg_match(
+                    '/^[a-z0-9._-]+$/',
+                    $new_username
+                )
+            ) {
+
+                $error =
+                    'Username may only contain lowercase letters, numbers, dots, underscores, and hyphens.';
+
+            } else {
+
+                $username_check =
+                    $pdo->prepare("
+                        SELECT id
+                        FROM users
+                        WHERE username = ?
+                          AND id <> ?
+                        LIMIT 1
+                    ");
+
+                $username_check->execute([
+                    $new_username,
+                    (int)$teacher_user['id']
+                ]);
+
+                if (
+                    $username_check->fetch()
+                ) {
+
+                    $error =
+                        'That username is already in use. Please choose another.';
+                }
+            }
         }
 
 
@@ -351,8 +504,8 @@ if (
                 $file =
                     $_FILES['photo'];
 
-                $max_size =
-                    2 * 1024 * 1024;
+                // Maximum teacher profile image size: 512 KB
+                $max_size = 512 * 1024;
 
                 $allowed_mime = [
                     'image/jpeg',
@@ -372,7 +525,7 @@ if (
                 ) {
 
                     $upload_error =
-                        'Photo file size must be under 2MB.';
+                        'Profile photo must be 512 KB or smaller.';
                 }
 
 
@@ -438,9 +591,7 @@ if (
                                         $file['tmp_name']
                                     );
 
-                                finfo_close(
-                                    $finfo
-                                );
+                                unset($finfo);
                             }
                         }
 
@@ -532,10 +683,29 @@ if (
                                 )
                             ) {
 
-                                $image =
-                                    @imagecreatefromstring(
+                                /*
+                                 * GD/libpng may emit harmless warnings for PNG files
+                                 * containing an incorrect iCCP/sRGB profile.
+                                 * The global error handler converts warnings into
+                                 * exceptions, so isolate this decoding operation.
+                                 */
+                                $previous_error_handler = set_error_handler(
+                                    static function (
+                                        int $errno,
+                                        string $errstr
+                                    ): bool {
+                                        return true;
+                                    },
+                                    E_WARNING
+                                );
+
+                                try {
+                                    $image = imagecreatefromstring(
                                         $image_data
                                     );
+                                } finally {
+                                    restore_error_handler();
+                                }
 
                                 if (
                                     $image === false
@@ -584,16 +754,7 @@ if (
                                     }
 
 
-                                    if (
-                                        function_exists(
-                                            'imagedestroy'
-                                        )
-                                    ) {
 
-                                        imagedestroy(
-                                            $image
-                                        );
-                                    }
                                 }
 
                             } else {
@@ -711,6 +872,26 @@ if (
                     $id
                 ]);
 
+                // Sync teacher's user account google_email if unlinked or blank
+                if ($email !== '') {
+                    $pdo->prepare("
+                        UPDATE users
+                        SET google_email = ?
+                        WHERE teacher_id = ?
+                          AND role = 'teacher'
+                          AND (google_id IS NULL OR google_id = '' OR google_email IS NULL OR google_email = '')
+                    ")->execute([$email, $id]);
+                }
+
+                (new \Edexcel\Services\TeacherBunnyLibraryService($pdo))->saveManual(
+                    (int)$id,
+                    trim((string)($_POST['bunny_library_id'] ?? '')),
+                    trim((string)($_POST['bunny_api_key'] ?? '')),
+                    trim((string)($_POST['bunny_token_key'] ?? '')),
+                    trim((string)($_POST['bunny_webhook_secret'] ?? '')),
+                    trim((string)($_POST['bunny_cdn_hostname'] ?? ''))
+                );
+
 
                 /* ============================================
                    UPDATE SUBJECT ASSIGNMENTS
@@ -756,12 +937,15 @@ if (
 
 
                 /* ============================================
-                   CHANGE TEACHER PASSWORD
+                   CHANGE TEACHER USERNAME / PASSWORD
                    ============================================ */
 
                 $password_changed = false;
+                $username_changed = false;
+                $previous_username = null;
 
                 if (
+                    $change_username ||
                     $change_password
                 ) {
 
@@ -802,58 +986,86 @@ if (
                          * teacher login account.
                          */
                         throw new RuntimeException(
-                            'No teacher login account exists for this teacher. The password could not be changed.'
+                            'No teacher login account exists for this teacher. The login details could not be changed.'
                         );
                     }
 
 
-                    /*
-                     * Hash the password securely.
-                     */
-                    $password_hash =
-                        password_hash(
-                            $new_password,
-                            PASSWORD_DEFAULT
-                        );
-
-
                     if (
-                        $password_hash === false
+                        $change_username
                     ) {
 
-                        throw new RuntimeException(
-                            'Unable to securely process the new password.'
-                        );
+                        $previous_username =
+                            (string)$teacher_user['username'];
+
+                        $update_username =
+                            $pdo->prepare("
+                                UPDATE users
+                                SET
+                                    username = ?
+                                WHERE id = ?
+                                  AND teacher_id = ?
+                                  AND role = 'teacher'
+                                  AND deleted_at IS NULL
+                            ");
+
+                        $update_username->execute([
+                            $new_username,
+                            $teacher_user['id'],
+                            $id
+                        ]);
+
+                        $username_changed = true;
+                        $teacher_user['username'] =
+                            $new_username;
                     }
 
 
-                    /*
-                     * Update ONLY the password hash.
-                     */
-                    $update_password =
-                        $pdo->prepare("
-                            UPDATE users
-                            SET
-                                password_hash = ?
-                            WHERE id = ?
-                              AND teacher_id = ?
-                              AND role = 'teacher'
-                              AND deleted_at IS NULL
-                        ");
-
-                    $update_password->execute([
-                        $password_hash,
-                        $teacher_user['id'],
-                        $id
-                    ]);
-
-
                     if (
-                        $update_password->rowCount() >= 0
+                        $change_password
                     ) {
 
-                        $password_changed =
-                            true;
+                        /*
+                         * Hash the password securely.
+                         */
+                        $password_hash =
+                            password_hash(
+                                $new_password,
+                                PASSWORD_DEFAULT
+                            );
+
+
+                        if (
+                            $password_hash === false
+                        ) {
+
+                            throw new RuntimeException(
+                                'Unable to securely process the new password.'
+                            );
+                        }
+
+
+                        /*
+                         * Update ONLY the password hash.
+                         */
+                        $update_password =
+                            $pdo->prepare("
+                                UPDATE users
+                                SET
+                                    password_hash = ?
+                                WHERE id = ?
+                                  AND teacher_id = ?
+                                  AND role = 'teacher'
+                                  AND deleted_at IS NULL
+                            ");
+
+                        $update_password->execute([
+                            $password_hash,
+                            $teacher_user['id'],
+                            $id
+                        ]);
+
+                        $password_changed = true;
                     }
                 }
 
@@ -883,6 +1095,25 @@ if (
                         $photo_path
                 ];
 
+
+                if (
+                    $username_changed
+                ) {
+
+                    $audit_data[
+                        'username_changed'
+                    ] = true;
+
+                    $audit_data[
+                        'login_username_from'
+                    ] =
+                        $previous_username;
+
+                    $audit_data[
+                        'login_username_to'
+                    ] =
+                        $new_username;
+                }
 
                 if (
                     $password_changed
@@ -925,6 +1156,21 @@ if (
                    ============================================ */
 
                 if (
+                    $username_changed &&
+                    $password_changed
+                ) {
+
+                    $_SESSION['success'] =
+                        'Teacher updated successfully. The teacher portal username and password have also been changed.';
+
+                } elseif (
+                    $username_changed
+                ) {
+
+                    $_SESSION['success'] =
+                        'Teacher updated successfully. The teacher portal username has also been changed.';
+
+                } elseif (
                     $password_changed
                 ) {
 
@@ -976,6 +1222,7 @@ if (
                 $error =
                     'Database error while updating the teacher. Please try again.';
             }
+        }
         }
     }
 }
@@ -1310,7 +1557,7 @@ function teacher_edit_e($value)
 
                 <div class="form-text">
 
-                    Max 2MB.
+                    Max 512 KB.
 
                     JPG, PNG, GIF or WEBP.
 
@@ -1344,8 +1591,8 @@ function teacher_edit_e($value)
 
     <p class="text-muted small mb-3">
 
-        Change the password used by this teacher
-        to access the Teacher Portal.
+        Change the username or password used by
+        this teacher to access the Teacher Portal.
 
         Leave the password fields blank if you
         do not want to change the password.
@@ -1355,6 +1602,16 @@ function teacher_edit_e($value)
 
     <?php if ($teacher_user): ?>
 
+        <?php
+            $username_field_value =
+                (
+                    $_SERVER['REQUEST_METHOD'] === 'POST' &&
+                    array_key_exists('username', $_POST)
+                )
+                    ? trim((string)$_POST['username'])
+                    : (string)$teacher_user['username'];
+        ?>
+
 
         <!-- USERNAME -->
 
@@ -1362,6 +1619,7 @@ function teacher_edit_e($value)
 
             <label
                 class="form-label"
+                for="username"
             >
 
                 Username
@@ -1381,8 +1639,14 @@ function teacher_edit_e($value)
                 <input
                     type="text"
                     class="form-control"
-                    value="<?= teacher_edit_e($teacher_user['username']) ?>"
-                    readonly
+                    id="username"
+                    name="username"
+                    value="<?= teacher_edit_e($username_field_value) ?>"
+                    required
+                    minlength="3"
+                    maxlength="64"
+                    pattern="[A-Za-z0-9._\-]+"
+                    autocomplete="username"
                 >
 
 
@@ -1417,12 +1681,27 @@ function teacher_edit_e($value)
 
 
             <div class="form-text">
-
                 This is the username the teacher
                 uses to sign in to the Teacher Portal.
-
+                Letters, numbers, dots, underscores,
+                and hyphens only.
             </div>
 
+            <div class="mt-2">
+                <?php if (!empty($teacher_user['google_id'])): ?>
+                    <span class="badge bg-success-subtle text-success border border-success-subtle px-2 py-1">
+                        <i class="bi bi-google"></i> Google Login Linked: <?= teacher_edit_e($teacher_user['google_email'] ?: $teacher['email']) ?>
+                    </span>
+                <?php elseif (!empty($teacher['email'])): ?>
+                    <span class="badge bg-info-subtle text-info border border-info-subtle px-2 py-1">
+                        <i class="bi bi-google"></i> Google Login: Authorized for <?= teacher_edit_e($teacher['email']) ?> (connects automatically on first sign-in)
+                    </span>
+                <?php else: ?>
+                    <span class="badge bg-warning-subtle text-warning border border-warning-subtle px-2 py-1">
+                        <i class="bi bi-exclamation-circle"></i> Add an email address above to enable Google Login
+                    </span>
+                <?php endif; ?>
+            </div>
         </div>
 
 
@@ -1552,9 +1831,9 @@ function teacher_edit_e($value)
                 class="bi bi-info-circle-fill me-1"
             ></i>
 
-            Changing the password here will immediately
-            change the password used by this teacher
-            for the Teacher Portal.
+            Changing the username or password here
+            will immediately update this teacher's
+            Teacher Portal login.
 
             The current password cannot be displayed.
 
@@ -1655,6 +1934,124 @@ function teacher_edit_e($value)
 
         <?php endforeach; ?>
 
+    </div>
+
+</div>
+
+
+<!-- ========================================================
+     BUNNY STREAM LIBRARY
+========================================================= -->
+
+<div class="teacher-form-section">
+
+    <h5>
+        <i class="bi bi-play-btn"></i>
+        Bunny Stream library
+    </h5>
+
+    <p class="text-muted small mb-3">
+        Each teacher must have a different Bunny.net library ID.
+        Lesson recordings for this teacher’s timetable are stored in this library.
+        Click Create library (account API key required in Settings) or paste credentials from an existing Stream library.
+    </p>
+
+    <?php
+        $teacherBunnyId = trim((string)($teacher['bunny_library_id'] ?? ''));
+        $teacherBunnyReady = $teacherBunnyId !== '' && trim((string)($teacher['bunny_api_key'] ?? '')) !== '';
+    ?>
+
+    <?php if ($teacherBunnyReady): ?>
+        <div class="alert alert-success py-2">
+            Library ID <code><?= teacher_edit_e($teacherBunnyId) ?></code> is assigned to this teacher only.
+            <?php if (!empty($teacher['bunny_library_name'])): ?>
+                <span class="text-muted"><?= teacher_edit_e($teacher['bunny_library_name']) ?></span>
+            <?php endif; ?>
+        </div>
+    <?php else: ?>
+        <div class="alert alert-warning py-2">
+            No unique Bunny library yet. This teacher cannot upload class recordings until one is assigned.
+        </div>
+    <?php endif; ?>
+
+    <div class="mb-3">
+        <label class="form-label">Library ID</label>
+        <input
+            class="form-control"
+            name="bunny_library_id"
+            value="<?= teacher_edit_e($teacherBunnyId) ?>"
+            autocomplete="off"
+            placeholder="Numeric Stream library ID"
+        >
+        <div class="form-text">Leave blank and click Update Teacher to unlink this teacher from Bunny.</div>
+    </div>
+
+    <div class="mb-3">
+        <label class="form-label">Library AccessKey</label>
+        <input
+            type="password"
+            class="form-control"
+            name="bunny_api_key"
+            value=""
+            placeholder="<?= trim((string)($teacher['bunny_api_key'] ?? '')) !== '' ? 'Saved — leave blank to keep' : 'Stream library AccessKey' ?>"
+            autocomplete="new-password"
+        >
+    </div>
+
+    <div class="mb-3">
+        <label class="form-label">CDN hostname (optional)</label>
+        <input
+            class="form-control"
+            name="bunny_cdn_hostname"
+            value="<?= teacher_edit_e($teacher['bunny_cdn_hostname'] ?? '') ?>"
+            placeholder="vz-xxxx.b-cdn.net"
+            autocomplete="off"
+        >
+    </div>
+
+    <div class="mb-3">
+        <label class="form-label">Token authentication key (optional)</label>
+        <input
+            type="password"
+            class="form-control"
+            name="bunny_token_key"
+            value=""
+            placeholder="<?= trim((string)($teacher['bunny_token_key'] ?? '')) !== '' ? 'Saved — leave blank to keep' : 'Usually the library token security key' ?>"
+            autocomplete="new-password"
+        >
+    </div>
+
+    <div class="mb-3">
+        <label class="form-label">Webhook signing secret (optional)</label>
+        <input
+            type="password"
+            class="form-control"
+            name="bunny_webhook_secret"
+            value=""
+            placeholder="<?= trim((string)($teacher['bunny_webhook_secret'] ?? '')) !== '' ? 'Saved — leave blank to keep' : 'Library Read-Only API key' ?>"
+            autocomplete="new-password"
+        >
+    </div>
+
+    <div class="d-flex flex-wrap gap-2">
+        <button
+            type="submit"
+            class="btn btn-outline-primary"
+            name="bunny_action"
+            value="create_library"
+        >
+            <i class="bi bi-plus-circle"></i>
+            Create library on Bunny
+        </button>
+        <button
+            type="submit"
+            class="btn btn-outline-secondary"
+            name="bunny_action"
+            value="test_library"
+            <?= $teacherBunnyReady ? '' : 'disabled' ?>
+        >
+            Test library connection
+        </button>
     </div>
 
 </div>

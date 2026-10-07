@@ -1,44 +1,108 @@
-// sw.js – Cache assets for offline support
-
-const CACHE_NAME = 'edexcel-timetable-v1';
-const urlsToCache = [
-    '/',
-    '/student/index.php',
-    '/assets/css/student.css',
-    '/assets/js/student.js',
-    'https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css',
-    'https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css',
-    'https://fonts.googleapis.com/css2?family=Inter:opsz@14..32&display=swap',
-    'https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js'
+// Legacy alias — keep registration targets on /service-worker.js.
+// Mirrors service-worker.js so old clients that still point at /sw.js stay safe.
+const CACHE_NAME = 'edexcel-static-v4';
+const OFFLINE_URL = '/offline.html';
+const STATIC_URLS = [
+    '/assets/css/home.css',
+    '/assets/css/system.css',
+    '/assets/css/a11y-mobile-v2.css',
+    '/manifest.json',
 ];
 
-self.addEventListener('install', event => {
+self.addEventListener('install', (event) => {
     event.waitUntil(
-        caches.open(CACHE_NAME)
-            .then(cache => cache.addAll(urlsToCache))
+        caches.open(CACHE_NAME).then(async (cache) => {
+            await cache.addAll(STATIC_URLS);
+            try {
+                await cache.add(new Request(OFFLINE_URL, { cache: 'reload' }));
+            } catch (e) {
+                // offline.html optional
+            }
+        }).then(() => self.skipWaiting())
     );
 });
 
-self.addEventListener('fetch', event => {
-    event.respondWith(
-        caches.match(event.request)
-            .then(response => {
-                // Return cached version or fetch from network
-                return response || fetch(event.request).catch(() => {
-                    // Offline fallback – you can show a custom page
-                    return new Response('Offline – please connect to the internet.', { status: 503 });
-                });
+self.addEventListener('activate', (event) => {
+    event.waitUntil(
+        caches.keys().then((names) =>
+            Promise.all(names.filter((name) => name !== CACHE_NAME).map((name) => caches.delete(name)))
+        ).then(() => self.clients.claim())
+    );
+});
+
+self.addEventListener('fetch', (event) => {
+    const req = event.request;
+    if (req.method !== 'GET') {
+        return;
+    }
+    const url = new URL(req.url);
+    const isHtml = req.mode === 'navigate' || (req.headers.get('accept') || '').includes('text/html');
+    const isApi = /\/(api|ajax)\//.test(url.pathname);
+    if (isHtml || isApi) {
+        event.respondWith(
+            fetch(req).catch(async () => {
+                const cached = await caches.match(req);
+                if (cached) {
+                    return cached;
+                }
+                if (isHtml) {
+                    const offline = await caches.match(OFFLINE_URL);
+                    if (offline) {
+                        return offline;
+                    }
+                }
+                return new Response('Offline', { status: 503, headers: { 'Content-Type': 'text/plain' } });
             })
+        );
+        return;
+    }
+    event.respondWith(
+        fetch(req).then((res) => {
+            if (res.ok && url.origin === self.location.origin) {
+                const copy = res.clone();
+                caches.open(CACHE_NAME).then((cache) => cache.put(req, copy));
+            }
+            return res;
+        }).catch(() => caches.match(req))
     );
 });
 
-self.addEventListener('activate', event => {
-    // Clean old caches
+self.addEventListener('push', (event) => {
+    let data = { title: 'Edexcel College', body: 'You have a new update.', url: '/' };
+    try {
+        if (event.data) {
+            const parsed = event.data.json();
+            data = Object.assign(data, parsed || {});
+        }
+    } catch (e) {
+        try {
+            data.body = event.data ? event.data.text() : data.body;
+        } catch (e2) {}
+    }
     event.waitUntil(
-        caches.keys().then(keys => {
-            return Promise.all(
-                keys.filter(key => key !== CACHE_NAME).map(key => caches.delete(key))
-            );
+        self.registration.showNotification(data.title || 'Edexcel College', {
+            body: data.body || '',
+            icon: '/assets/icons/icon-192.png',
+            badge: '/assets/icons/icon-192.png',
+            data: { url: data.url || data.link || '/' },
+        })
+    );
+});
+
+self.addEventListener('notificationclick', (event) => {
+    event.notification.close();
+    const target = (event.notification && event.notification.data && event.notification.data.url) || '/';
+    event.waitUntil(
+        clients.matchAll({ type: 'window', includeUncontrolled: true }).then((list) => {
+            for (const client of list) {
+                if ('focus' in client) {
+                    client.navigate(target);
+                    return client.focus();
+                }
+            }
+            if (clients.openWindow) {
+                return clients.openWindow(target);
+            }
         })
     );
 });

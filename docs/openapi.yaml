@@ -1,0 +1,312 @@
+openapi: 3.0.3
+info:
+  title: Edexcel College Kandy API
+  version: "2.0.0"
+  description: >
+    Session-oriented JSON helpers used by the PHP portals.
+    Not a fully public REST API — CSRF + session cookies required for mutating calls.
+servers:
+  - url: https://edexcel.college
+    description: Production
+paths:
+  /api/v1/students:
+    get:
+      summary: List authorized students
+      security: [{cookieAuth: []}]
+      parameters:
+        - {name: page, in: query, schema: {type: integer, minimum: 1}}
+        - {name: per_page, in: query, schema: {type: integer, maximum: 100}}
+        - {name: search, in: query, schema: {type: string}}
+      responses:
+        "200": {description: Authorized student collection}
+        "401": {description: Authentication required}
+        "403": {description: Insufficient access}
+  /api/v1/classes:
+    get:
+      summary: List authorized classes
+      security: [{cookieAuth: []}]
+      responses:
+        "200": {description: Authorized class collection}
+  /api/v1/timetable:
+    get:
+      summary: List authorized timetable lessons
+      security: [{cookieAuth: []}]
+      parameters:
+        - {name: from, in: query, schema: {type: string, format: date}}
+        - {name: to, in: query, schema: {type: string, format: date}}
+      responses:
+        "200": {description: Authorized timetable collection}
+  /api/v1/notifications:
+    get:
+      summary: List notifications for the current user
+      security: [{cookieAuth: []}]
+      responses:
+        "200": {description: Notification collection}
+    post:
+      summary: Mark current-user notifications read
+      security: [{cookieAuth: []}]
+      parameters:
+        - {name: Idempotency-Key, in: header, required: true, schema: {type: string, maxLength: 128}}
+        - {name: X-CSRF-Token, in: header, required: true, schema: {type: string}}
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [csrf_token]
+              properties:
+                csrf_token: {type: string}
+                id: {type: integer}
+                all: {type: boolean}
+      responses:
+        "200": {description: Notifications marked read}
+        "403": {description: CSRF or authorization failure}
+        "422": {description: Missing idempotency key or validation error}
+  /api/v1/teachers:
+    get:
+      summary: List authorized teachers
+      security: [{cookieAuth: []}]
+      responses:
+        "200": {description: Authorized teacher collection}
+  /api/v1/subjects:
+    get:
+      summary: List subjects
+      security: [{cookieAuth: []}]
+      responses:
+        "200": {description: Subject collection}
+  /api/v1/parents:
+    get:
+      summary: List the current parent or administrative parent records
+      security: [{cookieAuth: []}]
+      responses:
+        "200": {description: Authorized parent collection}
+  /api/v1/communications:
+    get:
+      summary: Search college communication messages (staff)
+      security: [{cookieAuth: []}]
+      parameters:
+        - {name: channel, in: query, schema: {type: string}}
+        - {name: status, in: query, schema: {type: string}}
+        - {name: category, in: query, schema: {type: string}}
+        - {name: q, in: query, schema: {type: string}}
+      responses:
+        "200": {description: Communication message collection}
+        "403": {description: Insufficient access}
+  /api/v1/messages:
+    get:
+      summary: Alias of communications resource
+      security: [{cookieAuth: []}]
+      responses:
+        "200": {description: Communication message collection}
+  /api/v1/threads:
+    get:
+      summary: List authorized communication threads for the current user
+      security: [{cookieAuth: []}]
+      parameters:
+        - {name: id, in: query, schema: {type: integer}}
+      responses:
+        "200": {description: Thread inbox or thread detail with messages}
+        "403": {description: Thread access denied}
+  /api/v1/announcements:
+    get:
+      summary: List announcements visible to the current role
+      security: [{cookieAuth: []}]
+      responses:
+        "200": {description: Announcement collection}
+  /api/v1/message-templates:
+    get:
+      summary: List active message templates
+      security: [{cookieAuth: []}]
+      responses:
+        "200": {description: Template collection}
+        "403": {description: Insufficient access}
+  /api/v1/notification-preferences:
+    get:
+      summary: Read notification channel preferences for the current user
+      security: [{cookieAuth: []}]
+      responses:
+        "200": {description: Preference rows and mandatory categories}
+  /api/v1/assessments:
+    get:
+      summary: List authorized assessments or recover an in-progress attempt
+      security: [{cookieAuth: []}]
+      parameters:
+        - {name: id, in: query, schema: {type: integer}}
+        - {name: status, in: query, schema: {type: string}}
+        - {name: type, in: query, schema: {type: string}}
+      responses:
+        "200": {description: Authorized assessment collection or recovered attempt}
+        "401": {description: Authentication required}
+        "403": {description: Insufficient access}
+    post:
+      summary: Start, autosave, submit, or record a technical exam event
+      security: [{cookieAuth: []}]
+      parameters:
+        - {name: Idempotency-Key, in: header, required: true, schema: {type: string, maxLength: 128}}
+        - {name: X-CSRF-Token, in: header, required: true, schema: {type: string}}
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [csrf_token, action]
+              properties:
+                csrf_token: {type: string}
+                action: {type: string, enum: [start, save, submit, event]}
+                assessment_id: {type: integer}
+                attempt_id: {type: integer}
+                answers: {type: object}
+                event_type: {type: string}
+                idempotency_key: {type: string}
+      responses:
+        "200": {description: Assessment mutation result}
+        "403": {description: CSRF or authorization failure}
+        "422": {description: Missing idempotency key or validation error}
+  /api/v1/public.php:
+    get:
+      summary: Public programme and class catalogue (no student data)
+      parameters:
+        - {name: resource, in: query, schema: {type: string, enum: [catalogue, subjects, programmes, teachers, classes, class-availability]}}
+      responses:
+        "200": {description: Public catalogue with seat availability only}
+        "429": {description: Rate limited}
+  /api/v1/leads:
+    get:
+      summary: List admissions leads
+      security: [{cookieAuth: []}]
+      responses:
+        "200": {description: Lead pipeline}
+        "403": {description: admissions.view required}
+    post:
+      summary: Create a lead
+      security: [{cookieAuth: []}]
+      parameters:
+        - {name: Idempotency-Key, in: header, required: true, schema: {type: string}}
+      responses:
+        "200": {description: Lead created}
+        "403": {description: admissions.create required}
+  /api/v1/applications:
+    get:
+      summary: List or fetch admission applications
+      security: [{cookieAuth: []}]
+      parameters:
+        - {name: id, in: query, schema: {type: integer}}
+        - {name: status, in: query, schema: {type: string}}
+      responses:
+        "200": {description: Application records for authorized staff}
+        "403": {description: admissions.view required}
+  /api/v1/admissions:
+    get:
+      summary: Admissions dashboard rows
+      security: [{cookieAuth: []}]
+      responses:
+        "200": {description: Application dashboard}
+        "403": {description: admissions.view required}
+  /api/v1/enrollments:
+    get:
+      summary: Enrollment rows for the caller
+      security: [{cookieAuth: []}]
+      responses:
+        "200": {description: Student sees own enrollments; staff with admissions.view see recent enrollments}
+        "403": {description: Restricted}
+  /api/v1/programmes:
+    get:
+      summary: Staff catalogue of programmes and classes
+      security: [{cookieAuth: []}]
+      responses:
+        "200": {description: Catalogue. Public websites should use /api/v1/public.php}
+  /api/v1/analytics:
+    get:
+      summary: Read administrator aggregate counts
+      security: [{cookieAuth: []}]
+      responses:
+        "200": {description: Aggregate analytics}
+        "403": {description: Administrator access required}
+  /ajax/notifications_center.php:
+    post:
+      summary: Mark notification center items read
+      security:
+        - cookieAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [csrf_token]
+              properties:
+                csrf_token:
+                  type: string
+                id:
+                  type: integer
+                  description: Notification id (omit when all=true)
+                all:
+                  type: boolean
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok: { type: boolean }
+                  marked: { type: integer }
+                  unread: { type: integer }
+        "403":
+          description: Not authenticated
+  /ajax/student_notifications.php:
+    post:
+      summary: Mark legacy student_notifications read
+      security:
+        - cookieAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [csrf_token]
+              properties:
+                csrf_token: { type: string }
+                id: { type: integer }
+                all: { type: boolean }
+      responses:
+        "200":
+          description: OK
+  /ajax/student_session_ping.php:
+    get:
+      summary: Student session keepalive
+      security:
+        - cookieAuth: []
+      responses:
+        "200":
+          description: Session status JSON
+components:
+  securitySchemes:
+    cookieAuth:
+      type: apiKey
+      in: cookie
+      name: PHPSESSID
+  schemas:
+    ApiSuccess:
+      type: object
+      required: [success, data, meta]
+      properties:
+        success: {type: boolean, example: true}
+        data: {type: object}
+        meta: {type: object}
+    ApiError:
+      type: object
+      required: [success, error]
+      properties:
+        success: {type: boolean, example: false}
+        error:
+          type: object
+          required: [code, message, details]
+          properties:
+            code: {type: string}
+            message: {type: string}
+            details: {type: object}

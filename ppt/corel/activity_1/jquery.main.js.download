@@ -1,0 +1,159 @@
+// Trial downlaod
+$(document).ready(function() {
+	var link = "DefaultFile";
+	function WhileDownloadRedirect() {
+		window.location.href = link;
+	}
+    $('.cdgs-trial-en').click(function() {
+        link = "/en/product/graphic-design-software/trial-thank-you.html?ver=20.0";
+        setTimeout(WhileDownloadRedirect, 3000);
+    });
+	$('.cdgs-trial-us').click(function() {
+		link = "/us/product/graphic-design-software/trial-thank-you.html?ver=20.0";
+		setTimeout(WhileDownloadRedirect, 3000);
+	});
+	$('.cdgs-trial-au').click(function() {
+		link = "/au/product/graphic-design-software/trial-thank-you.html?ver=20.0";
+		setTimeout(WhileDownloadRedirect, 3000);
+	});
+	$('.cdgs-trial-ca').click(function() {
+		link = "/ca/product/graphic-design-software/trial-thank-you.html?ver=20.0";
+		setTimeout(WhileDownloadRedirect, 3000);
+	});
+	$('.cdgs-trial-gb').click(function() {
+		link = "/gb/product/graphic-design-software/trial-thank-you.html?ver=20.0";
+		setTimeout(WhileDownloadRedirect, 3000);
+	});
+	$('.cdgs-trial-rw').click(function() {
+		link = "/rw/product/graphic-design-software/trial-thank-you.html?ver=20.0";
+		setTimeout(WhileDownloadRedirect, 3000);
+	});
+	$('.cdgs-trial-in').click(function() {
+		link = "/in/product/graphic-design-software/trial-thank-you.html?ver=20.0";
+		setTimeout(WhileDownloadRedirect, 3000);
+	});
+	$('.cdgs-trial-de').click(function() {
+		link = "/de/product/grafikprogramm/trial-thank-you.html?ver=20.0";
+		setTimeout(WhileDownloadRedirect, 3000);
+	});
+	$('.cdgs-trial-fr').click(function() {
+		link = "/fr/product/logiciel-de-dessin/trial-thank-you.html?ver=20.0";
+		setTimeout(WhileDownloadRedirect, 3000);
+	});
+	$('.cdgs-trial-it').click(function() {
+		link = "/it/product/software-di-progettazione-grafica/trial-thank-you.html?ver=20.0";
+		setTimeout(WhileDownloadRedirect, 3000);
+	});
+	$('.cdgs-trial-nl').click(function() {
+		link = "/nl/product/grafisch-ontwerpsoftware/trial-thank-you.html?ver=20.0";
+		setTimeout(WhileDownloadRedirect, 3000);
+	});
+	$('.cdgs-trial-pl').click(function() {
+		link = "/pl/product/graphic-design-software/trial-thank-you.html?ver=20.0";
+		setTimeout(WhileDownloadRedirect, 3000);
+	});
+	$('.cdgs-trial-ru').click(function() {
+		link = "/ru/product/graphic-design-software/trial-thank-you.html?ver=20.0";
+		setTimeout(WhileDownloadRedirect, 3000);
+	});
+	$('.cdgs-trial-br').click(function() {
+		link = "/br/product/software-de-design-grafico/trial-thank-you.html?ver=20.0";
+		setTimeout(WhileDownloadRedirect, 3000);
+	});
+	$('.cdgs-trial-la').click(function() {
+		link = "/la/product/diseno-grafico-creativo/trial-thank-you.html?ver=20.0";
+		setTimeout(WhileDownloadRedirect, 3000);
+	});
+	$('.cdgs-trial-cz').click(function() {
+		link = "/cz/product/graphic-design-software/trial-thank-you.html?ver=20.0";
+		setTimeout(WhileDownloadRedirect, 3000);
+	});
+	$('.cdgs-trial-cn').click(function() {
+		link = "/cn/product/graphic-design-software/trial-thank-you.html?ver=20.0";
+		setTimeout(WhileDownloadRedirect, 3000);
+	});
+	$('.cdgs-trial-jp').click(function() {
+		link = "/jp/product/graphic-design-software/trial-thank-you.html?ver=20.0";
+		setTimeout(WhileDownloadRedirect, 3000);
+	});
+	$('.cdgs-trial-tw').click(function() {
+		link = "/tw/product/graphic-design-software/trial-thank-you.html?ver=20.0";
+		setTimeout(WhileDownloadRedirect, 3000);
+	});
+	$('.cdts-trial-en').click(function() {
+        link = "/en/product/technical-suite/trial-thank-you.html?ver=18.0";
+        setTimeout(WhileDownloadRedirect, 3000);
+    });
+	$('.cdts-trial-us').click(function() {
+		link = "/us/product/technical-suite/trial-thank-you.html?ver=18.0";
+		setTimeout(WhileDownloadRedirect, 3000);
+	});
+	$('.cdts-trial-au').click(function() {
+		link = "/au/product/technical-suite/trial-thank-you.html?ver=18.0";
+		setTimeout(WhileDownloadRedirect, 3000);
+	});
+	$('.cdts-trial-ca').click(function() {
+		link = "/ca/product/technical-suite/trial-thank-you.html?ver=18.0";
+		setTimeout(WhileDownloadRedirect, 3000);
+	});
+	$('.cdts-trial-gb').click(function() {
+		link = "/gb/product/technical-suite/trial-thank-you.html?ver=18.0";
+		setTimeout(WhileDownloadRedirect, 3000);
+	});
+	$('.cdts-trial-rw').click(function() {
+		link = "/rw/product/technical-suite/trial-thank-you.html?ver=18.0";
+		setTimeout(WhileDownloadRedirect, 3000);
+	});
+	$('.cdts-trial-in').click(function() {
+		link = "/in/product/technical-suite/trial-thank-you.html?ver=18.0";
+		setTimeout(WhileDownloadRedirect, 3000);
+	});
+	$('.cdts-trial-de').click(function() {
+		link = "/de/product/technical-suite/trial-thank-you.html?ver=18.0";
+		setTimeout(WhileDownloadRedirect, 3000);
+	});
+	$('.cdts-trial-fr').click(function() {
+		link = "/fr/product/technical-suite/trial-thank-you.html?ver=18.0";
+		setTimeout(WhileDownloadRedirect, 3000);
+	});
+	$('.cdts-trial-it').click(function() {
+		link = "/it/product/technical-suite/trial-thank-you.html?ver=18.0";
+		setTimeout(WhileDownloadRedirect, 3000);
+	});
+	$('.cdts-trial-nl').click(function() {
+		link = "/nl/product/technical-suite/trial-thank-you.html?ver=18.0";
+		setTimeout(WhileDownloadRedirect, 3000);
+	});
+	$('.cdts-trial-pl').click(function() {
+		link = "/pl/product/technical-suite/trial-thank-you.html?ver=18.0";
+		setTimeout(WhileDownloadRedirect, 3000);
+	});
+	$('.cdts-trial-ru').click(function() {
+		link = "/ru/product/technical-suite/trial-thank-you.html?ver=18.0";
+		setTimeout(WhileDownloadRedirect, 3000);
+	});
+	$('.cdts-trial-br').click(function() {
+		link = "/br/product/technical-suite/trial-thank-you.html?ver=18.0";
+		setTimeout(WhileDownloadRedirect, 3000);
+	});
+	$('.cdts-trial-la').click(function() {
+		link = "/la/product/technical-suite/trial-thank-you.html?ver=18.0";
+		setTimeout(WhileDownloadRedirect, 3000);
+	});
+	$('.cdts-trial-cz').click(function() {
+		link = "/cz/product/technical-suite/trial-thank-you.html?ver=18.0";
+		setTimeout(WhileDownloadRedirect, 3000);
+	});
+	$('.cdts-trial-cn').click(function() {
+		link = "/cn/product/technical-suite/trial-thank-you.html?ver=18.0";
+		setTimeout(WhileDownloadRedirect, 3000);
+	});
+	$('.cdts-trial-jp').click(function() {
+		link = "/jp/product/technical-suite/trial-thank-you.html?ver=18.0";
+		setTimeout(WhileDownloadRedirect, 3000);
+	});
+	$('.cdts-trial-tw').click(function() {
+		link = "/tw/product/technical-suite/trial-thank-you.html?ver=18.0";
+		setTimeout(WhileDownloadRedirect, 3000);
+	});
+});

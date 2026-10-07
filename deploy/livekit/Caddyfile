@@ -1,0 +1,14 @@
+{$LIVEKIT_HOST} {
+    encode gzip
+    reverse_proxy livekit:7880
+}
+
+{$S3_HOST} {
+    reverse_proxy minio:9000 {
+        header_up Host {host}
+        transport http {
+            read_timeout 1h
+            write_timeout 1h
+        }
+    }
+}

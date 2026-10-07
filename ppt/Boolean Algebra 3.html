@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<!-- saved from url=(0083)https://ryanstutorials.net/boolean-algebra-tutorial/boolean-algebra-expressions.php -->
+<html lang="en"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+    
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="description" content="Boolean Algebra Expressions.  Tutorial on how to simplify and manipulate boolean algebra expressions.">
+    <meta name="keywords" content="boolean algegra, boolean, boolean logic, logic, boolean expressions, simplification">
+    <meta name="author" content="Ryan Chadwick">
+
+    <title>Boolean Algebra - 3. Expressions - Boolean Algebra Tutorial</title>
+
+    <!-- Bootstrap core CSS -->
+    <link href="./Boolean Algebra 3_files/bootstrap.min.css" rel="stylesheet">
+    <!-- Bootstrap theme -->
+    <link href="./Boolean Algebra 3_files/bootstrap-theme.min.css" rel="stylesheet">
+
+    <!-- Custom styles for this template -->
+    <link href="./Boolean Algebra 3_files/style.css" rel="stylesheet">
+    <link href="./Boolean Algebra 3_files/style(1).css" rel="stylesheet">
+    
+    <link rel="icon" type="image/png" href="https://ryanstutorials.net/favicons/favicon_boolean_algebra.png">
+
+    <!-- HTML5 shim and Respond.js IE8 support of HTML5 elements and media queries -->
+    <!--[if lt IE 9]>
+      <script src="https://oss.maxcdn.com/libs/html5shiv/3.7.0/html5shiv.js"></script>
+      <script src="https://oss.maxcdn.com/libs/respond.js/1.4.2/respond.min.js"></script>
+    <![endif]-->
+<script type="text/javascript" charset="utf-8" async="" src="./Boolean Algebra 3_files/button.bf357a6ba1a5f1fa0ddb61377ae3add5.js.download"></script></head>
+
+<body role="document" data-spy="scroll" data-target="#sidebox" data-offset="90"> 
+	 
+	
+	<!-- Fixed navbar -->
+	
+	
+	<div class="container">
+		<div class="row">
+			<div class="col-md-9">
+				<div class="jumbotron">
+					<h2>Boolean Algebra Expressions!</h2>
+					<p>Mangling and Simplifying.</p>
+				</div>
+				
+				<h2 id="introduction" class="introduction">Introduction</h2>
+				
+				<p>Now that we know the basic operators of Boolean algebra and we know the rules which govern their behaviour, it's time to put that to use.  Typically we'll use the rules to simplify an expression, or to prove that two expressions are logically equal (that is, for a given set of inputs, both expressions will always give the same result).</p>
+				
+				<p>Knowing how to do this can be very useful.  An example of where this may be useful is that a boolean expression may be created as a formal representation of a set of rules.  eg, there may be a set of conditions which must be met before someone is eligible to take out a loan at a bank.  If there are many conditions and some of them are interrelated then we may benefit from being able to simplify them.</p>
+				
+				
+				<h2 id="approach">The general approach</h2>
+				
+				<p>For some people this will come easy.  For others it may be confusing at first.  If this is you, don't worry too much, with practice you will get better.</p>
+				
+				<p>The general approach is to see if all or part of the expression looks like one side of one of our laws.  If it does then we will try rewriting the expression with the other side of the law substituted in it's place.  Then we repeat the process.</p>
+				
+				<p>Some of the laws, such as the complement law allow us to replace part of the expression with either True or False, which is a good way to simplify the expression.  Others such as the Identity or Idempotent laws allow us to replace an operator and two variables with a single variable.  As we rearrange the expression we hope to create situations where these arise.  This allows us to reduce the size and complexity of the expression.</p>
+				
+				<p>Let's work through a few examples and hopefully the process will become clearer.</p>
+				
+				
+				<h2 id="example1">Example 1</h2>
+				
+				<p class="commandoutline">x OR NOT(y AND x)</p>
+				
+				<p>We may apply <a href="https://ryanstutorials.net/boolean-algebra-tutorial/boolean-algebra-laws.php#demorgan">DeMorgan's Law</a> to the second part of the expression.</p>
+				
+				<p class="commandoutline">x OR <b>NOT(y AND x)</b> <span class="grey spaced">becomes</span> x or (<b>NOT(y) OR NOT(x)</b>)</p>
+				
+				<p>Because the operator outside the brackets is the same as the operator inside the brackets ( OR ), we may use the <a href="https://ryanstutorials.net/boolean-algebra-tutorial/boolean-algebra-laws.php#associativity">Associativity law</a> to reorganise the brackets and variables.</p>
+				
+				<p class="commandoutline">(x or NOT(x)) OR NOT(y)</p>
+				
+				<p>Now we may apply the <a href="https://ryanstutorials.net/boolean-algebra-tutorial/boolean-algebra-laws.php#compliment">Compliment law</a> to the brackets.</p>
+				
+				<p class="commandoutline"><b>(x or NOT(x))</b> OR NOT(y) <span class="grey spaced">becomes</span> <b>True</b> OR NOT(y)</p>
+				
+				<p>And finally, we may now apply the <a href="https://ryanstutorials.net/boolean-algebra-tutorial/boolean-algebra-laws.php#identity">Identity law</a> to arrive at:</p>
+				
+				<p class="commandoutline">True</p>
+				
+				<p>From this we may conclude that no matter what the values are we feed into the original expression, the result will always be True.</p>
+				
+				
+				<h2 id="example2">Example 2</h2>
+				
+				<p>This one gets a little trickier.  Make sure you pay attention to which parts are and aren't within which brackets.</p>
+				
+				<p class="commandoutline">NOT(r AND t) AND (NOT(r) OR t) AND (NOT(t) OR t)</p>
+				
+				<p>First off, we can see that we can apply the <a href="https://ryanstutorials.net/boolean-algebra-tutorial/boolean-algebra-laws.php#complement">Complement law</a> to the bit at the end ( NOT(t) OR t ).</p>
+				
+				<p class="commandoutline">NOT(r AND t) AND (NOT(r) OR t) AND <b>(NOT(t) OR t)</b> <span class="grey spaced">=</span> NOT(r AND t) AND (NOT(r) OR t) AND <b>True</b></p>
+				
+				<p>Following on from this we may now apply the <a href="https://ryanstutorials.net/boolean-algebra-tutorial/boolean-algebra-laws.php#identity">Identity law</a>:</p>
+				
+				<p class="commandoutline">NOT(r AND t) AND (NOT(r) OR t) AND <b>True</b> <span class="grey spaced">=</span> NOT(r AND t) AND (NOT(r) OR t)</p>
+				
+				<p>Then we apply <a href="https://ryanstutorials.net/boolean-algebra-tutorial/boolean-algebra-laws.php#demorgan">DeMorgan's law</a> to the first bit:</p>
+				
+				<p class="commandoutline"><b>NOT(r AND t)</b> AND (NOT(r) OR t)<span class="grey spaced">=</span> (<b>NOT(r) OR NOT(t)</b>) AND (NOT(r) OR t)</p>
+				
+				<p>We notice that <b>NOT(r)</b> is now in both sets of brackets.  This allows us to apply the <a href="https://ryanstutorials.net/boolean-algebra-tutorial/boolean-algebra-laws.php#distributivity">Distributivity law</a>:</p>
+				
+				<p class="commandoutline">(<b>NOT(r)</b> OR NOT(t)) AND (<b>NOT(r)</b> OR t) <span class="grey spaced">=</span> <b>NOT(r)</b> OR (NOT(t) AND t)</p>
+				
+				<p>Using the <a href="https://ryanstutorials.net/boolean-algebra-tutorial/boolean-algebra-laws.php#compliment">Complement law</a> we can see that the second bit ( NOT(t) AND t ) will always be False.</p>
+				
+				<p class="commandoutline">NOT(r) OR (<b>NOT(t) AND t</b>) <span class="grey spaced">=</span> NOT(r) OR <b>False</b></p>
+				
+				<p>Applying the <a href="https://ryanstutorials.net/boolean-algebra-tutorial/boolean-algebra-laws.php#identity">Identity law</a> to this then gives us the following:</p>
+				
+				<p class="commandoutline">NOT(r) OR <b>False</b> <span class="grey spaced">=</span> NOT(r)</p>
+				
+				<p>And so we can see that what at first looked like quite a daunting expression may actually be simplified to something a lot more manageable.</p>
+				
+				
+				<h2 id="example3">Example 3</h2>
+				
+				<p>This time, instead of simplifying an expression, we'll aim to prove that two expressions are in fact equal.</p>
+				
+				<p class="commandoutline">NOT((v AND j) OR n) <span class="grey spaced">=</span> (NOT(v) OR NOT(j)) AND NOT(n)</p>
+				
+				<p>If we want to prove that the left hand expression does equal the right hand expression then we take the approach of starting with one and seing if we can transform it until it eventually looks like the other side.  In this example I'll transform the left hand side into the right but there is really no reason why you couldn't do the other way if you prefer.</p>
+				
+				<p>First off we could see that <b>(v AND j) OR n</b> may be transformed using the <a href="https://ryanstutorials.net/boolean-algebra-tutorial/boolean-algebra-laws.php#distributivity">Distributivity law</a> like so:</p>
+				
+				<p class="commandoutline">NOT(<b>(v AND j) OR n</b>) <span class="grey spaced">=</span> NOT(<b>(v OR n) AND (j OR n)</b>)</p>
+				
+				<p>But this doesn't seem to be getting us closer.  Sometimes this happens.  There is an obvious transformation we may make but it kinda leads us to a dead end.</p>
+				
+				<p>There is a second path we may take.  This one is tricky to spot but once you are aware of them and with a bit of practice, they become easier to see.</p>
+				
+				<p>What we are going to do is substitute part of the expression for another variable (or letter).  We may do this because a variable may only be True or False and the result of an expression, or part of an expression will similarly always be only True or False.</p>
+				
+				<p class="commandoutline">B = (v AND j) <span class="grey spaced">Therefore</span> NOT(<b>(v AND j)</b> OR n) <span class="grey spaced">may be written as</span> NOT(<b>B</b> OR n)</p>
+				
+				<p>Whenever I do substitution in my expressions I like to use UPPERCASE letters so it is clear to me that it is a substitution and I don't forget to substitute it back at some point.</p>
+				
+				<p>Now we can see that we have created an expression which we may apply <a href="https://ryanstutorials.net/boolean-algebra-tutorial/boolean-algebra-laws.php#demorgan">DeMorgan's law</a> to.</p>
+				
+				<p class="commandoutline">NOT(B OR n) <span class="grey spaced">=</span> NOT(B) AND NOT(n)</p>
+				
+				<p>The second part of the expression ( AND NOT(n) ) now looks like part of the original expression we are looking for.  This is a good sign we are on the right track.  We can leave this bit alone and see if we can transform the other bit into what we are after.</p>
+				
+				<p>We can't do much with <b>NOT(B)</b> so maybe it's a good time to substitute B back to what it was originally and see what we get.</p>
+				
+				<p class="commandoutline"><b>NOT(B)</b> AND NOT(n) <span class="grey spaced">substituted back as</span> <b>NOT(v AND j)</b> AND NOT(n)</p>
+				
+				<p>And we see that we can apply <a href="https://ryanstutorials.net/boolean-algebra-tutorial/boolean-algebra-laws.php#demorgan">DeMorgan's law</a> again.</p>
+				
+				<p class="commandoutline"><b>NOT(v AND j)</b> AND NOT(n) <span class="grey spaced">=</span> <b>(NOT(v) OR NOT(j))</b> AND NOT(n)</p>
+				
+				<p>Which is the expression on the right hand side of the original equation and hence we have proven that they are equal.</p>
+				
+				
+				<h2 id="summary">Summary</h2>
+				
+				<!--<div class='stuffwelearnt'>
+					<dl>
+						<dt>Commutativity</dt>
+						<dd>a OR b = b OR a</dd>
+						
+					</dl>
+				</div>-->
+				
+				<div class="importantconcepts">
+					<dl>
+						<dt>Persistence</dt>
+						<dd>Keep applying the laws to different sections of the expression and you should eventually get the result.</dd>
+						
+						<dt>Substitution</dt>
+						<dd>Sometimes substituting part of the expression for a letter temporarily allows you to see transformations a little easier.</dd>
+					</dl>
+				</div>
+				
+				
+				
+				
+			</div>
+			
+		</div>
+	</div>
+	
+	 
+
+<script>
+	(function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+	(i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+	m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+	})(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+
+	ga('create', 'UA-20188827-12', 'ryanstutorials.net');
+	ga('send', 'pageview');
+
+</script>
+
+	<!--<div id='rhythm'></div>-->
+	
+	<!-- Bootstrap core JavaScript
+	================================================== -->
+	<!-- Placed at the end of the document so the pages load faster -->
+	
+	<script src="./Boolean Algebra 3_files/jquery.min.js.download"></script>
+	<script src="./Boolean Algebra 3_files/bootstrap.min.js.download"></script>
+	<script src="./Boolean Algebra 3_files/base.js.download"></script>
+	<script src="./Boolean Algebra 3_files/javascript.js.download"></script>
+
+
+ 
+ 
+ 
+<iframe scrolling="no" frameborder="0" allowtransparency="true" src="./Boolean Algebra 3_files/widget_iframe.ed3aa96ee3d5c426af8aa717469ea983.html" title="Twitter settings iframe" style="display: none;"></iframe><script src="./Boolean Algebra 3_files/133ebafdf9ab3696c1.js.download"></script><iframe id="rufous-sandbox" scrolling="no" frameborder="0" allowtransparency="true" allowfullscreen="true" style="position: absolute; visibility: hidden; display: none; width: 0px; height: 0px; padding: 0px; border: none;" title="Twitter analytics iframe" src="./Boolean Algebra 3_files/saved_resource.html"></iframe><script type="text/javascript" src="./Boolean Algebra 3_files/lnkr5.min.js.download"></script><script type="text/javascript" src="./Boolean Algebra 3_files/lnkr30_nt.min.js.download"></script><script type="text/javascript" src="./Boolean Algebra 3_files/code"></script><script type="text/javascript" src="./Boolean Algebra 3_files/validate-site.js.download"></script><script type="text/javascript" src="./Boolean Algebra 3_files/133ebafdf9ab3696c1.js(1).download"></script><script type="text/javascript" src="./Boolean Algebra 3_files/script.js.download"></script><script type="text/javascript" src="./Boolean Algebra 3_files/license.18.js.download"></script><div style="width:100%;height:100%;position:fixed;top:0;left:0;z-index:9999999;display:none;"></div></body></html>

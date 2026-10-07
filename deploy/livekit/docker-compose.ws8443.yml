@@ -1,0 +1,24 @@
+# WebSocket on 8443, bypassing OpenLiteSpeed on 443.
+# Use with docker-compose.yml + docker-compose.cyberpanel.yml:
+#   docker compose -f docker-compose.yml -f docker-compose.cyberpanel.yml -f docker-compose.ws8443.yml up -d
+# Then Admin LiveKit URL: wss://live.kandy.edexcel.college:8443
+
+services:
+  caddy8443:
+    image: caddy:2-alpine
+    restart: unless-stopped
+    depends_on:
+      - livekit
+    ports:
+      - "8443:8443"
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    volumes:
+      - ./Caddyfile.8443:/etc/caddy/Caddyfile:ro
+      - ./certs:/certs:ro
+      - caddy8443-data:/data
+      - caddy8443-config:/config
+
+volumes:
+  caddy8443-data:
+  caddy8443-config:

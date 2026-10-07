@@ -4,8 +4,7 @@ declare(strict_types=1);
 ob_start();
 
 require_once __DIR__ . '/../config/bootstrap.php';
-require_once __DIR__ . '/../config/notifications.php';
-require_login();
+require_staff();
 
 header('Content-Type: application/json; charset=utf-8');
 header('Cache-Control: no-store, no-cache, must-revalidate, max-age=0');
@@ -46,17 +45,6 @@ try {
         }
     );
 
-    $notificationsSent=0;
-    if($action==='mark_paid') {
-        foreach($result['notifications']??[] as $n) {
-            try {
-                if(notify_payment($pdo,(int)$n['teacher_id'],(float)$n['amount'])) $notificationsSent++;
-            } catch(Throwable $e) {
-                error_log('Bulk payment notification failed: '.$e->getMessage());
-            }
-        }
-    }
-
     $changed=(int)($result['changed']??0);
     $message=$changed.' '.($changed===1?'entry':'entries').' '.
         match($action){
@@ -66,11 +54,32 @@ try {
             'unlock'=>'unlocked.'
         };
 
+    $smsSent=0;
+    $smsFailed=0;
+    if($action==='mark_paid') {
+        foreach($result['sms']??[] as $sms) {
+            $status=(string)($sms['status']??'');
+            if($status==='sent' || $status==='resent' || $status==='already_sent') {
+                $smsSent++;
+            } else {
+                $smsFailed++;
+            }
+        }
+        if($changed>0) {
+            $message.=' SMS sent: '.$smsSent.'.';
+            if($smsFailed>0) {
+                $message.=' SMS not sent: '.$smsFailed.'. The payments stay paid.';
+            }
+        }
+    }
+
     bulk_json(true,$message,[
         'action'=>$action,
         'requested'=>count($ids),
         'changed'=>$changed,
-        'notifications_sent'=>$notificationsSent
+        'notifications_sent'=>$smsSent,
+        'sms_sent'=>$smsSent,
+        'sms_failed'=>$smsFailed
     ]);
 } catch(Throwable $e) {
     error_log('Bulk timetable AJAX error: '.$e->getMessage());

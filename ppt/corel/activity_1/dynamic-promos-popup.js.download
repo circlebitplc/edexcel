@@ -1,0 +1,17 @@
+registerPopup();
+var promoTimeout = 0;
+var totalWait = 3000;
+var interval = 100;
+function registerPopup() {
+	setTimeout (function (){
+		if (promotions.getPromosDisplayed()) {
+			$('.promo-popup-link').magnificPopup({type: 'ajax'});
+		}
+		else {
+			if (promoTimeout < totalWait) {
+				promoTimeout += interval;
+				registerPopup();
+			}
+		}
+	}, interval);
+}

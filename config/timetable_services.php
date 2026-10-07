@@ -3,34 +3,21 @@ declare(strict_types=1);
 
 require_once __DIR__ . '/../config/database.php';
 require_once __DIR__ . '/payment.php';
-require_once __DIR__ . '/../src/Services/TimetableAuditLogger.php';
-require_once __DIR__ . '/../src/Services/TimetableInputValidator.php';
-require_once __DIR__ . '/../src/Repositories/TimetableRepository.php';
-require_once __DIR__ . '/../src/Repositories/RecurringScheduleRepository.php';
-require_once __DIR__ . '/../src/Services/RecurringScheduleService.php';
-require_once __DIR__ . '/../src/Services/TimetableConflictService.php';
-require_once __DIR__ . '/../src/Services/TimetableService.php';
-require_once __DIR__ . '/../src/Services/TimetableCreateService.php';
-require_once __DIR__ . '/../src/Services/TimetableDeleteService.php';
-require_once __DIR__ . '/../src/Services/TimetableLockService.php';
-require_once __DIR__ . '/../src/Services/TimetablePaymentService.php';
-require_once __DIR__ . '/../src/Services/TimetableStudentCountService.php';
-require_once __DIR__ . '/../src/Services/TimetableCloneService.php';
-require_once __DIR__ . '/../src/Services/TimetableBulkService.php';
+require_once __DIR__ . '/../vendor/autoload.php';
 
-use App\Repositories\RecurringScheduleRepository;
-use App\Repositories\TimetableRepository;
-use App\Services\RecurringScheduleService;
-use App\Services\TimetableAuditLogger;
-use App\Services\TimetableConflictService;
-use App\Services\TimetableService;
-use App\Services\TimetableCreateService;
-use App\Services\TimetableDeleteService;
-use App\Services\TimetableLockService;
-use App\Services\TimetablePaymentService;
-use App\Services\TimetableStudentCountService;
-use App\Services\TimetableCloneService;
-use App\Services\TimetableBulkService;
+use Edexcel\Repositories\RecurringScheduleRepository;
+use Edexcel\Repositories\TimetableRepository;
+use Edexcel\Services\RecurringScheduleService;
+use Edexcel\Services\TimetableAuditLogger;
+use Edexcel\Services\TimetableConflictService;
+use Edexcel\Services\TimetableService;
+use Edexcel\Services\TimetableCreateService;
+use Edexcel\Services\TimetableDeleteService;
+use Edexcel\Services\TimetableLockService;
+use Edexcel\Services\TimetablePaymentService;
+use Edexcel\Services\TimetableStudentCountService;
+use Edexcel\Services\TimetableCloneService;
+use Edexcel\Services\TimetableBulkService;
 
 final class TimetableServiceFactory
 {

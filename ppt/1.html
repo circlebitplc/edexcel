@@ -1,0 +1,185 @@
+<!doctype html>
+<html lang='en'>
+<head>
+<!-- Global site tag (gtag.js) - Google Analytics -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=UA-117524735-1"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+
+  gtag('config', 'UA-117524735-1');
+</script>
+
+	<meta charset='utf-8'>
+
+	<title class='hightlight-blue'>ir sensor</title>
+
+	<meta name='description' content='Computer Architecture'>
+	<meta name='author' content='Enidu Batuwanthudawe'>
+
+	<meta name='apple-mobile-web-app-capable' content='yes' />
+	<meta name='apple-mobile-web-app-status-bar-style' content='black-translucent' />
+
+	<meta name='viewport' content='width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no'>
+
+	<link rel='stylesheet' href='css/reveal.min.css'>
+	<link rel='stylesheet' href='css/theme/default.css' id='theme'>
+	<link rel='stylesheet' href='css/custom.css'>
+
+	<!-- For syntax highlighting -->
+	<link rel='stylesheet' href='lib/css/zenburn.css'>
+
+	<!-- If the query includes 'print-pdf', use the PDF print sheet -->
+	<link rel="stylesheet" href="css/print/pdf.css">
+
+		<!--[if lt IE 9]>
+		<script src='lib/js/html5shiv.js'></script>
+		<![endif]-->
+		<script src='js/moment.min.js'></script>
+	</head>
+
+	<body>
+
+		<div class='reveal'>
+			<div class='slides'>
+				<section>
+					<h2>Ultrasonic Sensor</h2>
+					<p>
+						 by <a href='http://www.hodamapanthiya.com/enidu/' target="_blank">Enidu Batuwanthudawe </a><font size="3" color="white">C&nbsp;&nbsp;i&nbsp;&nbsp;v&nbsp;&nbsp;i&nbsp;&nbsp;l&nbsp;&nbsp;&nbsp;&nbsp;E&nbsp;&nbsp;n&nbsp;&nbsp;g&nbsp;&nbsp;.&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;| &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;B&nbsp;&nbsp;.&nbsp;&nbsp;S&nbsp;&nbsp;c&nbsp;&nbsp;.&nbsp;&nbsp;&nbsp;&nbsp;i&nbsp;&nbsp;n&nbsp;&nbsp;&nbsp;&nbsp;I&nbsp;&nbsp;T </font>
+					</p>
+					<p>
+						<small>
+							. . . . . . . . . . . . . . . . . . . .. . . . . . . . . . . . . . . . . . . . <br>
+							<script type='text/javascript'>
+								document.write(moment().format('dddd, MMMM D, YYYY'));
+							</script>
+						</small>
+					</p>
+				</section>
+				<section>
+				<img src="1.jpg"  height=450px>
+				</section>
+				<section>
+				<section>
+					<h1>initialisation</h1>
+				</section>
+				<section>
+				<p>"<html>
+<head></head>
+<body>
+<style>
+table{ width:100%;
+		height:100%}
+#r1{height:50px;
+    color:FF00FF;
+	background-color:000000;
+	text-align:center;}	
+#r3{height:25px;
+background-color:000000;
+color:FFFFFF}
+#r2d1{width:150px;
+background-color:202020;
+color:FFFFFF}	
+#r2c2{background-color:eeeeee}
+</style>
+<table border=1px al>
+<tr id=r1><td colspan=2>Website Logo</td></tr>
+<tr><td id=r2d1>col1 ro2</td><td id=r2c2>col2 ro2</td> </tr>
+<tr id=r3><td colspan=2>col1 ro1</td></tr>
+<table>
+</body>
+
+</html>"</p>		
+				</section>
+				</section>
+				<section>
+				<section>
+					<h1>setup()</h1>
+					<p>void setup() {<br>
+ Serial.begin (9600);<br>
+ pinMode(trigPin, OUTPUT);<br>
+ pinMode(echoPin, INPUT);<br>
+ pinMode(LEDPin, OUTPUT); // Use LED indicator (if required)
+}</P>
+				</section>
+				
+				</section>
+				<section>
+				<section>
+					<h1>loop()</h1>
+				</section>
+				<section>
+				<p>void loop() {<br>
+					digitalWrite(trigPin, LOW); <br>
+ delayMicroseconds(2); <br>
+
+ digitalWrite(trigPin, HIGH);<br>
+ delayMicroseconds(10); <br>
+ 
+ digitalWrite(trigPin, LOW);<br>
+ duration = pulseIn(echoPin, HIGH);<br>
+						}</p>		
+				</section>
+				<section>
+				<p>distance = duration/58.2;</p>
+				</section>
+				<section>
+				<p> if (distance >= maximumRange || distance <= minimumRange){<br>
+
+ Serial.println("-1");<br>
+ digitalWrite(LEDPin, HIGH); <br>
+ }</p>
+				</section>
+				<section>
+				<p> else { <br>
+  
+ Serial.println(distance); <br>
+ digitalWrite(LEDPin, LOW);  <br>
+ }</p>
+				</section>
+				<section>
+				<p>delay(50);</p>
+				</section>
+				</section>
+					 
+			</div>
+
+		</div>
+
+		<script src="lib/js/head.min.js"></script>
+		<script src="js/reveal.min.js"></script>
+
+		<script>
+
+			// Full list of configuration options available here:
+			// https://github.com/hakimel/reveal.js#configuration
+			Reveal.initialize({
+				controls: true,
+				progress: true,
+				history: true,
+				center: true,
+
+				theme: Reveal.getQueryHash().theme, // available themes are in /css/theme
+				transition: Reveal.getQueryHash().transition || 'default', // default/cube/page/concave/zoom/linear/fade/none
+
+				// Parallax scrolling
+				// parallaxBackgroundImage: 'https://s3.amazonaws.com/hakim-static/reveal-js/reveal-parallax-1.jpg',
+				// parallaxBackgroundSize: '2100px 900px',
+
+				// Optional libraries used to extend on reveal.js
+				dependencies: [
+					{ src: 'lib/js/classList.js', condition: function() { return !document.body.classList; } },
+					{ src: 'plugin/markdown/marked.js', condition: function() { return !!document.querySelector( '[data-markdown]' ); } },
+					{ src: 'plugin/markdown/markdown.js', condition: function() { return !!document.querySelector( '[data-markdown]' ); } },
+					{ src: 'plugin/highlight/highlight.js', async: true, callback: function() { hljs.initHighlightingOnLoad(); } },
+					{ src: 'plugin/zoom-js/zoom.js', async: true, condition: function() { return !!document.body.classList; } },
+					
+				]
+			});
+
+		</script>
+
+	</body>
+</html>
+

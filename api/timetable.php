@@ -3,7 +3,7 @@ declare(strict_types=1);
 
 require_once __DIR__ . '/../config/bootstrap.php';
 
-require_login();
+require_staff();
 
 if($_SERVER['REQUEST_METHOD']!=='GET') {
     http_response_code(405);
@@ -19,6 +19,14 @@ if(!is_admin()) {
         http_response_code(403);
         header('Content-Type: application/json; charset=utf-8');
         echo json_encode(['status'=>'error','error'=>'Teacher account is not linked.']);
+        exit;
+    }
+    $profile=$pdo->prepare("SELECT 1 FROM teachers WHERE id=? AND deleted_at IS NULL");
+    $profile->execute([$sessionTeacher]);
+    if(!$profile->fetchColumn()) {
+        http_response_code(403);
+        header('Content-Type: application/json; charset=utf-8');
+        echo json_encode(['status'=>'error','error'=>'Linked teacher profile is inactive.']);
         exit;
     }
     // Teachers may only read their own timetable.

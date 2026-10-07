@@ -1,0 +1,275 @@
+/**
+ * Theme contrast and component colours for light + dark.
+ * Tokens come from dashboard.css (:root / [data-bs-theme="dark"]).
+ */
+
+.card,
+.modal-content,
+.offcanvas,
+.accordion-item,
+.list-group-item,
+.dropdown-menu,
+.popover,
+.toast {
+    background-color: var(--surface);
+    color: var(--text);
+    border-color: var(--panel-border);
+}
+
+.alert {
+    border-color: var(--panel-border);
+}
+
+.btn:disabled,
+.btn.disabled {
+    opacity: 0.55;
+}
+
+.btn-outline-secondary,
+.btn-outline-primary,
+.btn-outline-danger,
+.btn-outline-success {
+    background-color: transparent;
+}
+
+.btn-outline-secondary:hover,
+.btn-outline-secondary:focus {
+    color: var(--text);
+    background-color: var(--surface-hover);
+    border-color: var(--panel-border-strong);
+}
+
+html[data-bs-theme="dark"] .btn-outline-secondary {
+    color: var(--text);
+    border-color: var(--panel-border-strong);
+}
+
+html[data-bs-theme="dark"] .btn-outline-primary {
+    color: #c5ccff;
+    border-color: rgba(104, 120, 227, 0.55);
+}
+
+html[data-bs-theme="dark"] .btn-outline-primary:hover,
+html[data-bs-theme="dark"] .btn-outline-primary:focus,
+html[data-bs-theme="dark"] .btn-outline-primary.active {
+    color: #fff;
+    background-color: var(--primary);
+    border-color: var(--primary);
+}
+
+html[data-bs-theme="dark"] .btn-primary {
+    color: #fff;
+    background-color: var(--primary);
+    border-color: var(--primary);
+}
+
+html[data-bs-theme="dark"] .btn-primary:hover {
+    background-color: var(--primary-dark);
+    border-color: var(--primary-dark);
+}
+
+.form-control::placeholder,
+.form-select {
+    color: var(--muted);
+}
+
+html[data-bs-theme="dark"] .form-control,
+html[data-bs-theme="dark"] .form-select,
+html[data-bs-theme="dark"] .form-control:focus,
+html[data-bs-theme="dark"] .form-select:focus {
+    background-color: var(--surface-soft);
+    color: var(--text);
+    border-color: var(--panel-border-strong);
+}
+
+html[data-bs-theme="dark"] .form-control:disabled,
+html[data-bs-theme="dark"] .form-select:disabled {
+    background-color: #161b27;
+    color: var(--muted);
+    opacity: 1;
+}
+
+html[data-bs-theme="dark"] .input-group-text {
+    background-color: var(--surface-soft);
+    color: var(--text);
+    border-color: var(--panel-border-strong);
+}
+
+.table thead th {
+    color: var(--muted);
+    background-color: var(--surface-soft);
+    border-color: var(--panel-border);
+}
+
+html[data-bs-theme="dark"] .table-hover > tbody > tr:hover > * {
+    background-color: var(--surface-hover);
+    color: var(--text);
+}
+
+html[data-bs-theme="dark"] .table-striped > tbody > tr:nth-of-type(odd) > * {
+    background-color: rgba(255, 255, 255, 0.03);
+    color: var(--text);
+}
+
+html[data-bs-theme="dark"] .text-warning-emphasis {
+    color: #ffd36a !important;
+}
+
+html[data-bs-theme="dark"] .text-success,
+html[data-bs-theme="dark"] .text-success-emphasis {
+    color: #5ee0a5 !important;
+}
+
+html[data-bs-theme="dark"] .text-primary,
+html[data-bs-theme="dark"] .text-primary-emphasis {
+    color: #aab4ff !important;
+}
+
+html[data-bs-theme="dark"] .text-danger {
+    color: #ff8a9a !important;
+}
+
+html[data-bs-theme="dark"] .text-bg-light,
+html[data-bs-theme="dark"] .badge.text-bg-light {
+    color: var(--text) !important;
+    background-color: var(--surface-soft) !important;
+    border-color: var(--panel-border);
+}
+
+html[data-bs-theme="dark"] .bg-light,
+html[data-bs-theme="dark"] .bg-white,
+html[data-bs-theme="dark"] .bg-body-tertiary {
+    background-color: var(--surface-soft) !important;
+    color: var(--text) !important;
+}
+
+html[data-bs-theme="light"] .bg-white {
+    background-color: #fff !important;
+    color: var(--text);
+}
+
+html[data-bs-theme="dark"] .pagination .page-link {
+    background-color: var(--surface);
+    color: var(--text);
+    border-color: var(--panel-border);
+}
+
+html[data-bs-theme="dark"] .pagination .page-item.active .page-link {
+    background-color: var(--primary);
+    border-color: var(--primary);
+    color: #fff;
+}
+
+html[data-bs-theme="dark"] .pagination .page-item.disabled .page-link {
+    background-color: var(--surface-soft);
+    color: var(--muted);
+}
+
+.nav-tabs .nav-link {
+    color: var(--muted);
+}
+
+.nav-tabs .nav-link.active {
+    color: var(--text);
+    background-color: var(--surface);
+    border-color: var(--panel-border) var(--panel-border) var(--surface);
+}
+
+.filter-bar,
+.tt-filter-card,
+.management-toolbar,
+.teacher-toolbar,
+.ops-card,
+.ops-stat,
+.finance-toolbar,
+.finance-stat,
+.finance-panel {
+    background-color: var(--surface) !important;
+    color: var(--text);
+    border-color: var(--panel-border) !important;
+}
+
+html[data-bs-theme="dark"] .finance-stat .value,
+html[data-bs-theme="dark"] .finance-heading h1,
+html[data-bs-theme="dark"] .page-title {
+    color: var(--text);
+}
+
+html[data-bs-theme="dark"] .management-card,
+html[data-bs-theme="dark"] .teacher-card,
+html[data-bs-theme="dark"] .ops-room-card,
+html[data-bs-theme="dark"] .ops-recurring-card {
+    background-color: var(--surface);
+    color: var(--text);
+    border-color: var(--panel-border);
+}
+
+html[data-bs-theme="dark"] .alert-success {
+    background-color: rgba(42, 196, 129, 0.16);
+    color: #b6f3d4;
+    border-color: rgba(42, 196, 129, 0.28);
+}
+
+html[data-bs-theme="dark"] .alert-danger {
+    background-color: rgba(240, 106, 124, 0.16);
+    color: #ffc2cb;
+    border-color: rgba(240, 106, 124, 0.3);
+}
+
+html[data-bs-theme="dark"] .alert-warning {
+    background-color: rgba(241, 181, 51, 0.16);
+    color: #ffe3a3;
+    border-color: rgba(241, 181, 51, 0.3);
+}
+
+html[data-bs-theme="dark"] .alert-info {
+    background-color: rgba(50, 189, 215, 0.16);
+    color: #b8ecf6;
+    border-color: rgba(50, 189, 215, 0.3);
+}
+
+.class-picker {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.class-picker-item {
+    display: block;
+    padding: 0.7rem 0.95rem;
+    border-radius: 0.8rem;
+    border: 1px solid var(--panel-border);
+    background: var(--surface-soft);
+    color: var(--text);
+    text-decoration: none;
+    line-height: 1.35;
+    transition: border-color .15s ease, background-color .15s ease, box-shadow .15s ease;
+}
+
+.class-picker-item:hover {
+    border-color: var(--panel-border-strong);
+    background: var(--surface-hover);
+    color: var(--text);
+}
+
+.class-picker-item.is-active {
+    background: var(--primary-soft);
+    border-color: var(--primary);
+    color: var(--text);
+    box-shadow: inset 3px 0 0 var(--primary);
+    font-weight: 600;
+}
+
+/* Bunny Stream iframe: keep a single 16:9 player. Their “Processing video”
+   splash must not stack under a working player when responsive mode is on. */
+.bunny-player {
+    position: relative;
+    width: 100%;
+    overflow: hidden;
+    background: #0b1220;
+}
+.bunny-player iframe {
+    border: 0;
+    width: 100%;
+    height: 100%;
+}

@@ -1,0 +1,29 @@
+<html><head></head><body><pre>
+<span style="color: #cc6600;">int</span> pinArray[] = { 3, 4, 5, 6, 7, 8, 9};
+<span style="color: #cc6600;">int</span> count = 0;
+<span style="color: #cc6600;">int</span> timer = 10;
+
+<span style="color: #cc6600;">void</span> <span style="color: #cc6600;"><strong>setup</strong></span>(){
+&nbsp;&nbsp;<span style="color: #cc6600;">for</span> (count=0;count&lt;8;count++) {
+&nbsp;&nbsp;&nbsp;&nbsp;<span style="color: #cc6600;">pinMode</span>(pinArray[count], <span style="color: #006699;">OUTPUT</span>);
+&nbsp;&nbsp;}
+}
+
+<span style="color: #cc6600;">void</span> <span style="color: #cc6600;"><strong>loop</strong></span>() {
+&nbsp;&nbsp;<span style="color: #cc6600;">for</span> (count=0;count&lt;6;count++) {
+&nbsp;&nbsp;&nbsp;<span style="color: #cc6600;">digitalWrite</span>(pinArray[count], <span style="color: #006699;">HIGH</span>);
+&nbsp;&nbsp;&nbsp;<span style="color: #cc6600;">delay</span>(timer);
+&nbsp;&nbsp;&nbsp;<span style="color: #cc6600;">digitalWrite</span>(pinArray[count + 1], <span style="color: #006699;">HIGH</span>);
+&nbsp;&nbsp;&nbsp;<span style="color: #cc6600;">delay</span>(timer);
+&nbsp;&nbsp;&nbsp;<span style="color: #cc6600;">digitalWrite</span>(pinArray[count], <span style="color: #006699;">LOW</span>);
+&nbsp;&nbsp;&nbsp;<span style="color: #cc6600;">delay</span>(timer*2);
+&nbsp;&nbsp;}
+&nbsp;&nbsp;<span style="color: #cc6600;">for</span> (count=6;count&gt;0;count--) {
+&nbsp;&nbsp;&nbsp;<span style="color: #cc6600;">digitalWrite</span>(pinArray[count], <span style="color: #006699;">HIGH</span>);
+&nbsp;&nbsp;&nbsp;<span style="color: #cc6600;">delay</span>(timer);
+&nbsp;&nbsp;&nbsp;<span style="color: #cc6600;">digitalWrite</span>(pinArray[count - 1], <span style="color: #006699;">HIGH</span>);
+&nbsp;&nbsp;&nbsp;<span style="color: #cc6600;">delay</span>(timer);
+&nbsp;&nbsp;&nbsp;<span style="color: #cc6600;">digitalWrite</span>(pinArray[count], <span style="color: #006699;">LOW</span>);
+&nbsp;&nbsp;&nbsp;<span style="color: #cc6600;">delay</span>(timer*2);
+&nbsp;&nbsp;}
+}</pre></body></html>

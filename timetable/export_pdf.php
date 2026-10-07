@@ -3,7 +3,7 @@
 // Requires dompdf/dompdf: composer require dompdf/dompdf
 require_once __DIR__ . '/../config/database.php';
 require_once __DIR__ . '/../config/auth.php';
-require_login();
+require_staff();
 
 // Dompdf is optional; if Composer dependencies are installed, PDF export is used.
 $vendorAutoload = __DIR__ . '/../vendor/autoload.php';
@@ -21,12 +21,7 @@ for ($i = 0; $i < 7; $i++) {
     $days[] = date('Y-m-d', strtotime($week_start . " +$i days"));
 }
 
-$time_slots = [];
-for ($h = 8; $h < 18; $h++) {
-    $time_slots[] = sprintf('%02d:00', $h);
-}
-
-$where = [];
+$where = ["t.deleted_at IS NULL"];
 $params = [];
 $title = '';
 
@@ -76,10 +71,10 @@ $sql = "SELECT t.*,
                c.name as class_name, 
                r.name as room_name 
         FROM timetable t
-        JOIN teachers tc ON t.teacher_id = tc.id
-        JOIN subjects s ON t.subject_id = s.id
-        JOIN student_classes c ON t.class_id = c.id
-        JOIN rooms r ON t.room_id = r.id
+        LEFT JOIN teachers tc ON t.teacher_id = tc.id AND tc.deleted_at IS NULL
+        LEFT JOIN subjects s ON t.subject_id = s.id AND s.deleted_at IS NULL
+        LEFT JOIN student_classes c ON t.class_id = c.id AND c.deleted_at IS NULL
+        LEFT JOIN rooms r ON t.room_id = r.id AND r.deleted_at IS NULL
         WHERE " . implode(" AND ", $where) . "
         ORDER BY t.date, t.start_time";
 
@@ -87,11 +82,36 @@ $stmt = $pdo->prepare($sql);
 $stmt->execute($params);
 $entries = $stmt->fetchAll();
 
+$start_h = 8;
+$end_h = 18;
+
+foreach ($entries as $e) {
+    $sh = (int)substr((string)$e['start_time'], 0, 2);
+    $eh = (int)substr((string)$e['end_time'], 0, 2);
+    if ((int)substr((string)$e['end_time'], 3, 2) > 0) {
+        $eh += 1;
+    }
+    if ($sh < $start_h) {
+        $start_h = $sh;
+    }
+    if ($eh > $end_h) {
+        $end_h = $eh;
+    }
+}
+$start_h = max(0, min($start_h, 8));
+$end_h   = min(24, max($end_h, 18));
+
+$time_slots = [];
+for ($h = $start_h; $h < $end_h; $h++) {
+    $time_slots[] = sprintf('%02d:00', $h);
+}
+
 $grid = [];
 foreach ($entries as $e) {
     $date = $e['date'];
-    $start = substr($e['start_time'], 0, 5);
-    $grid[$date][$start] = $e;
+    $sh = (int)substr((string)$e['start_time'], 0, 2);
+    $start_slot = sprintf('%02d:00', $sh);
+    $grid[$date][$start_slot] = $e;
 }
 
 // Build HTML for PDF

@@ -48,23 +48,20 @@ include __DIR__ . '/../includes/header.php';
                 <button type="submit" name="add_holiday" class="btn btn-primary w-100"><i class="bi bi-plus-lg"></i> Add Holiday</button>
             </form>
         </div></div>
-        <div class="ops-card"><div class="ops-card-body">
-            <div class="ops-toolbar"><div class="ops-search"><input type="search" id="holidaySearch" class="form-control" placeholder="Search holidays..."></div><select id="holidayFilter" class="form-select" style="max-width:170px"><option value="all">All</option><option value="upcoming">Upcoming</option><option value="past">Past</option></select></div>
+        <div class="ops-card" data-live-scope><div class="ops-card-body">
+            <div class="ops-toolbar"><div class="ops-search"><input type="search" id="holidaySearch" class="form-control" placeholder="Search holidays..." data-live-search></div><select id="holidayFilter" class="form-select" style="max-width:170px" data-live-select data-live-key="period"><option value="all">All</option><option value="upcoming">Upcoming</option><option value="past">Past</option></select></div>
             <?php if (!$holidays): ?><div class="ops-empty"><i class="bi bi-calendar-check"></i><strong>No holidays registered</strong><div>Add a holiday to keep scheduling rules accurate.</div></div><?php else: ?>
                 <div id="holidayList">
                 <?php foreach ($holidays as $h): $isUpcoming=$h['date'] >= $today; ?>
-                    <div class="ops-holiday-item" data-search="<?= htmlspecialchars(strtolower($h['name'].' '.$h['description'])) ?>" data-period="<?= $isUpcoming?'upcoming':'past' ?>">
+                    <div class="ops-holiday-item" data-live-item data-search="<?= htmlspecialchars(strtolower($h['name'].' '.$h['description'].' '.$h['date'].' '.date('d M Y l', strtotime($h['date'])))) ?>" data-period="<?= $isUpcoming?'upcoming':'past' ?>">
                         <div class="ops-date-badge"><strong><?= date('d', strtotime($h['date'])) ?></strong><span><?= date('M', strtotime($h['date'])) ?></span></div>
                         <div class="ops-holiday-content"><div class="ops-holiday-title"><?= htmlspecialchars($h['name']) ?> <?= $isUpcoming ? '<span class="ops-chip success ms-1">Upcoming</span>' : '<span class="ops-chip ms-1">Past</span>' ?></div><div class="ops-holiday-desc"><?= htmlspecialchars($h['description'] ?: date('l, Y', strtotime($h['date']))) ?></div></div>
                         <form method="POST" onsubmit="return confirm('Delete this holiday?')"><?= csrf_field() ?><input type="hidden" name="delete_holiday" value="1"><input type="hidden" name="id" value="<?= (int)$h['id'] ?>"><button class="btn btn-sm btn-outline-danger" type="submit" aria-label="Delete"><i class="bi bi-trash"></i></button></form>
                     </div>
                 <?php endforeach; ?>
-                </div><div id="holidayEmpty" class="ops-empty d-none"><i class="bi bi-search"></i><strong>No matching holidays</strong></div>
+                </div><div id="holidayEmpty" class="ops-empty d-none" data-live-empty><i class="bi bi-search"></i><strong>No matching holidays</strong></div>
             <?php endif; ?>
         </div></div>
     </div>
 </div>
-<script>
-(function(){const search=document.getElementById('holidaySearch'), filter=document.getElementById('holidayFilter'); function run(){const q=(search?.value||'').toLowerCase().trim(), f=filter?.value||'all'; let n=0; document.querySelectorAll('#holidayList .ops-holiday-item').forEach(el=>{const show=el.dataset.search.includes(q)&&(f==='all'||el.dataset.period===f); el.classList.toggle('d-none',!show); if(show)n++;}); document.getElementById('holidayEmpty')?.classList.toggle('d-none',n!==0); } search?.addEventListener('input',run); filter?.addEventListener('change',run);})();
-</script>
 <?php include __DIR__ . '/../includes/footer.php'; ?>

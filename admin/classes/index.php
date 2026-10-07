@@ -10,7 +10,8 @@ $classes = $pdo->query("SELECT c.*, l.name as level_name FROM student_classes c
 ?>
 <?php include __DIR__ . '/../../includes/header.php'; ?>
 <h1 class="mb-4"><i class="bi bi-layers"></i> Manage Classes</h1>
-<a href="create.php" class="btn btn-primary mb-3"><i class="bi bi-plus-circle"></i> Add New Class</a>
+<a href="<?= BASE_URL ?>classes/create.php" class="btn btn-primary mb-3"><i class="bi bi-plus-circle"></i> Add New Class</a>
+<a href="../../campus/waitlist.php" class="btn btn-outline-warning mb-3"><i class="bi bi-hourglass-split"></i> Waitlist</a>
 
 <?php if (isset($_SESSION['success'])): ?>
     <div class="alert alert-success"><?= htmlspecialchars($_SESSION['success']) ?></div>
@@ -53,8 +54,8 @@ $classes = $pdo->query("SELECT c.*, l.name as level_name FROM student_classes c
                             <?php endif; ?>
                         </td>
                         <td class="table-actions">
-                            <a href="edit.php?id=<?= $c['id'] ?>" class="btn btn-sm btn-warning"><i class="bi bi-pencil"></i></a>
-                            <a href="delete.php?id=<?= $c['id'] ?>" class="btn btn-sm btn-danger" onclick="return confirm('Delete this class?')"><i class="bi bi-trash"></i></a>
+                            <a href="<?= BASE_URL ?>classes/edit.php?id=<?= $c['id'] ?>" class="btn btn-sm btn-warning"><i class="bi bi-pencil"></i></a>
+                            <a href="<?= BASE_URL ?>classes/delete.php?id=<?= $c['id'] ?>" class="btn btn-sm btn-danger" onclick="return confirm('Delete this class?')"><i class="bi bi-trash"></i></a>
                         </td>
                     </tr>
                 <?php endforeach; ?>

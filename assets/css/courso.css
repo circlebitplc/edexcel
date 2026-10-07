@@ -1,0 +1,137 @@
+.courso-hero{
+    display:flex;
+    flex-wrap:wrap;
+    justify-content:space-between;
+    gap:18px;
+    padding:22px 24px;
+    margin-bottom:16px;
+    border:1px solid var(--bs-border-color,#2b3245);
+    border-radius:20px;
+    background:linear-gradient(135deg,rgba(113,131,255,.12),rgba(34,197,94,.06));
+}
+.courso-hero-meta{
+    display:flex;
+    gap:18px;
+}
+.courso-hero-meta div{
+    text-align:center;
+    min-width:72px;
+}
+.courso-hero-meta strong{
+    display:block;
+    font-size:1.5rem;
+    line-height:1.1;
+}
+.courso-hero-meta span{
+    font-size:.75rem;
+    color:var(--bs-secondary-color,#9ba5bd);
+}
+.courso-subnav{
+    display:flex;
+    flex-wrap:wrap;
+    gap:6px;
+    margin-bottom:16px;
+}
+.courso-subnav a{
+    border-radius:999px;
+    padding:.4rem .9rem;
+    text-decoration:none;
+    font-size:.9rem;
+    border:1px solid var(--bs-border-color,#2b3245);
+    color:inherit;
+}
+.courso-subnav a.is-on{
+    background:#4f6bff;
+    border-color:#4f6bff;
+    color:#fff;
+}
+.courso-panel[hidden]{display:none !important;}
+.courso-chat-card{min-height:420px;}
+.courso-log{
+    min-height:280px;
+    max-height:420px;
+    overflow:auto;
+    padding:16px;
+    display:flex;
+    flex-direction:column;
+    gap:10px;
+}
+.courso-bubble{
+    max-width:92%;
+    padding:10px 14px;
+    border-radius:16px;
+    white-space:pre-wrap;
+    line-height:1.45;
+}
+.courso-bubble.is-user{
+    margin-left:auto;
+    background:#4f6bff;
+    color:#fff;
+}
+.courso-bubble.is-ai{
+    background:rgba(127,140,180,.12);
+}
+.courso-rate{
+    display:flex;
+    gap:6px;
+    margin-top:6px;
+}
+.courso-rate button{
+    border:1px solid var(--bs-border-color,#2b3245);
+    background:transparent;
+    color:inherit;
+    border-radius:999px;
+    font-size:.8rem;
+    padding:.15rem .55rem;
+}
+.courso-rate button.is-on{
+    border-color:#4f6bff;
+    color:#4f6bff;
+}
+.courso-composer{
+    display:flex;
+    gap:8px;
+    padding:12px;
+    border-top:1px solid var(--bs-border-color,#2b3245);
+}
+.courso-composer textarea{
+    flex:1;
+    border-radius:12px;
+    border:1px solid var(--bs-border-color,#2b3245);
+    padding:8px 10px;
+    resize:none;
+    background:transparent;
+    color:inherit;
+}
+.courso-q{
+    border:1px solid var(--bs-border-color,#2b3245);
+    border-radius:14px;
+    padding:14px;
+    margin-bottom:12px;
+}
+.courso-q label{
+    display:block;
+    margin:.35rem 0;
+}
+.courso-feedback{
+    margin-top:8px;
+    font-size:.9rem;
+}
+.courso-feedback.is-ok{color:#16a34a;}
+.courso-feedback.is-no{color:#dc2626;}
+.courso-thread .courso-post{
+    border-bottom:1px solid var(--bs-border-color,#2b3245);
+    padding:10px 0;
+}
+.courso-thread .courso-replies{
+    margin-left:1rem;
+    padding-left:12px;
+    border-left:2px solid rgba(79,107,255,.35);
+}
+.courso[data-density="compact"] .courso-hero{padding:14px 16px;}
+.courso[data-density="compact"] .courso-log{min-height:200px;max-height:320px;}
+.courso[data-density="compact"] .card-body{padding:12px !important;}
+@media (max-width:576px){
+    .courso-hero-meta{width:100%;justify-content:space-between;}
+    .courso-composer{flex-direction:column;}
+}

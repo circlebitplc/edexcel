@@ -8,7 +8,7 @@ require_once __DIR__ . '/../config/database.php';
 require_once __DIR__ . '/../config/auth.php';
 require_once __DIR__ . '/../config/payment.php';
 require_once __DIR__ . '/../config/security.php';
-require_login();
+require_staff();
 
 $type = $_GET['type'] ?? 'timetable'; // 'timetable' or 'payments'
 $date_from = $_GET['date_from'] ?? '';
@@ -20,7 +20,7 @@ $session_teacher_id = (int)($_SESSION['teacher_id'] ?? 0);
 if (!$is_admin) {
     if ($session_teacher_id <= 0) {
         http_response_code(403);
-        exit('Teacher account is not linked.');
+        exit('Your teacher account is not linked to an active teacher profile. Ask an administrator to link users.teacher_id.');
     }
     $teacher_id = $session_teacher_id;
     if ($type === 'payments') {
@@ -84,7 +84,8 @@ if ($type === 'timetable') {
             JOIN student_classes c ON t.class_id = c.id
             JOIN rooms r ON t.room_id = r.id";
     if ($teacher_id) {
-        $where[] = "t.teacher_id = ?";
+        $where[] = "(t.teacher_id = ? OR t.substitute_teacher_id = ?)";
+        $params[] = $teacher_id;
         $params[] = $teacher_id;
     }
     if (!empty($date_from)) {
@@ -139,7 +140,8 @@ if ($type === 'timetable') {
             JOIN rooms r ON t.room_id = r.id
             WHERE t.payment_status = 'paid'";
     if ($teacher_id) {
-        $where[] = "t.teacher_id = ?";
+        $where[] = "(t.teacher_id = ? OR t.substitute_teacher_id = ?)";
+        $params[] = $teacher_id;
         $params[] = $teacher_id;
     }
     if (!empty($date_from)) {

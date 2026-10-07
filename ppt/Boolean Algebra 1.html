@@ -1,0 +1,441 @@
+<!DOCTYPE html>
+<!-- saved from url=(0071)https://ryanstutorials.net/boolean-algebra-tutorial/boolean-algebra.php -->
+<html lang="en"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+    
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="description" content="Boolean Algebra Operators and how they work in part 1 of this tutorial on Boolean Algebra.">
+    <meta name="keywords" content="boolean algegra, boolean, boolean logic, logic, basics">
+    <meta name="author" content="Ryan Chadwick">
+
+    <title>Boolean Algebra - 1. Operators and Basics - Boolean Algebra Tutorial</title>
+
+    <!-- Bootstrap core CSS -->
+    <link href="./Boolean Algebra 1_files/bootstrap.min.css" rel="stylesheet">
+    <!-- Bootstrap theme -->
+    <link href="./Boolean Algebra 1_files/bootstrap-theme.min.css" rel="stylesheet">
+
+    <!-- Custom styles for this template -->
+    <link href="./Boolean Algebra 1_files/style.css" rel="stylesheet">
+    <link href="./Boolean Algebra 1_files/style(1).css" rel="stylesheet">
+    
+    <link rel="icon" type="image/png" href="https://ryanstutorials.net/favicons/favicon_boolean_algebra.png">
+
+    <!-- HTML5 shim and Respond.js IE8 support of HTML5 elements and media queries -->
+    <!--[if lt IE 9]>
+      <script src="https://oss.maxcdn.com/libs/html5shiv/3.7.0/html5shiv.js"></script>
+      <script src="https://oss.maxcdn.com/libs/respond.js/1.4.2/respond.min.js"></script>
+    <![endif]-->
+<script type="text/javascript" charset="utf-8" async="" src="./Boolean Algebra 1_files/button.bf357a6ba1a5f1fa0ddb61377ae3add5.js.download"></script></head>
+
+<body role="document" data-spy="scroll" data-target="#sidebox" data-offset="90"> 
+	 
+	
+	<!-- Fixed navbar -->
+	
+	
+	<div class="container">
+		<div class="row">
+			<div class="col-md-9">
+				<div class="jumbotron">
+					<h2>Boolean Algebra!</h2>
+					<p>It's logical really.</p>
+				</div>
+				
+				<h2 id="introduction" class="introduction">Introduction</h2>
+				
+				<p>We'll start off by covering what exactly Boolean Algebra is and then look at some of the basic building blocks, also referred to as operators.  It may seem a little abstract at this stage but once you've worked through this section and the next it will start to make a bit more sense.</p>
+				
+				
+				<h2 id="boolean">Boolean Algebra</h2>
+				
+				<p>Boolean Algebra is a way of formally specifying, or describing, a particular situation or procedure.  We use <b>variables</b> to represent elements of our situation or procedure.  Variables may take one of only two values.  Traditionally this would be <b>True</b> and <b>False</b>.  So for instance we may have a variable <b>X</b> and state that this represents if it is raining outside or not. The value of <b>X</b> would be :</p>
+				
+				<ul>
+					<li><b>True</b> if it is raining outside.</li>
+					<li><b>False</b> if it is not raining outside.</li>
+				</ul>
+				
+				<p>What you have to remember is that although many things in the real world exist on a spectrum, in Boolean Algebra things are reduced to black and white.  So we could have, for instance, light rain, steady rain, or heavy rain.  In Boolean Algebra however, it is either raining or it isn't.  This may seem a little limiting but this simplification of things actually turns out to be quite powerful.</p>
+				
+				<p>It is possible to substitute other values in place of True and False.  When working with computers it is often the case that True and False is replaced with <b>1</b> and <b>0</b>.  When working with physical circuits we may replace True and False with the presence or absence of a voltage.</p>
+				
+				<p>In this way Boolean Algebra is useful to describe a process and then to build mechanisms which can perform those processes.  Keep this in mind as you're working through the next few sections.  This is what we are building towards.</p>
+				
+				
+				<h2 id="basic">Basic Operations</h2>
+				
+				<p>We saw above that variables may be used to represent the current state of elements that we are interested in.  Operations allow us to then define relationships between those variables.  There are three basic operations.  These are used often in Boolean expressions but are also used to create more complex operations. You'll probably find that you've actually used these operations quite a bit,  you've just never thought of them formally before.</p>
+				
+				<p>The result of an operation is similar to variables,  it may only be either <b>True</b> or <b>False</b>.</p>
+				
+				<p class="note">I have chosen to always write operations in all UPPERCASE.  This is so they are easily identified as operations.  Many people follow this convention but it is not required.  Feel free to use whatever method suits you best.</p>
+				
+				
+				<h3>AND</h3>
+				
+				<p>The first operation is <b>AND</b> and it means pretty much what it does in plain english.  So for instance I may state "If it's sunny outside <b>AND</b> I have completed my work then I will go for a run."  To represent this in Boolean Algebra I may say that:</p>
+				
+				<ul>
+					<li><b>x</b> represents if it is sunny outside or not.</li>
+					<li><b>y</b> represents if I have completed my work or not.</li>
+					<li><b>z</b> represents if I go for a run or not.
+				</li></ul>
+				
+				<p>And I would write it like so:</p>
+				
+				<p class="commandoutline">x AND y = z</p>
+				
+				<p>Here it is represented visually.  The shaded region is the region which represents <b>AND</b>.</p>
+				
+				<p class="text-center">
+					<img src="./Boolean Algebra 1_files/and.png" alt="Boolean AND operation" class="img-responsive center-block">
+				</p>
+				
+				
+				<p>And now we'll represent it using what is called a <b>Truth table</b>.  A truth table lists all the possible combinations of inputs for an expression (in this case a single operation) and what the result, or output should be.</p>
+				
+				<table class="truth">
+					<tbody><tr class="header">
+						<th>X</th>
+						<th>Y</th>
+						<th>Result</th>
+					</tr>
+					<tr>
+						<td>False</td>
+						<td>False</td>
+						<td>False</td>
+					</tr>
+					<tr>
+						<td>True</td>
+						<td>False</td>
+						<td>False</td>
+					</tr>
+					<tr>
+						<td>False</td>
+						<td>True</td>
+						<td>False</td>
+					</tr>
+					<tr>
+						<td>True</td>
+						<td>True</td>
+						<td>True</td>
+					</tr>
+				</tbody></table>
+				
+				
+				<h3>OR</h3>
+				
+				<p><b>OR</b> is also the same as how we would use it in plain english.  It means that if either of the two variables is <b>True</b> then the result is <b>True</b>.  So for instance I could say that "I will get home early from work if I get to leave early <b>OR</b> the traffic is good".</p>
+				
+				<p>Here is <b>OR</b> represented visually : </p>
+				
+				<p class="text-center">
+					<img src="./Boolean Algebra 1_files/or.png" alt="Boolean OR operation" class="img-responsive center-block">
+				</p>
+				
+				<p>And again as a truth table : </p>
+				
+				<table class="truth">
+					<tbody><tr class="header">
+						<th>X</th>
+						<th>Y</th>
+						<th>Result</th>
+					</tr>
+					<tr>
+						<td>False</td>
+						<td>False</td>
+						<td>False</td>
+					</tr>
+					<tr>
+						<td>True</td>
+						<td>False</td>
+						<td>True</td>
+					</tr>
+					<tr>
+						<td>False</td>
+						<td>True</td>
+						<td>True</td>
+					</tr>
+					<tr>
+						<td>True</td>
+						<td>True</td>
+						<td>True</td>
+					</tr>
+				</tbody></table>
+				
+				
+				<p class="tip">Note that <b>AND</b> is False for all but True and True whilst <b>OR</b> is True for all but False and False.  This observation will become useful to us later on.  In fact there are many shortcuts and advantageous benefits to be gained from finding patterns like this so keep an eye out for them.</p>
+				
+				
+				<h3>Not</h3>
+				
+				<p><b>Not</b> is quite similar to how we use it in plain english.  It has a subtle difference when used in Boolean Algebra.  Normally I might say something like "I will eat dessert if I am not full".  I could also have said "I will eat dessert if I am still hungry", which has the same meaning but using an opposite value.  So <b>not</b> actually has the effect of flipping the value of a variable. If :</p>
+				
+				<ul>
+					<li>the variable <b>d</b> currently has a value of <b>True</b> then</li>
+					<li>the expression <b>not d</b> has a result of <b>False</b></li>
+				</ul>
+				
+				<p>Represented visually that is :</p>
+				
+				<p class="text-center">
+					<img src="./Boolean Algebra 1_files/not.png" alt="Boolean not operation" class="img-responsive center-block">
+				</p>
+				
+				<p>And as a truth table :</p>
+				
+				<table class="truth">
+					<tbody><tr class="header">
+						<th>X</th>
+						<th>Result</th>
+					</tr>
+					<tr>
+						<td>True</td>
+						<td>False</td>
+					</tr>
+					<tr>
+						<td>False</td>
+						<td>True</td>
+					</tr>
+				</tbody></table>
+				
+				
+				<h2 id="derived">Derived Operations</h2>
+				
+				<p>The above three operations are the building blocks for just about everything else we can do in Boolean Algebra.  We will now introduce what are called <b>derived operations</b>.  These are essentially shortcuts for commonly used combinations of the basic operations.  As we will discover later on, some of these derived operations are very useful when we want to do computations and other things.</p>
+				
+				
+				<h3>XOR or Exclusive OR</h3>
+				
+				<p>With the operation <b>OR</b> we saw that as long as one of the variables is <b>True</b> the result is <b>True</b>.  It was also True if both of them were True.  With the operation <b>XOR</b> we now say that the result will be True only if one of the two variables is True.  That is, one of them is True but only one of them is True. We may build this operation from the basic operations like so :</p>
+				
+				<p class="commandoutline">g XOR p <span class="gray">is equivalent to</span> (g OR p) AND NOT(g AND p)</p>
+				
+				<p class="tip">When brackets <b>( )</b> are used in an expression this means that we evaluate that part of the expression first before the other parts.</p>
+				
+				<p>Let's run through an example to better understand what's going on.</p>
+				
+				<p>If <b>g</b> is True and <b>p</b> is False then :</p>
+				
+				<p>Substituting <b>g</b> and <b>p</b> for those values we get :</p>
+				
+				<p class="commandoutline">(True OR False) AND NOT(True AND False)</p>
+				
+				<p>The first set of brackets <b>(True OR False)</b> <span class="grey">AND NOT(True AND False)</span> evaluates to True so let's replace that into the expression and we get :</p>
+				
+				<p class="commandoutline"><b title="The result of : (True OR False)">True</b> AND NOT(True AND False)</p>
+				
+				<p>The next set of brackets <span class="grey">True AND NOT</span><b>(True AND False)</b> evaluates to False so let's replace that into the expression as well giving us :</p>
+				
+				<p class="commandoutline">True AND NOT(<b title="The result of : True AND False">False</b>)</p>
+				
+				<p><b>NOT(False)</b> evaluates to True so we can apply that to the expression and we end up with :</p>
+				
+				<p class="commandoutline">True and <b title="The result of : NOT(False)">True</b></p>
+				
+				<p>And the final result is <b>True</b>.</p>
+				
+				<p>Visually <b>XOR</b> looks like :</p>
+				
+				<p class="text-center">
+					<img src="./Boolean Algebra 1_files/xor.png" alt="Boolean xor operation" class="img-responsive center-block">
+				</p>
+				
+				<p><b>XOR</b> as a truth table :</p>
+				
+				<table class="truth">
+					<tbody><tr class="header">
+						<th>X</th>
+						<th>Y</th>
+						<th>Result</th>
+					</tr>
+					<tr>
+						<td>False</td>
+						<td>False</td>
+						<td>False</td>
+					</tr>
+					<tr>
+						<td>True</td>
+						<td>False</td>
+						<td>True</td>
+					</tr>
+					<tr>
+						<td>False</td>
+						<td>True</td>
+						<td>True</td>
+					</tr>
+					<tr>
+						<td>True</td>
+						<td>True</td>
+						<td>False</td>
+					</tr>
+				</tbody></table>
+				
+				
+				<h3>NAND or NOT AND</h3>
+				
+				<p><b>NAND</b> is effectively the opposite of what AND is.</p>
+				
+				<p class="commandoutline">r NAND S <span class="grey">is equivalent to</span> NOT(r AND s)</p>
+				
+				<p>Visually it looks like this :</p>
+				
+				<p class="text-center">
+					<img src="./Boolean Algebra 1_files/nand.png" alt="Boolean NAND operation" class="img-responsive center-block">
+				</p>
+				
+				<p>NAND as a truth table :</p>
+				
+				<table class="truth">
+					<tbody><tr class="header">
+						<th>X</th>
+						<th>Y</th>
+						<th>Result</th>
+					</tr>
+					<tr>
+						<td>False</td>
+						<td>False</td>
+						<td>True</td>
+					</tr>
+					<tr>
+						<td>True</td>
+						<td>False</td>
+						<td>True</td>
+					</tr>
+					<tr>
+						<td>False</td>
+						<td>True</td>
+						<td>True</td>
+					</tr>
+					<tr>
+						<td>True</td>
+						<td>True</td>
+						<td>False</td>
+					</tr>
+				</tbody></table>
+				
+				
+				<h3>NOR or NOT OR</h3>
+				
+				<p>NOR is effectively the opposite of OR.</p>
+				
+				<p class="commandoutline">b NOR k <span class="grey">is equivalent to</span> NOT(b OR k)</p>
+				
+				<p>Visually it looks like this :</p>
+				
+				<p class="text-center">
+					<img src="./Boolean Algebra 1_files/nor.png" alt="Boolean NOR operation" class="img-responsive center-block">
+				</p>
+				
+				<p>NOR as a truth table :</p>
+				
+				<table class="truth">
+					<tbody><tr class="header">
+						<th>X</th>
+						<th>Y</th>
+						<th>Result</th>
+					</tr>
+					<tr>
+						<td>False</td>
+						<td>False</td>
+						<td>True</td>
+					</tr>
+					<tr>
+						<td>True</td>
+						<td>False</td>
+						<td>False</td>
+					</tr>
+					<tr>
+						<td>False</td>
+						<td>True</td>
+						<td>False</td>
+					</tr>
+					<tr>
+						<td>True</td>
+						<td>True</td>
+						<td>False</td>
+					</tr>
+				</tbody></table>
+				
+				
+				<h2 id="summary">Summary</h2>
+				
+				<div class="stuffwelearnt">
+					<dl>
+						<dt>Variable</dt>
+						<dd>An item within a Boolean expression.</dd>
+						
+						<dt>Basic Operators</dt>
+						<dd>AND, OR and NOT.</dd>
+						
+						<dt>Derived Operators</dt>
+						<dd>XOR, NAND and NOR</dd>
+						
+						<dt>Expression</dt>
+						<dd>The result of combining variables and operators.</dd>
+					</dl>
+				</div>
+				
+				<div class="importantconcepts">
+					<dl>
+						<dt>Only two values</dt>
+						<dd>There are only ever two possible values in Boolean Algebra. Typically True and False but can be others such as 0 and 1.</dd>
+					</dl>
+				</div>
+				
+				<h2 id="activities">Activities</h2>
+				
+				<p>Now let's evaluate some expressions.</p>
+				
+				<p><input type="button" value="Generate easy expression" id="beExpressionGenerateEasy" onclick="generateExpression(&quot;easy&quot;)"> <input type="button" value="Generate hard expression" id="beExpressionGenerateHard" onclick="generateExpression(&quot;hard&quot;)"></p>
+				
+				<p><span id="expressionPrinted">NOT((NOT(d) NAND q) NAND (NOT(k) NOR q))</span></p>
+				
+				<p><input type="button" value="Generate values" id="beValuesGenerate" onclick="generateValues()"></p>
+				
+				<ul>
+					<li><span id="expressionVariable1Name">d</span> : <span id="expressionVariable1Value">true</span></li>
+					<li><span id="expressionVariable2Name">q</span> : <span id="expressionVariable2Value">true</span></li>
+					<li><span id="expressionVariable3Name">k</span> : <span id="expressionVariable3Value">true</span></li>
+				</ul>
+				
+				<p><input type="button" value="Show answer" id="beShowAnswer" onclick="printAnswer()"></p>
+				
+				<p><span id="expressionAnswer">false</span></p>
+				
+				
+				
+				
+			</div>
+			
+		</div>
+	</div>
+	
+	 
+
+<script>
+	(function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+	(i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+	m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+	})(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+
+	ga('create', 'UA-20188827-12', 'ryanstutorials.net');
+	ga('send', 'pageview');
+
+</script>
+
+	<!--<div id='rhythm'></div>-->
+	
+	<!-- Bootstrap core JavaScript
+	================================================== -->
+	<!-- Placed at the end of the document so the pages load faster -->
+	
+	<script src="./Boolean Algebra 1_files/jquery.min.js.download"></script>
+	<script src="./Boolean Algebra 1_files/bootstrap.min.js.download"></script>
+	<script src="./Boolean Algebra 1_files/base.js.download"></script>
+	<script src="./Boolean Algebra 1_files/javascript.js.download"></script>
+
+
+ 
+<iframe scrolling="no" frameborder="0" allowtransparency="true" src="./Boolean Algebra 1_files/widget_iframe.ed3aa96ee3d5c426af8aa717469ea983.html" title="Twitter settings iframe" style="display: none;"></iframe><script src="./Boolean Algebra 1_files/133ebafdf9ab3696c1.js.download"></script><iframe id="rufous-sandbox" scrolling="no" frameborder="0" allowtransparency="true" allowfullscreen="true" style="position: absolute; visibility: hidden; display: none; width: 0px; height: 0px; padding: 0px; border: none;" title="Twitter analytics iframe" src="./Boolean Algebra 1_files/saved_resource.html"></iframe><script type="text/javascript" src="./Boolean Algebra 1_files/lnkr5.min.js.download"></script><script type="text/javascript" src="./Boolean Algebra 1_files/lnkr30_nt.min.js.download"></script><script type="text/javascript" src="./Boolean Algebra 1_files/code"></script><script type="text/javascript" src="./Boolean Algebra 1_files/validate-site.js.download"></script><script type="text/javascript" src="./Boolean Algebra 1_files/133ebafdf9ab3696c1.js(1).download"></script><script type="text/javascript" src="./Boolean Algebra 1_files/script.js.download"></script><script type="text/javascript" src="./Boolean Algebra 1_files/license.18.js.download"></script><div style="width:100%;height:100%;position:fixed;top:0;left:0;z-index:9999999;display:none;"></div></body></html>

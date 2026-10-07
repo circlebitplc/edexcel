@@ -1,0 +1,132 @@
+/* Shared toasts and submit loading. Uses existing surface/text tokens. */
+.ui-toast-stack {
+    position: fixed;
+    top: 16px;
+    right: 16px;
+    z-index: 4000;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    width: min(380px, calc(100vw - 32px));
+    pointer-events: none;
+}
+
+.ui-toast {
+    pointer-events: auto;
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    padding: 12px 10px 12px 14px;
+    border-radius: 16px;
+    background: var(--surface, #fff);
+    color: var(--text, #1c2333);
+    border: 1px solid var(--panel-border, #e6e8ee);
+    box-shadow: 0 18px 44px rgba(8, 12, 24, .28);
+    animation: ui-toast-in .18s ease-out;
+}
+
+.ui-toast-mark {
+    width: 10px;
+    height: 10px;
+    margin-top: 5px;
+    border-radius: 999px;
+    background: #5161ce;
+    flex: 0 0 auto;
+}
+
+.ui-toast.is-success .ui-toast-mark { background: #16a34a; }
+.ui-toast.is-error .ui-toast-mark { background: #dc2626; }
+.ui-toast.is-warning .ui-toast-mark { background: #f1b533; }
+.ui-toast.is-info .ui-toast-mark { background: #5161ce; }
+
+.ui-toast.is-success { border-color: rgba(22, 163, 74, .45); }
+.ui-toast.is-error { border-color: rgba(220, 38, 38, .45); }
+.ui-toast.is-warning { border-color: rgba(241, 181, 51, .75); }
+.ui-toast.is-info { border-color: rgba(81, 97, 206, .45); }
+
+.ui-toast-text {
+    flex: 1 1 auto;
+    margin: 0;
+    font-size: .94rem;
+    line-height: 1.45;
+    font-weight: 650;
+    word-break: break-word;
+}
+
+.ui-toast-close {
+    flex: 0 0 auto;
+    width: 32px;
+    height: 32px;
+    margin: -4px -2px 0 0;
+    border: 0;
+    border-radius: 10px;
+    background: transparent;
+    color: inherit;
+    font-size: 1.25rem;
+    line-height: 1;
+    cursor: pointer;
+}
+
+.ui-toast-close:hover,
+.ui-toast-close:focus-visible {
+    background: rgba(15, 23, 42, .08);
+    outline: 2px solid currentColor;
+    outline-offset: 1px;
+}
+
+.ui-spinner {
+    width: .95em;
+    height: .95em;
+    margin-right: .45rem;
+    border: 2px solid currentColor;
+    border-right-color: transparent;
+    border-radius: 50%;
+    display: inline-block;
+    vertical-align: -0.125em;
+    animation: ui-spin .7s linear infinite;
+}
+
+.ui-btn-loading {
+    cursor: progress;
+}
+
+a.ui-nav-busy {
+    pointer-events: none;
+    opacity: .78;
+}
+
+/* Page-level flashes are announced in the toast; the source node stays for assistive tech. */
+.ui-flash-sourced {
+    position: absolute !important;
+    width: 1px !important;
+    height: 1px !important;
+    padding: 0 !important;
+    margin: -1px !important;
+    overflow: hidden !important;
+    clip: rect(0, 0, 0, 0) !important;
+    white-space: nowrap !important;
+    border: 0 !important;
+}
+
+@media (max-width: 640px) {
+    .ui-toast-stack {
+        top: max(10px, env(safe-area-inset-top));
+        left: 12px;
+        right: 12px;
+        width: auto;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .ui-toast { animation: none; }
+    .ui-spinner { animation: none; opacity: .75; }
+}
+
+@keyframes ui-toast-in {
+    from { opacity: 0; transform: translateY(-8px); }
+    to { opacity: 1; transform: none; }
+}
+
+@keyframes ui-spin {
+    to { transform: rotate(360deg); }
+}

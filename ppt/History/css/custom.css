@@ -1,0 +1,110 @@
+.reveal section li {
+	padding-bottom: 25px;
+}
+
+.reveal section img {
+	padding: 10px;
+}
+
+.reveal section hlr {
+	color: #ff2c2d;
+	font-weight: bold;
+}
+
+.reveal section hlb {
+	color: #1b91ff;
+	font-weight: bold;
+}
+
+.reveal section hlg {
+	color: #17ff2e;
+	font-weight: bold;
+}
+
+.reveal .split_screen {
+	padding: 0px;
+	margin: 40px 0px 0px 0px;
+}
+
+.reveal .split_screen span {
+	width: 48%;
+	display: inline-table;
+	text-align: center;
+}
+
+
+.reveal .msstats {
+	margin-left: auto;
+	margin-right: auto;
+	width: 95%;
+	border-collapse: collapse;
+}
+
+.reveal .prespaced {
+	margin-top: 40px;
+}
+
+.reveal th {
+	background-color: #569800;
+	color: #eeeeee;
+	font-family: "League Gothic", Impact, sans-serif;
+	line-height: 0.9em;
+	letter-spacing: 0.02em;
+	text-transform: uppercase;
+	text-shadow: 0px 0px 6px rgba(0, 0, 0, 0.2);
+}
+
+.reveal table,
+.reveal th,
+.reveal td {
+	border: 1px solid #569800;
+	font-size: 80%;
+	padding: 2px;
+	line-height: 1.3em;
+}
+
+.reveal td {
+	background: rgba(38, 62, 0, 0.27);
+}
+
+.reveal .example {
+	text-align: left;
+	font-size: 80%;
+	min-width: 30%;
+	margin: 15px 0px;
+	padding: 10px;
+	background: rgba(255, 255, 255, 0.12);
+	border: 4px solid #eeeeee;
+	box-shadow: 0 0 10px rgba(0, 0, 0, 0.15);
+	-webkit-transition: all .2s linear;
+	-moz-transition: all .2s linear;
+	-ms-transition: all .2s linear;
+	-o-transition: all .2s linear;
+	transition: all .2s linear;
+}
+
+.reveal .example h1,
+.reveal .example h2,
+.reveal .example h3,
+.reveal .example h4,
+.reveal .example h5,
+.reveal .example h6 {
+	text-transform: none;
+}
+
+.reveal .example li {
+	line-height: 1.0em;
+}
+
+.reveal .example li code {
+	font-size: 80%;
+}
+
+.reveal .acknowledgements {
+	text-align: left;
+}
+
+/*.reveal pre code {
+	font-size: 130%;
+	line-height: 1.2em;
+}*/

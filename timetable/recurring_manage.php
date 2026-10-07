@@ -44,12 +44,12 @@ include __DIR__ . '/../includes/header.php';
     </div>
     <?php if($success): ?><div class="alert alert-success"><i class="bi bi-check-circle"></i> <?= htmlspecialchars($success) ?></div><?php endif; ?>
     <?php if($error): ?><div class="alert alert-danger"><i class="bi bi-exclamation-triangle"></i> <?= htmlspecialchars($error) ?></div><?php endif; ?>
-    <div class="ops-card"><div class="ops-card-body">
-        <div class="ops-toolbar"><div class="ops-search"><input type="search" id="recurringSearch" class="form-control" placeholder="Search teacher, subject, class or room..."></div><select id="recurringFilter" class="form-select" style="max-width:170px"><option value="all">All schedules</option><option value="active">Active</option><option value="expired">Expired</option></select></div>
+    <div class="ops-card" data-live-scope><div class="ops-card-body">
+        <div class="ops-toolbar"><div class="ops-search"><input type="search" id="recurringSearch" class="form-control" placeholder="Search teacher, subject, class or room..." data-live-search></div><select id="recurringFilter" class="form-select" style="max-width:170px" data-live-select data-live-key="status"><option value="all">All schedules</option><option value="active">Active</option><option value="expired">Expired</option></select></div>
         <?php if(!$schedules): ?><div class="ops-empty"><i class="bi bi-arrow-repeat"></i><strong>No recurring schedules</strong><div>Create a weekly schedule from the timetable Add Lesson screen.</div></div><?php else: ?>
             <div class="ops-recurring-grid" id="recurringGrid">
             <?php foreach($schedules as $s): $isActive=$s['end_date'] >= $today; $search=strtolower($s['teacher_name'].' '.$s['subject_name'].' '.$s['class_name'].' '.$s['room_name'].' '.$s['day_of_week']); ?>
-                <article class="ops-recurring-card" data-search="<?= htmlspecialchars($search) ?>" data-status="<?= $isActive?'active':'expired' ?>">
+                <article class="ops-recurring-card" data-live-item data-search="<?= htmlspecialchars($search) ?>" data-status="<?= $isActive?'active':'expired' ?>">
                     <div class="ops-recurring-top"><div><div class="ops-recurring-title"><?= htmlspecialchars($s['subject_name']) ?></div><div class="text-muted small mt-1"><?= htmlspecialchars($s['class_name']) ?></div></div><span class="ops-chip <?= $isActive?'success':'warning' ?>"><?= $isActive?'Active':'Expired' ?></span></div>
                     <div class="mt-3"><span class="ops-chip"><i class="bi bi-person"></i><?= htmlspecialchars($s['teacher_name']) ?></span> <span class="ops-chip"><i class="bi bi-door-open"></i><?= htmlspecialchars($s['room_name']) ?></span></div>
                     <div class="ops-recurring-meta">
@@ -61,12 +61,9 @@ include __DIR__ . '/../includes/header.php';
                     <div class="ops-recurring-footer"><span class="text-muted small">Last generated: <?= $s['last_generated_date'] ? date('d M Y',strtotime($s['last_generated_date'])) : 'Not yet' ?></span><form method="POST" onsubmit="return confirm('Delete this recurring schedule? Existing generated classes will remain.')"><?= csrf_field() ?><input type="hidden" name="delete_schedule" value="1"><input type="hidden" name="id" value="<?= (int)$s['id'] ?>"><button class="btn btn-sm btn-outline-danger" type="submit"><i class="bi bi-trash"></i> Remove</button></form></div>
                 </article>
             <?php endforeach; ?>
-            </div><div id="recurringEmpty" class="ops-empty d-none"><i class="bi bi-search"></i><strong>No matching schedules</strong></div>
+            </div><div id="recurringEmpty" class="ops-empty d-none" data-live-empty><i class="bi bi-search"></i><strong>No matching schedules</strong></div>
         <?php endif; ?>
     </div></div>
     <div class="alert alert-info mt-3"><i class="bi bi-info-circle"></i> Removing a recurring rule stops future generation; it does <strong>not</strong> delete lessons that were already generated.</div>
 </div>
-<script>
-(function(){const s=document.getElementById('recurringSearch'),f=document.getElementById('recurringFilter');function run(){const q=(s?.value||'').toLowerCase().trim(),x=f?.value||'all';let n=0;document.querySelectorAll('#recurringGrid .ops-recurring-card').forEach(el=>{const show=el.dataset.search.includes(q)&&(x==='all'||el.dataset.status===x);el.classList.toggle('d-none',!show);if(show)n++;});document.getElementById('recurringEmpty')?.classList.toggle('d-none',n!==0);}s?.addEventListener('input',run);f?.addEventListener('change',run);})();
-</script>
 <?php include __DIR__ . '/../includes/footer.php'; ?>

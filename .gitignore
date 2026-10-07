@@ -3,7 +3,11 @@
 # =========================================================
 .env
 .env.*
+.env.local
+.env.staging
+.env.production
 !.env.example
+!.env.*.example
 
 # Local configuration containing credentials
 config/.env
@@ -21,8 +25,74 @@ config/*credentials*
 *.bak
 *.backup
 
+# Whitelist schema migration files
+!database/migrations/*.sql
+
+# Project backup directories
+backups/
+backup/
+storage/backups/*
+!storage/backups/.htaccess
+!storage/backups/index.html
+
 # =========================================================
-# Archives / deployment backups
+# Storage & Private User Data
+# =========================================================
+storage/logs/*
+!storage/logs/.htaccess
+!storage/logs/index.html
+
+storage/imports/*
+!storage/imports/index.html
+
+storage/cache/*
+
+uploads/*
+!uploads/.gitkeep
+files/documents/*
+!files/documents/.htaccess
+!files/documents/.gitkeep
+files/homework/*
+!files/homework/.gitkeep
+!files/homework/.htaccess
+files/payment_slips/*
+!files/payment_slips/.htaccess
+!files/payment_slips/.gitkeep
+
+# =========================================================
+# Logs
+# =========================================================
+*.log
+logs/
+
+# =========================================================
+# Application Cache
+# =========================================================
+cache/*
+!cache/.htaccess
+!cache/.gitkeep
+*.cache
+
+# =========================================================
+# Dependencies
+# =========================================================
+vendor/
+node_modules/
+
+# =========================================================
+# SSH / SSL / Private Keys
+# =========================================================
+*.pem
+*.key
+*.pkcs12
+*.pfx
+*.ppk
+id_rsa*
+id_ed25519*
+.ssh/
+
+# =========================================================
+# Archives & compressed backups
 # =========================================================
 *.rar
 *.zip
@@ -32,70 +102,26 @@ config/*credentials*
 *.tgz
 
 # =========================================================
-# Logs
-# =========================================================
-*.log
-logs/
-storage/logs/
-
-# =========================================================
-# Temporary files
+# Temporary files & Editor files
 # =========================================================
 *.tmp
 *.temp
 *.swp
 *.swo
 *~
-
-# =========================================================
-# OS files
-# =========================================================
 .DS_Store
 Thumbs.db
 desktop.ini
-
-# =========================================================
-# Editor / IDE
-# =========================================================
 .vscode/
 .idea/
+.cursor/
 
 # =========================================================
-# Local server / runtime files
-# =========================================================
-node_modules/
-vendor/bin/
-
-# =========================================================
-# Development backups created during live fixes
-# =========================================================
-*.step*.bak
-*.bak
-*.old
-*.orig
-
-# =========================================================
-# PHP generated/cache files
+# Testing & Composer auth
 # =========================================================
 .phpunit.result.cache
 .phpunit.cache/
-
-# =========================================================
-# Composer generated auth
-# =========================================================
 auth.json
-
-# Application cache
-cache/*
-!cache/.htaccess
 
 # Let's Encrypt / ACME temporary files
 .well-known/acme-challenge/*
-
-# Runtime cache / generated files
-*.cache
-
-# Local environment files
-.env
-.env.local
-.env.production

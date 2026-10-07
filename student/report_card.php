@@ -1,0 +1,9 @@
+<?php
+declare(strict_types=1);
+require_once __DIR__ . '/../config/bootstrap.php';
+require_once __DIR__ . '/../vendor/autoload.php';
+use Edexcel\Services\ReportCardService;
+require_student();
+$card=(new ReportCardService($pdo))->published((int)$_SESSION['user_id'],(string)($_GET['term']??''));
+include __DIR__ . '/../includes/header.php';?>
+<div class="container-fluid py-4"><h1 class="h3"><i class="bi bi-award"></i> Academic report card</h1><?php if(!$card):?><div class="alert alert-info">No published report card is available yet.</div><?php else:?><div class="row g-3 mb-4"><div class="col-md-4"><div class="card p-3"><div class="small text-muted">Term</div><strong><?=e($card['term_label'])?></strong></div></div><div class="col-md-4"><div class="card p-3"><div class="small text-muted">Overall</div><strong><?=e((string)($card['overall_percent']??'—'))?>%</strong></div></div><div class="col-md-4"><div class="card p-3"><div class="small text-muted">Published</div><strong><?=e((string)$card['published_at'])?></strong></div></div></div><div class="card shadow-sm border-0"><div class="table-responsive"><table class="table"><thead><tr><th>Subject</th><th>Test</th><th>Exam</th><th>Homework</th><th>Attendance</th><th>Overall</th><th>Grade</th><th>Comment</th></tr></thead><tbody><?php foreach($card['items'] as $i):?><tr><td><?=e($i['subject_name'])?></td><td><?=e((string)$i['test_mark'])?></td><td><?=e((string)$i['exam_mark'])?></td><td><?=e((string)$i['homework_percent'])?>%</td><td><?=e((string)$i['attendance_percent'])?>%</td><td><?=e((string)$i['overall_percent'])?>%</td><td><?=e((string)$i['grade'])?></td><td><?=e((string)$i['teacher_comment'])?></td></tr><?php endforeach;?></tbody></table></div><?php if($card['overall_comment']):?><div class="card-body border-top"><?=nl2br(e($card['overall_comment']))?></div><?php endif;?></div><?php endif;?></div><?php include __DIR__ . '/../includes/footer.php';?>

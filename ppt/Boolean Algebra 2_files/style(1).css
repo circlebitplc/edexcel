@@ -1,0 +1,99 @@
+h1:after {
+	content: ' of 3';
+	color: #666;
+	font-size: 20px;
+	font-weight: 100;
+}
+
+.jumbotron {
+	background-color: #4681a0;
+	background: url('../../img/round/config_128.png') no-repeat #4681a0;
+	background-position: right 0px bottom -15px;
+}
+
+#sidebox.affix {
+	top: 70px;
+}
+
+.activities li:last-child {
+	list-style-type: none;
+}
+
+/* Truth Tables */
+
+table.truth {
+	border-bottom: 1px solid #444;
+	border-top: 1px solid #444;
+	margin-left: auto;
+	margin-right: auto;
+	margin-top: 40px;
+	margin-bottom: 40px;
+	text-align: center;
+}
+
+table.truth th:last-child, table.truth td:last-child {
+	padding-left: 19px;
+	padding-right: 40px;
+}
+
+table.truth th:first-child, table.truth td.first-child {
+	padding-left: 40px;
+	padding-right: 40px;
+}
+
+table.truth th {
+	padding-top: 5px;
+	padding-bottom: 5px;
+	text-align: center;
+}
+
+table.truth td {
+	padding: 5px 40px 5px 40px;
+	text-align: center;
+}
+
+table.truth td:last-child {
+	font-weight: bold;
+}
+
+table.truth tr:nth-child(2n + 3) {
+	background-color: #e1f0ff;
+}
+
+
+/* Misc */
+
+.commandoutline b {
+	color: #C09853;
+}
+
+.grey {
+	color: #999;
+}
+
+.spaced {
+	padding-left: 15px;
+	padding-right: 15px;
+}
+
+
+/* Activities */
+
+.questiontitle {
+	display: inline-block;
+	width: 170px;
+}
+
+.activityquestion {
+	display: inline-block;
+	width: 150px;
+	font-weight: bold;
+	color: #48A1AF;
+	text-align: center;
+}
+
+.activityanswer {
+	font-weight: bold;
+	color: #29C183;
+	padding-left: 20px;
+}

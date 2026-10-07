@@ -1,8 +1,9 @@
 <?php
 declare(strict_types=1);
 
-namespace App\Repositories;
+namespace Edexcel\Repositories;
 
+use Edexcel\Services\ClassSessionFeeCalculator;
 use PDO;
 use RuntimeException;
 
@@ -18,19 +19,26 @@ final class TimetableRepository
         $where=["t.deleted_at IS NULL","t.date BETWEEN ? AND ?"];
         $params=[$dateFrom,$dateTo];
 
-        if($teacherId>0){$where[]="t.teacher_id=?";$params[]=$teacherId;}
+        if($teacherId>0){
+            $where[]="(t.teacher_id=? OR t.substitute_teacher_id=?)";
+            $params[]=$teacherId;
+            $params[]=$teacherId;
+        }
         if($roomId>0){$where[]="t.room_id=?";$params[]=$roomId;}
         if($classId>0){$where[]="t.class_id=?";$params[]=$classId;}
 
         $sql="SELECT t.id,t.date,t.start_time,t.end_time,
-                     tc.name teacher_name,s.name subject_name,
+                     COALESCE(st.name,tc.name,'Unassigned teacher') teacher_name,
+                     tc.name assigned_teacher_name,st.name substitute_teacher_name,
                      c.name class_name,r.name room_name,
-                     t.student_count,t.payment_status,t.is_locked
+                     t.student_count,t.class_fee_per_student,t.payment_status,t.is_locked,
+                     t.delivery_mode
               FROM timetable t
-              JOIN teachers tc ON t.teacher_id=tc.id AND tc.deleted_at IS NULL
-              JOIN subjects s ON t.subject_id=s.id AND s.deleted_at IS NULL
-              JOIN student_classes c ON t.class_id=c.id AND c.deleted_at IS NULL
-              JOIN rooms r ON t.room_id=r.id AND r.deleted_at IS NULL
+              LEFT JOIN teachers tc ON t.teacher_id=tc.id AND tc.deleted_at IS NULL
+              LEFT JOIN teachers st ON t.substitute_teacher_id=st.id AND st.deleted_at IS NULL
+              LEFT JOIN subjects s ON t.subject_id=s.id AND s.deleted_at IS NULL
+              LEFT JOIN student_classes c ON t.class_id=c.id AND c.deleted_at IS NULL
+              LEFT JOIN rooms r ON t.room_id=r.id AND r.deleted_at IS NULL
               WHERE ".implode(" AND ",$where)."
               ORDER BY t.date,t.start_time
               LIMIT ? OFFSET ?";
@@ -64,12 +72,47 @@ final class TimetableRepository
 
     public function create(array $data): int
     {
+        $mode = 'physical';
+        if (function_exists('classroom_normalize_delivery_mode')) {
+            $mode = classroom_normalize_delivery_mode((string)($data['delivery_mode'] ?? 'physical'));
+        }
+        $fee = ClassSessionFeeCalculator::moneyString($data['class_fee_per_student'] ?? 0);
+        if ($this->feeColumnsReady()) {
+            $snap = ClassSessionFeeCalculator::snapshotFromPayload($data);
+            $stmt=$this->pdo->prepare(
+                "INSERT INTO timetable
+                 (teacher_id,subject_id,class_id,room_id,student_count,
+                  class_fee_per_student,date,start_time,end_time,
+                  payment_status,payment_date,is_locked,deleted_at,delivery_mode,
+                  fee_rule,institute_online_fee,transaction_handling_fee,teacher_net_amount)
+                 VALUES (?,?,?,?,?,?,?,?,?,?,?,0,NULL,?,?,?,?,?)"
+            );
+            $stmt->execute([
+                (int)$data['teacher_id'],
+                (int)$data['subject_id'],
+                (int)$data['class_id'],
+                (int)$data['room_id'],
+                (int)$data['student_count'],
+                $fee,
+                $data['date'],
+                $data['start_time'],
+                $data['end_time'],
+                $data['payment_status'],
+                $data['payment_date'] ?? null,
+                $mode,
+                $snap['fee_rule'],
+                $snap['institute_online_fee'],
+                $snap['transaction_handling_fee'],
+                $snap['teacher_net_amount'],
+            ]);
+            return (int)$this->pdo->lastInsertId();
+        }
         $stmt=$this->pdo->prepare(
             "INSERT INTO timetable
              (teacher_id,subject_id,class_id,room_id,student_count,
-              date,start_time,end_time,payment_status,payment_date,
-              is_locked,deleted_at)
-             VALUES (?,?,?,?,?,?,?,?,?,?,0,NULL)"
+              class_fee_per_student,date,start_time,end_time,
+              payment_status,payment_date,is_locked,deleted_at,delivery_mode)
+             VALUES (?,?,?,?,?,?,?,?,?,?,?,0,NULL,?)"
         );
         $stmt->execute([
             (int)$data['teacher_id'],
@@ -77,23 +120,29 @@ final class TimetableRepository
             (int)$data['class_id'],
             (int)$data['room_id'],
             (int)$data['student_count'],
+            $fee,
             $data['date'],
             $data['start_time'],
             $data['end_time'],
             $data['payment_status'],
-            $data['payment_date'] ?? null
+            $data['payment_date'] ?? null,
+            $mode
         ]);
         return (int)$this->pdo->lastInsertId();
     }
 
     public function cloneForDate(int $sourceId,string $date): int
     {
+        $feeColumns = $this->feeColumnsReady()
+            ? ',fee_rule,institute_online_fee,transaction_handling_fee,teacher_net_amount'
+            : '';
         $stmt=$this->pdo->prepare(
             "INSERT INTO timetable
              (teacher_id,subject_id,class_id,room_id,student_count,
-              date,start_time,end_time,payment_status,is_locked,deleted_at)
+              class_fee_per_student,date,start_time,end_time,
+              payment_status,is_locked,deleted_at,delivery_mode{$feeColumns})
              SELECT teacher_id,subject_id,class_id,room_id,student_count,
-                    ?,start_time,end_time,'pending',0,NULL
+                    class_fee_per_student,?,start_time,end_time,'pending',0,NULL,delivery_mode{$feeColumns}
              FROM timetable source
              WHERE source.id=? AND source.deleted_at IS NULL
                AND NOT EXISTS (
@@ -118,26 +167,66 @@ final class TimetableRepository
 
     public function update(int $id,array $data): void
     {
-        $stmt=$this->pdo->prepare(
-            "UPDATE timetable SET
-                teacher_id=?,subject_id=?,class_id=?,room_id=?,
-                student_count=?,date=?,start_time=?,end_time=?,
-                payment_status=?,payment_date=?
-             WHERE id=? AND deleted_at IS NULL"
-        );
-        $stmt->execute([
-            (int)$data['teacher_id'],
-            (int)$data['subject_id'],
-            (int)$data['class_id'],
-            (int)$data['room_id'],
-            (int)$data['student_count'],
-            $data['date'],
-            $data['start_time'],
-            $data['end_time'],
-            $data['payment_status'],
-            $data['payment_date'] ?? null,
-            $id
-        ]);
+        $mode = 'physical';
+        if (function_exists('classroom_normalize_delivery_mode')) {
+            $mode = classroom_normalize_delivery_mode((string)($data['delivery_mode'] ?? 'physical'));
+        }
+        $fee = ClassSessionFeeCalculator::moneyString($data['class_fee_per_student'] ?? 0);
+        if ($this->feeColumnsReady()) {
+            $snap = ClassSessionFeeCalculator::snapshotFromPayload($data);
+            $stmt=$this->pdo->prepare(
+                "UPDATE timetable SET
+                    teacher_id=?,subject_id=?,class_id=?,room_id=?,
+                    student_count=?,class_fee_per_student=?,
+                    date=?,start_time=?,end_time=?,
+                    payment_status=?,payment_date=?,delivery_mode=?,
+                    fee_rule=?,institute_online_fee=?,transaction_handling_fee=?,teacher_net_amount=?
+                 WHERE id=? AND deleted_at IS NULL"
+            );
+            $stmt->execute([
+                (int)$data['teacher_id'],
+                (int)$data['subject_id'],
+                (int)$data['class_id'],
+                (int)$data['room_id'],
+                (int)$data['student_count'],
+                $fee,
+                $data['date'],
+                $data['start_time'],
+                $data['end_time'],
+                $data['payment_status'],
+                $data['payment_date'] ?? null,
+                $mode,
+                $snap['fee_rule'],
+                $snap['institute_online_fee'],
+                $snap['transaction_handling_fee'],
+                $snap['teacher_net_amount'],
+                $id
+            ]);
+        } else {
+            $stmt=$this->pdo->prepare(
+                "UPDATE timetable SET
+                    teacher_id=?,subject_id=?,class_id=?,room_id=?,
+                    student_count=?,class_fee_per_student=?,
+                    date=?,start_time=?,end_time=?,
+                    payment_status=?,payment_date=?,delivery_mode=?
+                 WHERE id=? AND deleted_at IS NULL"
+            );
+            $stmt->execute([
+                (int)$data['teacher_id'],
+                (int)$data['subject_id'],
+                (int)$data['class_id'],
+                (int)$data['room_id'],
+                (int)$data['student_count'],
+                $fee,
+                $data['date'],
+                $data['start_time'],
+                $data['end_time'],
+                $data['payment_status'],
+                $data['payment_date'] ?? null,
+                $mode,
+                $id
+            ]);
+        }
         /*
          * rowCount() may be 0 when the submitted values are identical
          * to the existing values. The service already locked and verified
@@ -219,6 +308,7 @@ final class TimetableRepository
                AND t.date=?
                AND (? < t.end_time AND ? > t.start_time)
                AND t.deleted_at IS NULL
+               AND (t.lesson_status IS NULL OR t.lesson_status <> 'cancelled')
                AND t.id <> ?
              LIMIT 1"
         );
@@ -226,4 +316,66 @@ final class TimetableRepository
         $row=$stmt->fetch(PDO::FETCH_ASSOC);
         return $row ?: null;
     }
+
+    public function updateRecurringClassFees(
+        array $oldEntry,
+        int $excludeId,
+        float $classFee,
+        string $fromDate,
+        string $untilDate,
+        ?array $feeSnapshot = null
+    ): int {
+        if ($untilDate === '' || $untilDate < $fromDate) {
+            return 0;
+        }
+
+        $fee = ClassSessionFeeCalculator::moneyString($classFee);
+        $params = [$fee];
+        $set = 'class_fee_per_student = ?';
+        if ($feeSnapshot !== null && $this->feeColumnsReady()) {
+            $set .= ', fee_rule = ?, institute_online_fee = ?, transaction_handling_fee = ?, teacher_net_amount = ?';
+            $params[] = $feeSnapshot['fee_rule'] ?? null;
+            $params[] = $feeSnapshot['institute_online_fee'] ?? null;
+            $params[] = $feeSnapshot['transaction_handling_fee'] ?? null;
+            $params[] = $feeSnapshot['teacher_net_amount'] ?? null;
+        }
+
+        $sql = "UPDATE timetable
+                SET {$set}
+                WHERE deleted_at IS NULL
+                  AND id <> ?
+                  AND teacher_id = ?
+                  AND subject_id = ?
+                  AND class_id = ?
+                  AND room_id = ?
+                  AND start_time = ?
+                  AND end_time = ?
+                  AND date > ?
+                  AND date <= ?
+                  AND DAYOFWEEK(date) = DAYOFWEEK(?)
+                  AND (payment_status IS NULL OR payment_status <> 'paid')
+                  AND (is_locked IS NULL OR is_locked = 0)";
+
+        $stmt = $this->pdo->prepare($sql);
+        $stmt->execute(array_merge($params, [
+            $excludeId,
+            (int)$oldEntry['teacher_id'],
+            (int)$oldEntry['subject_id'],
+            (int)$oldEntry['class_id'],
+            (int)$oldEntry['room_id'],
+            substr((string)$oldEntry['start_time'], 0, 5),
+            substr((string)$oldEntry['end_time'], 0, 5),
+            $fromDate,
+            $untilDate,
+            $fromDate,
+        ]));
+
+        return $stmt->rowCount();
+    }
+
+    private function feeColumnsReady(): bool
+    {
+        return ClassSessionFeeCalculator::tableHas($this->pdo, 'timetable', 'fee_rule');
+    }
 }
+

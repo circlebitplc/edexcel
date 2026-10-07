@@ -1,0 +1,291 @@
+var booleanExpressionQuestions = {
+	x: false,
+	y: false,
+	z: false,
+	answer: false,
+	xName: 'x',
+	yName: 'y',
+	zName: 'z',
+	expressionOperator1: '',
+	expressionOperator2: '',
+	expressionOperator3: '',
+	expressionItem1Not: false,
+	expressionItem2Not: false,
+	expressionItem3Not: false,
+	expressionItem4Not: false,
+	expressionNot: false,
+	
+	generateValues: function() {
+		var flipper = Math.random();
+		
+		// set x
+		this.x = false;
+		if (flipper >= 0.5) {
+			this.x = true;
+		}
+		
+		// set y
+		flipper = Math.random();
+		this.y = false;
+		if (flipper >= 0.5) {
+			this.y = true;
+		}
+		
+		// set z
+		flipper = Math.random();
+		this.z = false;
+		if (flipper >= 0.5) {
+			this.z = true;
+		}
+	},
+	
+	generateNames: function() {
+		var alphabet = 'abcdefghijkmnpqrstuvwxyz';
+		
+		var letter = Math.floor(Math.random() * (alphabet.length));
+		this.xName = alphabet.substr(letter, 1);
+		alphabet = alphabet.replace(this.xName, '');
+		
+		letter = Math.floor(Math.random() * (alphabet.length));
+		this.yName = alphabet.substr(letter, 1);
+		alphabet = alphabet.replace(this.yName, '');
+		
+		letter = Math.floor(Math.random() * (alphabet.length));
+		this.zName = alphabet.substr(letter, 1);
+	},
+	
+	generateExpression: function (difficulty) {
+		var operators = ['AND', 'OR', 'XOR', 'NAND', 'NOR'];
+		var flipper = Math.random();
+		
+		if (difficulty == 'hard') {
+			flipper = Math.floor(Math.random() * 5);
+			this.expressionOperator1 = operators[flipper];
+			flipper = Math.floor(Math.random() * 5);
+			this.expressionOperator2 = operators[flipper];
+			flipper = Math.floor(Math.random() * 5);
+			this.expressionOperator3 = operators[flipper];
+			
+			flipper = Math.random();
+			this.expressionItem1Not = flipper > 0.5 ? true : false;
+			flipper = Math.random();
+			this.expressionItem2Not = flipper > 0.5 ? true : false;
+			flipper = Math.random();
+			this.expressionItem3Not = flipper > 0.5 ? true : false;
+			flipper = Math.random();
+			this.expressionItem4Not = flipper > 0.5 ? true : false;
+			
+			flipper = Math.random();
+			this.expressionNot = flipper > 0.5 ? true : false;
+			
+		} else {
+			flipper = Math.floor(Math.random() * 2);
+			this.expressionOperator1 = operators[flipper];
+			flipper = Math.floor(Math.random() * 2);
+			this.expressionOperator2 = operators[flipper];
+			
+			// set to blank
+			this.expressionOperator3 = '';
+			
+			flipper = Math.random();
+			this.expressionItem1Not = flipper > 0.75 ? true : false;
+			flipper = Math.random();
+			this.expressionItem2Not = flipper > 0.75 ? true : false;
+			flipper = Math.random();
+			this.expressionItem3Not = flipper > 0.75 ? true : false;
+			flipper = Math.random();
+			this.expressionItem4Not = flipper > 0.75 ? true : false;
+			
+			flipper = Math.random();
+			this.expressionNot = flipper > 0.75 ? true : false;
+			
+		}
+	},
+	
+	// returns a string
+	renderExpression: function() {
+		var render = '';
+		
+		var part1 = '(';
+		part1 += this.expressionItem1Not ? ('NOT(' + this.xName + ')') : this.xName;
+		part1 += ' ' + this.expressionOperator1 + ' ';
+		part1 += this.expressionItem2Not ? ('NOT(' + this.yName + ')') : this.yName;
+		part1 += ')';
+		
+		var part2 = '';
+		if (this.expressionOperator3 == '') { // easy
+			part2 = this.expressionItem3Not ? ('NOT(' + this.zName + ')') : this.zName;
+		} else {
+			part2 += '(';
+			part2 += this.expressionItem3Not ? ('NOT(' + this.zName + ')') : this.zName;
+			part2 += ' ' + this.expressionOperator3 + ' ';
+			part2 += this.expressionItem4Not ? ('NOT(' + this.yName + ')') : this.yName;
+			part2 += ')';
+		}
+		
+		var render = part1 + ' ' + this.expressionOperator2 + ' ' + part2;
+		
+		if (this.expressionNot) {
+			render = 'NOT(' + render + ')';
+		}
+		
+		return render;
+	},
+	
+	solveExpression: function() {
+		var tempX = this.x;
+		var tempY = this.y;
+		var tempZ = this.z;
+		var answer = false;
+		var part1 = false;
+		var part2 = false;
+		
+		if (this.expressionOperator3 != '') {
+			var tempY2 = this.y;
+			if (this.expressionItem4Not) {
+				tempY2 = !this.y;
+			}
+		}
+		
+		if (this.expressionItem1Not) {
+			tempX = !tempX;
+		}
+		
+		if (this.expressionItem2Not) {
+			tempY = !tempY;
+		}
+		
+		if (this.expressionItem3Not) {
+			tempZ = !tempZ;
+		}
+		
+		// Now all values should be as required
+		switch (this.expressionOperator1) {
+			case 'AND':
+				part1 = tempX && tempY;
+				break;
+			case 'OR':
+				part1 = tempX || tempY;
+				break;
+			case 'XOR':
+				part1 = XOR(tempX, tempY);
+				break;
+			case 'NAND':
+				part1 = NAND(tempX, tempY);
+				break;
+			default: // NOR
+				part1 = NOR(tempX, tempY);
+		}
+		//console.log('part1: ' + part1);
+		
+		switch (this.expressionOperator3) {
+			case 'AND':
+				part2 = tempZ && tempY2;
+				break;
+			case 'OR':
+				part2 = tempZ || tempY2;
+				break;
+			case 'XOR':
+				part2 = XOR(tempZ, tempY2);
+				break;
+			case 'NAND':
+				part2 = NAND(tempZ, tempY2);
+				break;
+			case 'NOR':
+				part2 = NOR(tempZ, tempY2);
+				break;
+			default: // it is an easy expression so no work to do
+				part2 = tempZ;
+		}
+		//console.log('part2: ' + part2);
+		
+		switch (this.expressionOperator2) {
+			case 'AND':
+				answer = part1 && part2;
+				break;
+			case 'OR':
+				answer = part1 || part2;
+				break;
+			case 'XOR':
+				answer = XOR(part1, part2);
+				break;
+			case 'NAND':
+				answer = NAND(part1, part2);
+				break;
+			default: // NOR
+				answer = NOR(part1, part2);
+		}
+		
+		
+		// if overall NOT then flip answer
+		if (this.expressionNot) {
+			answer = !answer;
+		}
+		
+		return answer;
+	}
+
+}
+
+
+function generateExpression (difficulty) {
+	booleanExpressionQuestions.generateNames();
+	booleanExpressionQuestions.generateValues();
+	booleanExpressionQuestions.generateExpression(difficulty);
+	
+	$('#expressionPrinted').text(booleanExpressionQuestions.renderExpression());
+	printValues();
+}
+
+
+function generateValues () {
+	booleanExpressionQuestions.generateValues();
+	printValues();
+}
+
+
+function printValues () {
+	$('#expressionVariable1Name').text(booleanExpressionQuestions.xName);
+	$('#expressionVariable1Value').text(booleanExpressionQuestions.x);
+	
+	$('#expressionVariable2Name').text(booleanExpressionQuestions.yName);
+	$('#expressionVariable2Value').text(booleanExpressionQuestions.y);
+	
+	$('#expressionVariable3Name').text(booleanExpressionQuestions.zName);
+	$('#expressionVariable3Value').text(booleanExpressionQuestions.z);
+	
+	$('#expressionAnswer').text('');
+}
+
+
+function printAnswer () {
+	$('#expressionAnswer').text(booleanExpressionQuestions.solveExpression());
+}
+
+
+
+function NOR (x, y) {
+	if (! typeof x === 'boolean' || ! typeof y === 'boolean') {
+		return false;
+	}
+	
+	return !(x || y);
+}
+
+
+function NAND (x, y) {
+	if (! typeof x === 'boolean' || ! typeof y === 'boolean') {
+		return false;
+	}
+	
+	return !(x && y);
+}
+
+
+function XOR (x, y) {
+	if (! typeof x === 'boolean' || ! typeof y === 'boolean') {
+		return false;
+	}
+	
+	return (x || y) && !(x && y);
+}

@@ -1,9 +1,9 @@
 <?php
 declare(strict_types=1);
 
-namespace App\Services;
+namespace Edexcel\Services;
 
-use App\Repositories\RecurringScheduleRepository;
+use Edexcel\Repositories\RecurringScheduleRepository;
 use PDO;
 
 final class RecurringScheduleService
@@ -19,7 +19,13 @@ final class RecurringScheduleService
         $existing=$this->repository->findMatching($data);
         if ($existing) {
             $this->repository->updateEndDate(
-                (int)$existing['id'],$data['repeat_until'],$data['date']
+                (int)$existing['id'],
+                $data['repeat_until'],
+                $data['date'],
+                isset($data['class_fee_per_student'])
+                    ? (float)$data['class_fee_per_student']
+                    : null,
+                isset($data['fee_rule']) ? ClassSessionFeeCalculator::snapshotFromPayload($data) : null
             );
             return;
         }
@@ -50,8 +56,31 @@ final class RecurringScheduleService
                 );
 
                 while($next <= $future && $next <= $schedule['end_date']) {
-                    if(!$this->repository->entryExists($schedule,$next)) {
+                    $skip = false;
+                    if ($this->pdo) {
+                        if (!function_exists('is_holiday')) {
+                            require_once dirname(__DIR__, 2) . '/includes/holidays.php';
+                        }
+                        if (is_holiday($this->pdo, $next)) {
+                            $skip = true;
+                        } elseif (
+                            $this->conflictService()->hasConflict(
+                                (int)$schedule['teacher_id'],
+                                (int)$schedule['room_id'],
+                                (int)$schedule['class_id'],
+                                $next,
+                                (string)$schedule['start_time'],
+                                (string)$schedule['end_time']
+                            )
+                        ) {
+                            $skip = true;
+                        }
+                    }
+                    if(!$skip && !$this->repository->entryExists($schedule,$next)) {
                         $id=$this->repository->generateEntry($schedule,$next);
+                        if (function_exists('classroom_sync_lesson_meeting') && $this->pdo) {
+                            classroom_sync_lesson_meeting($this->pdo, $id);
+                        }
                         $generated++;
                         if($this->audit) {
                             $this->audit->log(
@@ -79,5 +108,14 @@ final class RecurringScheduleService
             if($this->pdo && $this->pdo->inTransaction()) $this->pdo->rollBack();
             throw $e;
         }
+    }
+
+    private function conflictService(): TimetableConflictService
+    {
+        static $svc = null;
+        if ($svc === null) {
+            $svc = new TimetableConflictService(new \Edexcel\Repositories\TimetableRepository($this->pdo));
+        }
+        return $svc;
     }
 }

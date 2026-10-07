@@ -2,7 +2,7 @@
 // ajax/get_subjects.php (with debug)
 require_once __DIR__ . '/../config/bootstrap.php';
 header('Cache-Control: no-store, no-cache, must-revalidate, max-age=0');
-require_login();
+require_staff();
 
 $teacher_id = (int)($_GET['teacher_id'] ?? 0);
 if (!$teacher_id) {

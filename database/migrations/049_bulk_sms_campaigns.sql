@@ -1,0 +1,61 @@
+-- Migration 049: Bulk SMS Campaigns and Recipients Schema
+-- Applied automatically by BulkSmsService::ensureSchema()
+-- Provides database-level support for bulk campaigns, safe batching, duplicate prevention, and detailed delivery audits.
+
+CREATE TABLE IF NOT EXISTS bulk_sms_campaigns (
+    id                      BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+    campaign_code           VARCHAR(32)     NOT NULL,
+    campaign_name           VARCHAR(150)    NOT NULL DEFAULT '',
+    created_by              INT             NULL COMMENT 'users.id of the admin who created the campaign',
+    source_filename         VARCHAR(255)    NOT NULL DEFAULT '',
+    message                 TEXT            NOT NULL,
+    message_hash            CHAR(64)        NOT NULL COMMENT 'SHA-256 of trimmed, normalized message body',
+    total_records           INT             NOT NULL DEFAULT 0 COMMENT 'Total rows in uploaded file',
+    valid_records           INT             NOT NULL DEFAULT 0 COMMENT 'Total valid phone numbers',
+    invalid_records         INT             NOT NULL DEFAULT 0 COMMENT 'Invalid phone rows',
+    duplicate_records       INT             NOT NULL DEFAULT 0 COMMENT 'Duplicate phone rows within file',
+    previously_sent_records INT             NOT NULL DEFAULT 0 COMMENT 'Recipients who previously received this message',
+    recipient_count         INT             NOT NULL DEFAULT 0 COMMENT 'Effective recipients to be sent',
+    total_sms_units         INT             NOT NULL DEFAULT 0 COMMENT 'Estimated total SMS billable units',
+    sent_count              INT             NOT NULL DEFAULT 0 COMMENT 'Recipients successfully accepted by gateway',
+    delivered_count         INT             NOT NULL DEFAULT 0 COMMENT 'Recipients confirmed delivered',
+    failed_count            INT             NOT NULL DEFAULT 0 COMMENT 'Recipients failed',
+    skipped_count           INT             NOT NULL DEFAULT 0 COMMENT 'Recipients skipped (e.g. previously sent)',
+    status                  VARCHAR(30)     NOT NULL DEFAULT 'DRAFT' COMMENT 'DRAFT, READY, SENDING, COMPLETED, COMPLETED_WITH_ERRORS, FAILED, CANCELLED',
+    created_at              DATETIME        NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    started_at              DATETIME        NULL,
+    completed_at            DATETIME        NULL,
+    PRIMARY KEY (id),
+    UNIQUE KEY uq_bsc_code (campaign_code),
+    KEY idx_bsc_status (status, created_at),
+    KEY idx_bsc_created_by (created_by),
+    KEY idx_bsc_created_at (created_at)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS bulk_sms_recipients (
+    id                      BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+    campaign_id             BIGINT UNSIGNED NOT NULL,
+    phone_number            VARCHAR(20)     NOT NULL COMMENT 'Normalized Sri Lankan mobile (e.g. 94771234567)',
+    name                    VARCHAR(150)    NOT NULL DEFAULT '',
+    original_phone_number   VARCHAR(50)     NOT NULL DEFAULT '',
+    message                 TEXT            NOT NULL,
+    message_hash            CHAR(64)        NOT NULL COMMENT 'SHA-256 of message',
+    recipient_message_hash  CHAR(64)        NOT NULL COMMENT 'SHA-256 of (phone_number + normalized_message) for duplicate prevention',
+    sms_units               INT             NOT NULL DEFAULT 1 COMMENT 'SMS segment count per message',
+    status                  VARCHAR(20)     NOT NULL DEFAULT 'PENDING' COMMENT 'PENDING, SENDING, SENT, DELIVERED, FAILED, INVALID, DUPLICATE, SKIPPED',
+    gateway_message_id      VARCHAR(120)    NULL,
+    gateway_response        TEXT            NULL,
+    error_message           VARCHAR(500)    NULL,
+    attempt_count           INT             NOT NULL DEFAULT 0,
+    sent_at                 DATETIME        NULL,
+    delivered_at            DATETIME        NULL,
+    created_at              DATETIME        NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at              DATETIME        NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    PRIMARY KEY (id),
+    UNIQUE KEY uq_campaign_recipient (campaign_id, phone_number),
+    KEY idx_bsr_campaign_status (campaign_id, status),
+    KEY idx_bsr_phone (phone_number),
+    KEY idx_bsr_recip_hash (recipient_message_hash, status),
+    KEY idx_bsr_status (status),
+    CONSTRAINT fk_bsr_campaign FOREIGN KEY (campaign_id) REFERENCES bulk_sms_campaigns(id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

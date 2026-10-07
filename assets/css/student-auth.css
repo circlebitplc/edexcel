@@ -1,0 +1,90 @@
+/* Student registration / verification */
+.auth-shell{
+    min-height:100vh;
+    display:grid;
+    place-items:center;
+    padding:24px;
+    background:
+      radial-gradient(circle at top left, var(--page-wash-b, #eef2ff) 0, var(--page-bg, #f8fafc) 45%, var(--page-bg, #fff) 100%);
+}
+.auth-card{
+    width:min(100%,520px);
+    background:var(--surface, #fff);
+    color:var(--text, #0f172a);
+    border:1px solid var(--panel-border, #e5e7eb);
+    border-radius:24px;
+    padding:32px;
+    box-shadow:var(--shadow-md, 0 20px 60px rgba(15,23,42,.10));
+}
+.auth-icon{
+    width:60px;height:60px;
+    display:grid;place-items:center;
+    border-radius:18px;
+    background:var(--primary-soft, #eef2ff);
+    font-size:28px;
+    margin-bottom:18px;
+}
+.eyebrow{
+    color:var(--muted, #64748b);
+    font-size:.72rem;
+    font-weight:800;
+    letter-spacing:.12em;
+    text-transform:uppercase;
+}
+.auth-card h1{
+    margin:5px 0 8px;
+    font-size:1.8rem;
+    font-weight:800;
+    color:var(--text, #0f172a);
+}
+.intro{
+    color:var(--muted, #64748b);
+    margin-bottom:24px;
+}
+.auth-card label{
+    display:block;
+    margin:14px 0 7px;
+    font-weight:700;
+    color:var(--text, #334155);
+}
+.auth-card .form-control{
+    min-height:48px;
+    border-radius:13px;
+}
+.auth-card small{
+    display:block;
+    color:var(--muted, #64748b);
+    margin-top:6px;
+}
+.optional{font-weight:400;color:var(--muted, #94a3b8)}
+.auth-card .btn{
+    min-height:50px;
+    margin-top:22px;
+    border-radius:13px;
+    font-weight:800;
+}
+.auth-links{
+    text-align:center;
+    margin-top:20px;
+}
+.auth-links a{
+    color:var(--primary, #4f46e5);
+    text-decoration:none;
+    font-weight:700;
+}
+.otp-input{
+    text-align:center;
+    font-size:1.5rem;
+    letter-spacing:.35em;
+    font-weight:800;
+}
+.otp-resend-form .btn{
+    margin-top:12px;
+}
+.otp-resend-form small{
+    text-align:center;
+}
+@media(max-width:576px){
+    .auth-shell{padding:12px}
+    .auth-card{padding:24px 18px;border-radius:20px}
+}

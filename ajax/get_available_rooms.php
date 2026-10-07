@@ -1,7 +1,7 @@
 <?php
 require_once __DIR__ . '/../config/bootstrap.php';
 header('Cache-Control: no-store, no-cache, must-revalidate, max-age=0');
-require_login();
+require_staff();
 
 $day_of_week = $_GET['day_of_week'] ?? '';
 $start_time = $_GET['start_time'] ?? '';
@@ -14,7 +14,11 @@ if (empty($day_of_week) || empty($start_time) || empty($end_time)) {
 
 // Calculate the next occurrence date for the selected day
 $days = ['Monday'=>1,'Tuesday'=>2,'Wednesday'=>3,'Thursday'=>4,'Friday'=>5,'Saturday'=>6,'Sunday'=>7];
-$target = $days[$day_of_week] ?? 1;
+if (!isset($days[$day_of_week])) {
+    echo json_encode([]);
+    exit();
+}
+$target = $days[$day_of_week];
 $today = date('N');
 $diff = $target - $today;
 if ($diff < 0) $diff += 7;
@@ -30,6 +34,7 @@ $sql = "SELECT r.id, r.name, r.capacity
             WHERE t.date = ? 
             AND ((? < t.end_time AND ? > t.start_time))
             AND t.deleted_at IS NULL
+            AND (t.lesson_status IS NULL OR t.lesson_status <> 'cancelled')
         )
         ORDER BY r.name";
 

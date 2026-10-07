@@ -1,0 +1,39 @@
+/* sidenav rules */
+.menu { margin-bottom: 15px; }
+.menu li.inactive .no-right-margin { background-position:100%0 !important; }
+.menu li.no-right-padding { padding-right:0; }
+.menu .no-right-margin { margin-right:0; }
+#selected-tree-node { color:#009CFF; font-weight: bold; }
+.menu .no-right-padding a { color: #494D56; }
+.menu .no-right-padding a:hover { color: #009CFF; }
+.menu li.active a.tree-node-link { font-weight: bold; }
+.menu li.inactive a.tree-node-link { font-weight: normal; }
+/* patches rules */
+.filename-and-size { text-align: left; }
+.resources-holder .select-holder { width: auto; }
+#select-product-patch { width: 257px; }
+.select-top { background:transparent none repeat scroll 0 0; }
+.select-bottom { background:transparent none repeat scroll 0 0; margin:-1px 3px 0 0; padding:0 12px 0 10px; }
+.select-bottom .select-bottom-left { border-top:2px solid #DCDCDC; }
+.optionsDivVisible ul { background:transparent none repeat scroll 0 0; padding-right: 0; width: 230px; }
+.optionsDivVisible ul li { background:white none repeat scroll 0 0; border-left:2px solid #DCDCDC; border-right:2px solid #DCDCDC; width: 100%; }
+#hideNavNoPaddingDiv p { margin:0 0 10px 0; }
+.resources-block h1, .products-block h1 { -x-system-font:none; color:#000; font-family:Tahoma, Arial, Helvetica, sans-serif; font-size:24px; font-size-adjust:none; font-stretch:normal; font-style:normal; font-variant:normal; font-weight:normal; line-height:24px; margin:0 0 26px; }
+.resources-block h2, .products-block h2 { -x-system-font:none; color:#000; font-family:Tahoma, Arial, Helvetica, sans-serif; font-size:20px; font-size-adjust:none; font-stretch:normal; font-style:normal; font-variant:normal; font-weight:normal; line-height:24px; margin:0 0 26px; }
+.resources-block h1, .resources-block h2 { margin:0 0 12px; }
+.resources-holder .select-holder p.patches_dlInst { clear:both; text-align:right; }
+.resources-holder .select-holder p.patches_dlInst a { line-height:14px; }
+/* select of Patches page */
+#patchPage_select #sarea0 { width:auto !important; min-width:257px; }
+#patchPage_select #mySelectText0 { min-width:202px; }
+/* select of Install Center page */
+form > p > div#sarea0 { width:auto !important; min-width:257px; }
+form > p > div#sarea0 > span#mySelectText0 { min-width:169px; }
+#content .content-holder { background:none repeat scroll 0 0 transparent; }
+#main { background:#fff; }
+.internationalBody_content_404 .column { padding:0; width:185px; }
+.internationalBody_content_404 ul { list-style:none outside none; margin:10px 0 0 0; padding:0; }
+.internationalBody_content_404_hd, .internationalBody_content_404, .internationalBody_content_500 { padding-left:25px; }
+.internationalBody_content_500 { font-size:12px; font-family:Tahoma, Arial, Helvetica, sans-serif; }
+.internationalBody_content_500 p { font-size:12px; }
+.resources-list li .text-holder { line-height: 19px; }

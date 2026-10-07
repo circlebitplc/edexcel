@@ -2,7 +2,7 @@
 declare(strict_types=1);
 
 require_once __DIR__ . '/../config/bootstrap.php';
-require_login();
+require_staff();
 
 header('Content-Type: application/json; charset=utf-8');
 

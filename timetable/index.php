@@ -7,11 +7,19 @@ require_once __DIR__ . '/../includes/holidays.php';
 require_once __DIR__ . '/../includes/pagination.php';
 require_once __DIR__ . '/../config/cache.php';
 require_once __DIR__ . '/../config/notifications.php'; // <-- Added
-require_login();
+require_once __DIR__ . '/../includes/class_fee_summary.php';
+require_staff();
+if (isset($pdo) && $pdo instanceof PDO) {
+    \Edexcel\Services\ClassSessionFeeCalculator::ensureSchema($pdo);
+}
 
 $is_admin = is_admin();
 $teacher_id = isset($_SESSION['teacher_id']) ? (int)$_SESSION['teacher_id'] : 0;
-$is_teacher = !$is_admin && $teacher_id > 0;
+$is_teacher = !$is_admin && is_teacher();
+if ($is_teacher && $teacher_id <= 0) {
+    http_response_code(403);
+    exit('Your teacher account is not linked to an active teacher profile. Ask an administrator to link users.teacher_id.');
+}
 
 // ========================================================
 // HANDLE POST REQUESTS (LOCK, UNLOCK, MARK PAID)
@@ -46,19 +54,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $is_admin) {
                 $result = $services['payment']->markPaid((int)$_POST['entry_id'], static function(array $entry): void {
                     if (!is_admin()) throw new RuntimeException('Only an administrator can mark a lesson as paid.');
                 });
-                try {
-                    $sent = notify_payment(
-                        $pdo,
-                        (int)$result['teacher_id'],
-                        (float)$result['amount']
-                    );
-                    $_SESSION[$sent ? 'success' : 'error'] =
-                        $sent
-                            ? 'Payment marked as paid and WhatsApp notification sent to teacher.'
-                            : 'Payment marked as paid, but WhatsApp notification failed.';
-                } catch (Throwable $notificationError) {
-                    error_log('Payment notification failed: '.$notificationError->getMessage());
-                    $_SESSION['error'] = 'Payment marked as paid, but WhatsApp notification failed.';
+                $sms = is_array($result['sms'] ?? null) ? $result['sms'] : [];
+                $smsStatus = (string)($sms['status'] ?? 'failed');
+                $smsNotice = (string)($sms['sms_notice'] ?? 'Payment SMS could not be sent.');
+                if (in_array($smsStatus, ['sent', 'resent', 'already_sent'], true)) {
+                    $_SESSION['success'] = 'Payment marked as PAID. ' . $smsNotice;
+                } else {
+                    $_SESSION['success'] = 'Payment marked as PAID.';
+                    $_SESSION['warning'] = $smsNotice;
                 }
             } catch (Throwable $e) {
                 $_SESSION['error'] = $e->getMessage();
@@ -77,6 +80,7 @@ generate_future_entries($pdo, 7);
 // --- Get current filters (with defaults) --- 
 
 $today = date('Y-m-d');
+[$weekMonday, $weekSunday] = week_bounds($today);
 
 $filters = [
     'teacher' => (int)($_GET['teacher'] ?? 0),
@@ -85,23 +89,22 @@ $filters = [
     'subject' => (int)($_GET['subject'] ?? 0),
     'day' => $_GET['day'] ?? '',
 
-    // Default From date = Today
     'date_from' => (
         isset($_GET['date_from']) &&
         $_GET['date_from'] !== ''
     )
         ? $_GET['date_from']
-        : $today,
+        : $weekMonday,
 
-    // Default To date = Today
     'date_to' => (
         isset($_GET['date_to']) &&
         $_GET['date_to'] !== ''
     )
         ? $_GET['date_to']
-        : $today,
+        : $weekSunday,
 
     'payment_status' => $_GET['payment_status'] ?? 'all',
+    'q' => trim((string)($_GET['q'] ?? '')),
 
     'view' => (
         ($_GET['view'] ?? 'list') === 'week'
@@ -131,7 +134,8 @@ $where = ["t.deleted_at IS NULL"];
 $params = [];
 
 if ($filters['teacher']) {
-    $where[] = "t.teacher_id = ?";
+    $where[] = "(t.teacher_id = ? OR t.substitute_teacher_id = ?)";
+    $params[] = $filters['teacher'];
     $params[] = $filters['teacher'];
 }
 if ($filters['room']) {
@@ -161,6 +165,18 @@ if ($filters['date_to']) {
 if ($filters['payment_status'] !== 'all') {
     $where[] = "t.payment_status = ?";
     $params[] = $filters['payment_status'];
+}
+if ($filters['q'] !== '') {
+    $tokens = preg_split('/\s+/', $filters['q']) ?: [];
+    foreach ($tokens as $token) {
+        $token = trim($token);
+        if ($token === '') {
+            continue;
+        }
+        $where[] = '(COALESCE(tc.name, \'\') LIKE ? OR COALESCE(s.name, \'\') LIKE ? OR COALESCE(c.name, \'\') LIKE ? OR COALESCE(r.name, \'\') LIKE ?)';
+        $like = '%' . $token . '%';
+        array_push($params, $like, $like, $like, $like);
+    }
 }
 
 /*
@@ -334,6 +350,19 @@ if ($filters['view'] === 'week') {
     $entries = $stmt->fetchAll(PDO::FETCH_ASSOC);
 }
 
+$paymentSmsById = [];
+if ($is_admin && $entries && $filters['view'] === 'list') {
+    $paymentSmsById = \Edexcel\Services\TeacherPaymentSmsService::latestFor(
+        $pdo,
+        \Edexcel\Services\TeacherPaymentSmsService::KIND_TIMETABLE,
+        array_map(static fn (array $row): int => (int)$row['id'], $entries)
+    );
+}
+$pageSuccess = $_SESSION['success'] ?? null;
+$pageWarning = $_SESSION['warning'] ?? null;
+$pageError = $_SESSION['error'] ?? null;
+unset($_SESSION['success'], $_SESSION['warning'], $_SESSION['error']);
+
 /* ============================================================
  * FILTER OPTIONS
  * ============================================================ */
@@ -423,11 +452,12 @@ if ($is_teacher) {
              ON c.id = t.class_id
             AND c.deleted_at IS NULL
          WHERE t.deleted_at IS NULL
-           AND t.teacher_id = ?
+           AND (t.teacher_id = ? OR t.substitute_teacher_id = ?)
          ORDER BY c.name"
     );
 
     $stmt->execute([
+        $teacher_id,
         $teacher_id
     ]);
 
@@ -447,11 +477,12 @@ if ($is_teacher) {
              ON s.id = t.subject_id
             AND s.deleted_at IS NULL
          WHERE t.deleted_at IS NULL
-           AND t.teacher_id = ?
+           AND (t.teacher_id = ? OR t.substitute_teacher_id = ?)
          ORDER BY s.name"
     );
 
     $stmt->execute([
+        $teacher_id,
         $teacher_id
     ]);
 
@@ -506,7 +537,7 @@ $total_revenue = 0;
 $paid_count = 0;
 
 foreach ($entries as $e) {
-    $rev = (int)$e['student_count'] * $FEE_PER_STUDENT_LIVE;
+    $rev = \Edexcel\Services\TeacherPaymentSmsService::payableCents($e);
     $total_revenue += $rev;
 
     if ($e['payment_status'] === 'paid') {
@@ -526,7 +557,8 @@ $pending_sql = "
 $pending_params = [];
 
 if ($is_teacher) {
-    $pending_sql .= " AND teacher_id = ?";
+    $pending_sql .= " AND (teacher_id = ? OR substitute_teacher_id = ?)";
+    $pending_params[] = $teacher_id;
     $pending_params[] = $teacher_id;
 }
 
@@ -540,6 +572,12 @@ $pending_count = (int)$pending_stmt->fetchColumn();
 include __DIR__ . '/../includes/header.php';
 ?>
 
+<style>
+.timetable-cards .sms-pill.sms-sent { color: #16a34a; }
+.timetable-cards .sms-pill.sms-failed { color: #b45309; }
+html[data-bs-theme="dark"] .timetable-cards .sms-pill.sms-sent { color: #4ade80; }
+html[data-bs-theme="dark"] .timetable-cards .sms-pill.sms-failed { color: #fbbf24; }
+</style>
 <div class="timetable-page <?= $filters['compact'] ? 'compact' : '' ?>">
     <div class="tt-page-heading">
         <div class="heading-copy">
@@ -554,6 +592,15 @@ include __DIR__ . '/../includes/header.php';
         </div>
     </div>
     <div id="timetableRefreshArea">
+    <?php if ($pageSuccess): ?>
+        <div class="alert alert-success"><?= htmlspecialchars((string)$pageSuccess) ?></div>
+    <?php endif; ?>
+    <?php if ($pageWarning): ?>
+        <div class="alert alert-warning"><?= htmlspecialchars((string)$pageWarning) ?></div>
+    <?php endif; ?>
+    <?php if ($pageError): ?>
+        <div class="alert alert-danger"><?= htmlspecialchars((string)$pageError) ?></div>
+    <?php endif; ?>
     <!-- ===== SUMMARY STATS ===== -->
     <?php
     // Summary values are calculated above.
@@ -564,16 +611,16 @@ include __DIR__ . '/../includes/header.php';
             <div class="label">Classes</div>
         </div>
         <div class="summary-stat">
-            <div class="number">Rs <?= number_format($total_revenue) ?></div>
-            <div class="label">Total Revenue</div>
+            <div class="number">Rs <?= number_format($total_revenue / 100, 2) ?></div>
+            <div class="label">Teacher pay</div>
         </div>
         <div class="summary-stat">
             <div class="number"><?= $pending_count ?></div>
-            <div class="label">Pending</div>
+            <div class="label">Teacher pending</div>
         </div>
         <div class="summary-stat">
             <div class="number"><?= $paid_count ?></div>
-            <div class="label">Paid</div>
+            <div class="label">Teacher paid</div>
         </div>
         <div class="summary-stat">
             <div class="number"><?= $total_items ?></div>
@@ -588,6 +635,10 @@ include __DIR__ . '/../includes/header.php';
             <input type="hidden" name="view" value="<?= $filters['view'] ?>">
             <input type="hidden" name="compact" value="<?= $filters['compact'] ? 1 : 0 ?>">
 
+            <div class="filter-item" style="min-width:180px;">
+                <label class="form-label">Search</label>
+                <input type="search" name="q" class="form-control form-control-sm" placeholder="Teacher, subject, class, room" value="<?= htmlspecialchars($filters['q']) ?>">
+            </div>
             <?php if ($is_admin): ?>
             <div class="filter-item">
                 <label class="form-label">Teacher</label>
@@ -658,6 +709,7 @@ include __DIR__ . '/../includes/header.php';
                 </select>
             </div>
             <div class="filter-actions">
+                <button type="submit" class="btn btn-primary btn-sm"><i class="bi bi-search"></i> Search</button>
                 <a href="index.php" class="btn btn-secondary btn-sm"><i class="bi bi-arrow-clockwise"></i> Reset</a>
                 <div class="toggle-view">
                     <button type="button" class="btn <?= ($filters['view']=='list')?'active':'' ?>" onclick="setView('list')"><i class="bi bi-list-ul"></i></button>
@@ -723,7 +775,7 @@ include __DIR__ . '/../includes/header.php';
             <!-- ===== LIST VIEW (Card-based) ===== -->
             <div class="timetable-cards" id="timetableList">
                 <?php foreach ($entries as $e):
-                    $rev = $e['student_count'] * $FEE_PER_STUDENT_LIVE;
+                    $rev = \Edexcel\Services\TeacherPaymentSmsService::amountLabel($e);
                     $can_edit = ($is_admin || ($teacher_id && $e['teacher_id'] == $teacher_id)) && !$e['is_locked'];
                     $conflict = false;
                     $color = $subject_color_map[$e['subject_name']] ?? '#4A6CF7';
@@ -838,13 +890,33 @@ include __DIR__ . '/../includes/header.php';
                 <span><?= (int)$e['student_count'] ?> Students</span>
             </span>
 
-            <span class="pill revenue-pill">
-                <span>Rs <?= number_format($rev) ?></span>
+            <span class="pill revenue-pill" title="Teacher payment for this lesson">
+                <span><?= htmlspecialchars($rev) ?></span>
             </span>
 
-            <span class="status-badge <?= htmlspecialchars($e['payment_status']) ?>">
-                <?= ucfirst(htmlspecialchars($e['payment_status'])) ?>
+            <span class="status-badge <?= htmlspecialchars($e['payment_status']) ?>" title="Teacher payment status. This is not the student payment.">
+                Teacher <?= ucfirst(htmlspecialchars($e['payment_status'])) ?>
             </span>
+
+            <?php if ($is_admin && ($e['payment_status'] ?? '') === 'paid'): ?>
+                <?php
+                $smsRow = $paymentSmsById[(int)$e['id']] ?? null;
+                $smsStatus = (string)($smsRow['status'] ?? '');
+                $smsWhenRaw = (string)($smsRow['sent_at'] ?? $smsRow['created_at'] ?? '');
+                $smsWhen = $smsWhenRaw !== '' && strtotime($smsWhenRaw) !== false
+                    ? date('d/m/Y H:i', strtotime($smsWhenRaw))
+                    : '';
+                $smsClass = in_array($smsStatus, ['sent', 'resent'], true) ? 'sms-sent' : 'sms-failed';
+                ?>
+                <span class="pill sms-pill <?= $smsClass ?>" title="<?= htmlspecialchars((string)($smsRow['failure_reason'] ?? '')) ?>">
+                    Teacher SMS: <?= htmlspecialchars(\Edexcel\Services\TeacherPaymentSmsService::statusLabel($smsStatus)) ?>
+                </span>
+                <?php if ($smsWhen !== ''): ?>
+                    <span class="pill sms-pill">
+                        <?= $smsStatus === 'failed' ? 'SMS attempted' : 'SMS sent' ?>: <?= htmlspecialchars($smsWhen) ?>
+                    </span>
+                <?php endif; ?>
+            <?php endif; ?>
 
             <?php if ($e['is_locked']): ?>
 
@@ -994,6 +1066,19 @@ include __DIR__ . '/../includes/header.php';
                         >
                             <i class="bi bi-check-circle"></i>
                             <span>Paid</span>
+                        </button>
+
+                    <?php elseif ($is_admin): ?>
+
+                        <button
+                            type="button"
+                            class="card-action js-resend-payment-sms"
+                            title="Resend payment SMS"
+                            data-kind="timetable"
+                            data-id="<?= (int)$e['id'] ?>"
+                        >
+                            <i class="bi bi-chat-dots"></i>
+                            <span>Resend SMS</span>
                         </button>
 
                     <?php endif; ?>
@@ -1312,15 +1397,15 @@ include __DIR__ . '/../includes/header.php';
 </div>
 
 
+<?php class_fee_summary_assets($pdo); ?>
 <!-- ===== AJAX EDIT LESSON MODAL ===== -->
 <div class="modal fade" id="ajaxEditModal" tabindex="-1" aria-labelledby="ajaxEditModalLabel" aria-hidden="true">
-    <div class="modal-dialog modal-lg modal-dialog-scrollable">
-        <div class="modal-content">
+    <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
+        <form id="ajaxEditForm" class="modal-content">
             <div class="modal-header">
                 <h5 class="modal-title" id="ajaxEditModalLabel"><i class="bi bi-pencil-square"></i> Edit Lesson</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
-            <form id="ajaxEditForm">
                 <div class="modal-body">
                     <div id="ajaxEditError" class="alert alert-danger d-none"></div>
                     <div id="ajaxEditLoading" class="text-center py-4">
@@ -1363,6 +1448,32 @@ include __DIR__ . '/../includes/header.php';
                                 <input type="number" min="0" class="form-control" name="student_count" id="ajaxEditStudents" required>
                             </div>
                             <div class="col-md-6">
+                                <label class="form-label" for="ajaxEditDelivery">How this class runs</label>
+                                <select class="form-select" name="delivery_mode" id="ajaxEditDelivery">
+                                    <option value="physical">In college</option>
+                                    <option value="online">Online</option>
+                                    <option value="hybrid">Online and in college</option>
+                                </select>
+                            </div>
+                            <div class="col-md-6">
+                                <label for="ajaxEditClassFee" class="form-label">Class fee / student / session</label>
+                                <div class="input-group">
+                                    <span class="input-group-text">Rs.</span>
+                                    <input
+                                        type="number"
+                                        min="0"
+                                        step="0.01"
+                                        class="form-control"
+                                        name="class_fee_per_student"
+                                        id="ajaxEditClassFee"
+                                        required
+                                    >
+                                </div>
+                            </div>
+                            <div class="col-12">
+                                <?php class_fee_summary_card('ajaxOnlineFeeSummary'); ?>
+                            </div>
+                            <div class="col-md-6">
                                 <label class="form-label">Payment Status</label>
                                 <select class="form-select" name="payment_status" id="ajaxEditPayment">
                                     <option value="pending">Pending</option>
@@ -1386,8 +1497,7 @@ include __DIR__ . '/../includes/header.php';
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
                     <button type="submit" class="btn btn-primary" id="ajaxEditSaveBtn"><i class="bi bi-check-lg"></i> Save Changes</button>
                 </div>
-            </form>
-        </div>
+        </form>
     </div>
 </div>
 
@@ -1451,6 +1561,32 @@ include __DIR__ . '/../includes/header.php';
     .bulk-select-control ~ .lesson-main {
         /* selection control is positioned and does not alter the card layout */
     }
+
+    #ajaxEditModal .modal-dialog {
+        margin: 0.75rem auto;
+        max-height: calc(100dvh - 1.5rem);
+        max-width: min(800px, calc(100vw - 1.5rem));
+    }
+
+    #ajaxEditModal .modal-content {
+        max-height: calc(100dvh - 1.5rem);
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
+    }
+
+    #ajaxEditModal .modal-header,
+    #ajaxEditModal .modal-footer {
+        flex: 0 0 auto;
+        background: var(--surface, #191e2b);
+    }
+
+    #ajaxEditModal .modal-body {
+        flex: 1 1 auto;
+        min-height: 0;
+        overflow-y: auto;
+        overscroll-behavior: contain;
+    }
 </style>
 
 <script>
@@ -1466,7 +1602,20 @@ include __DIR__ . '/../includes/header.php';
         ? 'Lock this lesson?'
         : 'Unlock this lesson?';
 
-    if (!confirm(message)) {
+    const confirmed = await new Promise(function (resolve) {
+        if (typeof customConfirm === 'function') {
+            customConfirm(
+                action ? 'Lock lesson' : 'Unlock lesson',
+                message,
+                resolve,
+                { okLabel: action ? 'Lock' : 'Unlock' }
+            );
+            return;
+        }
+        resolve(typeof nativeConfirm === 'function' ? nativeConfirm(message) : confirm(message));
+    });
+
+    if (!confirmed) {
         return;
     }
 
@@ -1631,8 +1780,7 @@ function saveQuickEdit() {
     fetch('../ajax/update_students.php', {
         method: 'POST',
         headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-        body: 'id=' + id + '&student_count=' + newCount + '&csrf_token=' + encodeURIComponent(csrf)
-    })
+        body:  'id=' + id + '&student_count=' + newCount +'&class_fee_per_student=' + encodeURIComponent(document.getElementById('ajaxEditClassFee').value ) + '&csrf_token=' +    encodeURIComponent(csrf)})
     .then(response => response.json())
     .then(data => {
         if (data.success) {
@@ -1729,6 +1877,27 @@ function openEditModal(id) {
         document.getElementById('ajaxEditStart').value = String(e.start_time).slice(0,5);
         document.getElementById('ajaxEditEnd').value = String(e.end_time).slice(0,5);
         document.getElementById('ajaxEditStudents').value = e.student_count;
+        document.getElementById('ajaxEditClassFee').value =e.class_fee_per_student ?? '0.00';
+        const delivery = document.getElementById('ajaxEditDelivery');
+        if (delivery) {
+            delivery.value = e.delivery_mode || 'physical';
+        }
+        const feeCard = document.getElementById('ajaxOnlineFeeSummary');
+        if (feeCard) {
+            feeCard.dataset.storedRule = e.fee_rule || '';
+            feeCard.dataset.storedMode = e.delivery_mode || 'physical';
+            feeCard.dataset.storedGross = e.class_fee_per_student || '0.00';
+            feeCard.dataset.storedInstitute = e.institute_online_fee || '0.00';
+            feeCard.dataset.storedTxn = e.transaction_handling_fee || '0.00';
+            feeCard.dataset.storedNet = e.teacher_net_amount || '0.00';
+        }
+        if (window.ClassSessionFee) {
+            ClassSessionFee.mount({
+                feeId: 'ajaxEditClassFee',
+                modeId: 'ajaxEditDelivery',
+                cardId: 'ajaxOnlineFeeSummary'
+            });
+        }
         document.getElementById('ajaxEditPayment').value = e.payment_status || 'pending';
         document.getElementById('ajaxEditPayment').disabled = !data.is_admin;
         document.getElementById('ajaxEditTeacher').disabled = !data.is_admin;
@@ -1851,6 +2020,13 @@ document.addEventListener('DOMContentLoaded', function() {
             .then(data => {
                 if (!data.success) throw new Error(data.error || 'Unable to update lesson.');
                 if (ajaxEditModal) ajaxEditModal.hide();
+                if (data.sms_notice) {
+                    if (typeof appAlert === 'function') {
+                        appAlert(data.sms_notice, 'Payment updated');
+                    } else {
+                        alert(data.sms_notice);
+                    }
+                }
                 refreshTimetable();
             })
             .catch(err => showAjaxError(err.message))
@@ -1910,18 +2086,14 @@ function markPaidAjax(id, button) {
             return data;
         })
         .then(data => {
-            /*
-             * Refresh only the timetable content.
-             * The current URL, including all filters, is preserved.
-             */
-            return refreshTimetable().then(() => {
-                if (data.notification_sent === false) {
-                    console.warn(
-                        data.notification_message ||
-                        'Payment was updated, but the WhatsApp notification was not sent.'
-                    );
-                }
-            });
+            var smsLine = data.sms_notice || 'Payment SMS could not be sent.';
+            var summary = 'Payment marked as PAID.\n' + smsLine;
+            if (typeof appAlert === 'function') {
+                appAlert(summary, 'Payment updated');
+            } else {
+                alert(summary);
+            }
+            return refreshTimetable();
         })
         .catch(err => {
             if (button) {
@@ -1938,15 +2110,92 @@ function markPaidAjax(id, button) {
     if (typeof customConfirm === 'function') {
         customConfirm(
             'Mark Payment as Paid',
-            'Mark this lesson payment as paid?',
+            'Mark this lesson payment as paid? One SMS is sent to the teacher after the payment is saved.',
             proceed
         );
     } else {
         proceed(
-            confirm('Mark this lesson payment as paid?')
+            confirm('Mark this lesson payment as paid? One SMS is sent to the teacher after the payment is saved.')
         );
     }
 }
+
+document.addEventListener('click', function (event) {
+    var button = event.target.closest('.js-resend-payment-sms');
+    if (!button || button.disabled) {
+        return;
+    }
+    var csrf = getCsrfToken();
+    if (!csrf) {
+        alert('CSRF token not found. Please refresh the page.');
+        return;
+    }
+    var body = new URLSearchParams();
+    body.set('csrf_token', csrf);
+    body.set('kind', button.getAttribute('data-kind') || 'timetable');
+    body.set('id', button.getAttribute('data-id') || '0');
+    body.set('action', 'preview');
+    button.disabled = true;
+    fetch('../ajax/resend_payment_sms.php', {
+        method: 'POST',
+        body: body,
+        headers: {'X-Requested-With': 'XMLHttpRequest', 'Accept': 'application/json'}
+    })
+    .then(function (response) { return response.json(); })
+    .then(function (data) {
+        if (!data.success) {
+            throw new Error(data.error || 'Payment SMS could not be prepared.');
+        }
+        if (!data.can_send) {
+            alert(data.warning || 'Payment SMS could not be sent.');
+            return;
+        }
+        var preview = 'Send this SMS to the teacher?\n\n' + (data.message || '') + '\n\nIt uses the mobile number saved on the teacher profile.';
+        var proceed = function (confirmed) {
+            if (!confirmed) {
+                return;
+            }
+            body.set('action', 'send');
+            fetch('../ajax/resend_payment_sms.php', {
+                method: 'POST',
+                body: body,
+                headers: {'X-Requested-With': 'XMLHttpRequest', 'Accept': 'application/json'}
+            })
+            .then(function (response) { return response.json(); })
+            .then(function (sent) {
+                if (!sent.success) {
+                    throw new Error(sent.error || 'Payment SMS could not be sent.');
+                }
+                var ok = sent.sms_status === 'sent' || sent.sms_status === 'resent';
+                var line = ok
+                    ? 'SMS notification sent to the teacher. The payment stays PAID.'
+                    : ((sent.sms_notice || 'Payment SMS could not be sent.') + ' The payment stays PAID.');
+                if (typeof appAlert === 'function') {
+                    appAlert(line, 'Teacher SMS');
+                } else {
+                    alert(line);
+                }
+                if (ok) {
+                    refreshTimetable();
+                }
+            })
+            .catch(function (err) {
+                alert(err.message || 'Payment SMS could not be sent.');
+            });
+        };
+        if (typeof customConfirm === 'function') {
+            customConfirm('Resend SMS', preview, proceed, {okLabel: 'Send SMS'});
+        } else {
+            proceed(confirm(preview));
+        }
+    })
+    .catch(function (err) {
+        alert(err.message || 'Payment SMS could not be prepared.');
+    })
+    .finally(function () {
+        button.disabled = false;
+    });
+});
 
 
 function deleteTimetableEntry(id, button) {
@@ -2031,7 +2280,18 @@ async function refreshTimetable() {
 
 // ===== Clone entry =====
 function cloneEntry(id) {
-    if (!confirm('Clone this entry?')) return;
+    const proceed = function (confirmed) {
+        if (!confirmed) return;
+        cloneEntryNow(id);
+    };
+    if (typeof customConfirm === 'function') {
+        customConfirm('Clone lesson', 'Clone this entry?', proceed, { okLabel: 'Clone' });
+        return;
+    }
+    proceed(typeof nativeConfirm === 'function' ? nativeConfirm('Clone this entry?') : confirm('Clone this entry?'));
+}
+
+function cloneEntryNow(id) {
     const csrf = getCsrfToken();
     if (!csrf) {
         alert('CSRF token not found.');

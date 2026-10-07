@@ -1,0 +1,10 @@
+<?php
+declare(strict_types=1);
+require_once __DIR__ . '/../config/bootstrap.php';
+require_once __DIR__ . '/../vendor/autoload.php';
+use Edexcel\Services\StudentSuccessService;
+require_staff();
+$level=in_array($_GET['level']??'', ['HEALTHY','WATCH','AT_RISK','CRITICAL'],true)?(string)$_GET['level']:null;
+$rows=(new StudentSuccessService($pdo))->dashboard($level);
+include __DIR__ . '/../includes/header.php';?>
+<div class="container-fluid py-4"><div class="d-flex flex-wrap justify-content-between align-items-center gap-2"><div><h1 class="h3"><i class="bi bi-graph-up-arrow"></i> Student success</h1><p class="text-muted mb-0">Explainable signals for human follow-up; this score does not make disciplinary or enrollment decisions.</p></div><div class="btn-group"><?php foreach(['WATCH','AT_RISK','CRITICAL'] as $l):?><a class="btn btn-sm btn-outline-primary" href="?level=<?=$l?>"><?=$l?></a><?php endforeach;?><a class="btn btn-sm btn-outline-secondary" href="student_success.php">All</a></div></div><div class="card border-0 shadow-sm mt-3"><div class="table-responsive"><table class="table align-middle"><thead><tr><th>Student</th><th>Success</th><th>Score</th><th>Attendance</th><th>Academic</th><th>Homework</th><th>Retention</th><th>Reasons</th><th></th></tr></thead><tbody><?php foreach($rows as $r):?><tr><td>#<?= (int)$r['student_id']?></td><td><span class="badge text-bg-<?=in_array($r['success_level'],['CRITICAL','AT_RISK'],true)?'danger':($r['success_level']==='WATCH'?'warning':'success')?>"><?=e($r['success_level'])?></span></td><td><?=e((string)$r['success_score'])?></td><td><?=e((string)($r['attendance_recent']??'—'))?>%</td><td><?=e((string)($r['academic_recent']??'—'))?>%</td><td><?=e((string)($r['homework_percent']??'—'))?>%</td><td><?=e($r['retention_level'])?></td><td class="small"><?php foreach($r['reasons'] as $reason):?><div><?=e($reason)?></div><?php endforeach;?></td><td><a class="btn btn-sm btn-outline-primary" href="student360.php?student=<?= (int)$r['student_id']?>">360°</a></td></tr><?php endforeach;?></tbody></table></div></div></div><?php include __DIR__ . '/../includes/footer.php';?>

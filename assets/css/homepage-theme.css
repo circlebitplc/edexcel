@@ -1,0 +1,91 @@
+/**
+ * Homepage chrome only. Each layout keeps its designed look.
+ * Appearance tokens still style login, AI, and the theme picker.
+ */
+
+body.hp { overflow-x: hidden; max-width: 100%; }
+
+/* Undo themes.css body wash so the 10 layouts match their mockups */
+body.hp.hp-l1 { background: #f4f6fb !important; color: #14213d !important; }
+body.hp.hp-l2 { background: #e8eef6 !important; color: #0f172a !important; }
+/* Layout 3 uses classic home.css + the appearance theme */
+body.hp.hp-l4 { background: #f4f1ff !important; color: #1e1b4b !important; }
+body.hp.hp-l5 { background: #ecfdf5 !important; color: #064e3b !important; }
+body.hp.hp-l6 { background: #dbe4f5 !important; color: #172033 !important; }
+body.hp.hp-l7 { background: #0b1020 !important; color: #f8fafc !important; }
+body.hp.hp-l8 { background: #ffffff !important; color: #111827 !important; }
+body.hp.hp-l9 { background: #faf7f2 !important; color: #1c1917 !important; }
+body.hp.hp-l10 { background: #05060a !important; color: #e0f2fe !important; }
+
+body.hp .hp-auth-panel {
+    background: var(--modal-bg, var(--surface)) !important;
+    color: var(--text) !important;
+    border: 1px solid var(--panel-border);
+}
+body.hp .hp-auth-panel h2,
+body.hp .hp-auth-panel label { color: var(--text) !important; }
+body.hp .hp-auth-panel p,
+body.hp .hp-auth-panel .hp-auth-links { color: var(--muted) !important; }
+body.hp .hp-auth-panel input {
+    background: var(--input-bg) !important;
+    color: var(--text) !important;
+    border-color: var(--input-border) !important;
+}
+body.hp .hp-auth-panel button[type="submit"] {
+    background: var(--primary) !important;
+    color: var(--btn-primary-text, #fff) !important;
+}
+body.hp .hp-auth-panel .hp-btn-ghost,
+body.hp .hp-auth-links a {
+    color: var(--primary) !important;
+    border-color: var(--panel-border);
+}
+body.hp .hp-google-btn {
+    background: #fff !important;
+    color: #3c4043 !important;
+    border-color: #dadce0 !important;
+}
+body.hp .hp-auth-or {
+    color: var(--muted) !important;
+}
+body.hp .hp-auth-or::before,
+body.hp .hp-auth-or::after {
+    background: var(--panel-border) !important;
+}
+
+body.hp .public-ai-launcher {
+    background: var(--primary) !important;
+    color: var(--btn-primary-text, #fff) !important;
+}
+body.hp .public-ai-panel {
+    background: var(--surface) !important;
+    color: var(--text) !important;
+    border-color: var(--panel-border);
+}
+
+body.hp .eck-theme-picker--floating {
+    top: 16px;
+    right: 14px;
+    z-index: 1080;
+}
+body.hp:has(.hp-preview-banner) .eck-theme-picker--floating { top: 62px; }
+body.hp:not(.hp-l3):has(.hp-auth-panel:not([hidden])) .eck-theme-picker--floating {
+    opacity: 0;
+    pointer-events: none;
+}
+
+body.hp-l1 .l1-nav,
+body.hp-l4 .l4-bar,
+body.hp-l5 .l5-top,
+body.hp-l7 .l7-nav,
+body.hp-l8 .l8-bar,
+body.hp-l10 .l10-bar { padding-right: 4.75rem; }
+body.hp-l2 .l2-top { padding-right: 4.75rem; }
+body.hp-l6 .l6-phone { padding-top: .4rem; }
+body.hp:has(.hp-preview-banner) .l1-nav,
+body.hp:has(.hp-preview-banner) .l6-appbar { top: 48px; }
+
+body.hp-l6 .public-ai { bottom: 92px; }
+body.hp-l3 .public-ai { bottom: calc(var(--nav-height, 76px) + 14px); }
+body.hp-l7 .hp-teacher-rank,
+body.hp-l10 .hp-teacher-rank { color: rgba(255,255,255,.78) !important; }

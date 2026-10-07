@@ -2,6 +2,7 @@
 // ajax/contact.php
 header('Content-Type: application/json');
 require_once __DIR__ . '/../config/database.php';
+require_once __DIR__ . '/../config/security.php';
 
 // Allow only POST requests
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
@@ -9,6 +10,27 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     echo json_encode(['status' => 'error', 'message' => 'Method not allowed']);
     exit;
 }
+
+if (session_status() === PHP_SESSION_NONE) {
+    session_start();
+}
+if (!verify_csrf_token($_POST['csrf_token'] ?? '')) {
+    echo json_encode(['status' => 'error', 'message' => 'Session expired. Refresh the page and try again.']);
+    exit;
+}
+
+$ip = (string)($_SERVER['REMOTE_ADDR'] ?? '0');
+$bucket = 'contact:' . $ip;
+$_SESSION['contact_hits'] = $_SESSION['contact_hits'] ?? [];
+$_SESSION['contact_hits'] = array_values(array_filter(
+    (array)$_SESSION['contact_hits'],
+    static fn($t) => is_int($t) && $t > time() - 900
+));
+if (count($_SESSION['contact_hits']) >= 5) {
+    echo json_encode(['status' => 'error', 'message' => 'Too many messages. Please wait and try again.']);
+    exit;
+}
+$_SESSION['contact_hits'][] = time();
 
 // Validate inputs
 $name = trim($_POST['name'] ?? '');
@@ -53,6 +75,7 @@ try {
 
     echo json_encode(['status' => 'success', 'message' => 'Your message has been sent. We will get back to you soon.']);
 } catch (PDOException $e) {
-    echo json_encode(['status' => 'error', 'message' => 'Database error: ' . $e->getMessage()]);
+    error_log('contact form: ' . $e->getMessage());
+    echo json_encode(['status' => 'error', 'message' => 'Unable to send your message right now. Please try again later.']);
 }
 ?>

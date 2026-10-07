@@ -1,21 +1,48 @@
 {
-    "name": "Edexcel College Kandy",
+    "name": "Edexcel College",
     "short_name": "Edexcel",
-    "description": "International education with Cambridge and Pearson Edexcel pathways.",
+    "description": "Pearson Edexcel IGCSE and International A Level classes, tuition, and exam preparation in Kandy, Sri Lanka.",
     "start_url": "/",
+    "scope": "/",
     "display": "standalone",
+    "orientation": "portrait-primary",
     "background_color": "#1a3a5c",
     "theme_color": "#f8b400",
+    "lang": "en",
+    "categories": ["education"],
     "icons": [
         {
             "src": "assets/icons/icon-192.png",
             "sizes": "192x192",
-            "type": "image/png"
+            "type": "image/png",
+            "purpose": "any"
         },
         {
             "src": "assets/icons/icon-512.png",
             "sizes": "512x512",
-            "type": "image/png"
+            "type": "image/png",
+            "purpose": "any"
+        },
+        {
+            "src": "assets/icons/icon-512.png",
+            "sizes": "512x512",
+            "type": "image/png",
+            "purpose": "maskable"
+        }
+    ],
+    "screenshots": [],
+    "shortcuts": [
+        {
+            "name": "Student portal",
+            "short_name": "Student",
+            "url": "/student/dashboard.php",
+            "icons": [{ "src": "assets/icons/icon-192.png", "sizes": "192x192" }]
+        },
+        {
+            "name": "Parent portal",
+            "short_name": "Parent",
+            "url": "/parent/dashboard.php",
+            "icons": [{ "src": "assets/icons/icon-192.png", "sizes": "192x192" }]
         }
     ]
 }

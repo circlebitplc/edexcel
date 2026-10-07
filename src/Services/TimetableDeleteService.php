@@ -1,9 +1,9 @@
 <?php
 declare(strict_types=1);
 
-namespace App\Services;
+namespace Edexcel\Services;
 
-use App\Repositories\TimetableRepository;
+use Edexcel\Repositories\TimetableRepository;
 use PDO;
 use RuntimeException;
 

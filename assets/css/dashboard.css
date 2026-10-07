@@ -102,7 +102,51 @@
 
 }
 
+/* ============================================================
+   TEACHER DASHBOARD AVATAR
+============================================================ */
 
+.teacher-welcome-content {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+}
+
+.dashboard-teacher-avatar {
+    width: 58px;
+    height: 58px;
+    flex: 0 0 58px;
+    border-radius: 50%;
+    overflow: hidden;
+    display: grid;
+    place-items: center;
+    background: var(--surface-soft);
+    border: 2px solid var(--primary);
+    color: var(--muted);
+    font-size: 1.7rem;
+    box-shadow: var(--shadow-sm);
+}
+
+.dashboard-teacher-avatar img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+@media (max-width: 576px) {
+
+    .teacher-welcome-content {
+        align-items: flex-start;
+    }
+
+    .dashboard-teacher-avatar {
+        width: 48px;
+        height: 48px;
+        flex-basis: 48px;
+        font-size: 1.35rem;
+    }
+
+}
 /* ============================================================
    DARK THEME
 ============================================================ */
@@ -760,6 +804,66 @@ img {
 }
 
 
+.admin-dashboard.dash-home {
+
+    display: flex;
+    flex-direction: column;
+    gap: 1.35rem;
+
+}
+
+
+.dash-section-title {
+
+    margin: 0;
+    font-size: 1.05rem;
+    font-weight: 800;
+    letter-spacing: -.02em;
+    color: var(--text);
+
+}
+
+
+.dash-section-sub {
+
+    margin: .25rem 0 0;
+    font-size: .82rem;
+    color: var(--muted);
+
+}
+
+
+.dash-action-group-title {
+
+    margin: 0 0 .65rem;
+    font-size: .72rem;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: .06em;
+    color: var(--muted);
+
+}
+
+
+.dash-ops-grid {
+
+    display: grid;
+    grid-template-columns: minmax(0, 1.45fr) minmax(260px, .9fr);
+    gap: 1rem;
+    align-items: start;
+
+}
+
+
+@media (max-width: 991px) {
+
+    .dash-ops-grid {
+        grid-template-columns: 1fr;
+    }
+
+}
+
+
 /* ------------------------------------------------------------
    Welcome
 ------------------------------------------------------------ */
@@ -767,7 +871,7 @@ img {
 .welcome-section {
 
     margin-bottom:
-        22px;
+        0;
 
     padding:
         24px 26px;
@@ -7837,5 +7941,556 @@ img {
         max-width: 100%;
         white-space: normal;
     }
+}
+
+/* ============================================================
+   COMPACT LESSONS THIS WEEK CARD
+============================================================ */
+
+.dashboard-stats .stat-card {
+    min-height: 150px;
+}
+
+.dashboard-stats .col-md-3:first-child .stat-card {
+    min-height: 125px;
+    padding: 15px 16px;
+}
+
+.dashboard-stats .col-md-3:first-child .stat-icon {
+    font-size: 1.45rem;
+    margin-bottom: 2px;
+}
+
+.dashboard-stats .col-md-3:first-child .stat-number {
+    font-size: 1.65rem;
+}
+
+.dashboard-stats .col-md-3:first-child .stat-label {
+    font-size: .76rem;
+}
+
+.dashboard-stats .col-md-3:first-child .stat-trend {
+    font-size: .62rem;
+    padding: 2px 8px;
+    margin-top: 4px;
+}
+
+@media (max-width: 576px) {
+
+    .dashboard-stats .stat-card {
+        min-height: 130px;
+    }
+
+    .dashboard-stats .col-md-3:first-child .stat-card {
+        min-height: 115px;
+        padding: 12px;
+    }
+
+}
+
+/* ============================================================
+   GLOBAL DARK / LIGHT MODE FIX
+   Ensures all portal components follow the theme variables.
+============================================================ */
+
+html,
+body {
+    background-color: var(--page-bg);
+    color: var(--text);
+}
+
+body {
+    transition:
+        background-color .25s ease,
+        color .25s ease;
+}
+
+/* Main portal surfaces */
+
+.portal-container,
+.main-content,
+.content-wrapper,
+.dashboard-content,
+.student-dashboard,
+.student-dashboard-page {
+    color: var(--text);
+}
+
+/* Cards / panels */
+
+.card,
+.dashboard-card,
+.student-panel,
+.student-account-card,
+.student-class-card,
+.student-service-card,
+.panel,
+.modal-content,
+.dropdown-menu {
+    background-color: var(--surface);
+    color: var(--text);
+    border-color: var(--panel-border);
+}
+
+/* Headings */
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+    color: var(--text);
+}
+
+/* Muted text */
+
+.text-muted,
+.text-secondary {
+    color: var(--muted) !important;
+}
+
+/* Form controls */
+
+.form-control,
+.form-select,
+.form-check-input,
+textarea,
+input,
+select {
+    background-color: var(--surface);
+    color: var(--text);
+    border-color: var(--border-color);
+}
+
+.form-control::placeholder,
+textarea::placeholder {
+    color: var(--muted);
+}
+
+.form-control:focus,
+.form-select:focus,
+textarea:focus,
+input:focus {
+    background-color: var(--surface);
+    color: var(--text);
+    border-color: var(--primary);
+}
+
+/* Tables */
+
+.table {
+    --bs-table-bg: var(--surface);
+    --bs-table-color: var(--text);
+    --bs-table-border-color: var(--border-color);
+    color: var(--text);
+}
+
+.table > :not(caption) > * > * {
+    background-color: var(--surface);
+    color: var(--text);
+    border-color: var(--border-color);
+}
+
+.table-hover > tbody > tr:hover > * {
+    background-color: var(--surface-hover);
+    color: var(--text);
+}
+
+/* Navbar */
+
+.navbar {
+    background-color: var(--surface) !important;
+    color: var(--text);
+}
+
+.navbar .nav-link,
+.navbar .navbar-brand {
+    color: var(--text);
+}
+
+.navbar .nav-link:hover,
+.navbar .nav-link.active {
+    color: var(--primary);
+}
+
+/* Sidebar */
+
+.sidebar {
+    background-color: var(--surface) !important;
+    color: var(--text);
+}
+
+.sidebar .nav-link {
+    color: var(--text);
+}
+
+.sidebar .nav-link:hover {
+    background-color: var(--surface-hover);
+    color: var(--primary);
+}
+
+/* Dropdown */
+
+.dropdown-menu {
+    background-color: var(--surface);
+    border-color: var(--border-color);
+}
+
+.dropdown-item {
+    color: var(--text);
+}
+
+.dropdown-item:hover,
+.dropdown-item:focus {
+    background-color: var(--surface-hover);
+    color: var(--text);
+}
+
+/* Alerts */
+
+.alert {
+    color: var(--text);
+}
+
+/* Student dashboard specific elements */
+
+.student-dashboard-page .student-tabs,
+.student-dashboard-page .student-panel,
+.student-dashboard-page .student-stat-grid > *,
+.student-dashboard-page .class-card,
+.student-dashboard-page .student-account-card {
+    background-color: var(--surface);
+    color: var(--text);
+    border-color: var(--panel-border);
+}
+
+/* Smooth theme transition */
+
+html,
+body,
+.navbar,
+.sidebar,
+.card,
+.dropdown-menu,
+.student-panel,
+.student-account-card,
+.student-class-card,
+.student-service-card,
+.form-control,
+.form-select,
+.table {
+    transition:
+        background-color .25s ease,
+        color .25s ease,
+        border-color .25s ease;
+}
+
+
+
+/* ============================================================
+   FINAL GLOBAL THEME OVERRIDE
+============================================================ */
+
+html[data-bs-theme="light"]:not([data-theme]),
+html[data-theme="light"],
+html[data-theme="light"] body {
+    /* Light tokens are defined in themes.css. Kept as a fallback. */
+}
+
+html[data-bs-theme="dark"]:not([data-theme]),
+html[data-theme="dark"]:not([data-theme]),
+html[data-theme="dark"]:not([data-theme]) body {
+    /* Dark tokens are defined in themes.css. Kept as a fallback. */
+}
+
+html,
+body {
+    background-color: var(--page-bg) !important;
+    color: var(--text) !important;
+}
+
+body {
+    transition:
+        background-color .25s ease,
+        color .25s ease;
+}
+
+.portal-container,
+.main-content,
+.dashboard-content,
+.student-dashboard-page {
+    color: var(--text);
+}
+
+.card,
+.student-panel,
+.student-stat,
+.student-class-card,
+.student-account-card,
+.student-setting-card,
+.student-page-hero {
+    background-color: var(--surface);
+    color: var(--text);
+    border-color: var(--panel-border);
+}
+
+.student-panel p,
+.student-setting-card p,
+.text-muted {
+    color: var(--muted) !important;
+}
+
+.form-control,
+.form-select,
+.form-check-input {
+    background-color: var(--surface);
+    color: var(--text);
+    border-color: var(--border-color);
+}
+
+.form-control:focus,
+.form-select:focus {
+    background-color: var(--surface);
+    color: var(--text);
+}
+
+.table {
+    --bs-table-bg: var(--surface);
+    --bs-table-color: var(--text);
+    --bs-table-border-color: var(--border-color);
+}
+
+.table > :not(caption) > * > * {
+    background-color: var(--surface);
+    color: var(--text);
+    border-color: var(--border-color);
+}
+
+.dropdown-menu {
+    background-color: var(--surface) !important;
+    color: var(--text);
+    border-color: var(--border-color);
+}
+
+.dropdown-item {
+    color: var(--text);
+}
+
+.dropdown-item:hover,
+.dropdown-item:focus {
+    background-color: var(--surface-hover);
+    color: var(--text);
+}
+
+/* Keep navbar readable in both themes */
+html[data-bs-theme="light"] .portal-navbar {
+    background-color: #ffffff !important;
+}
+
+html[data-bs-theme="light"] .portal-navbar .nav-link,
+html[data-bs-theme="light"] .portal-navbar .navbar-brand {
+    color: #172033 !important;
+}
+
+html[data-bs-theme="dark"] .portal-navbar {
+    background-color: #191e2b !important;
+}
+
+html[data-bs-theme="dark"] .portal-navbar .nav-link,
+html[data-bs-theme="dark"] .portal-navbar .navbar-brand {
+    color: #f5f7fb !important;
+}
+
+/* Theme button */
+.edexcel-theme-toggle {
+    color: inherit !important;
+}
+
+html[data-bs-theme="light"] .edexcel-theme-toggle {
+    color: #172033 !important;
+}
+
+html[data-bs-theme="dark"] .edexcel-theme-toggle {
+    color: #f5f7fb !important;
+}
+
+/* Student avatar */
+html[data-bs-theme="dark"] .student-avatar {
+    background: #252c3d;
+    color: #8ea0ff;
+    border-color: rgba(255,255,255,.15);
+}
+
+html[data-bs-theme="dark"] .student-account-avatar {
+    background: #252c3d;
+    color: #8ea0ff;
+}
+
+/* Smooth transition */
+html,
+body,
+.portal-navbar,
+.card,
+.student-panel,
+.student-stat,
+.student-class-card,
+.student-account-card,
+.student-setting-card,
+.dropdown-menu,
+.form-control,
+.form-select,
+.table {
+    transition:
+        background-color .25s ease,
+        color .25s ease,
+        border-color .25s ease;
+}
+
+
+
+/* ============================================================
+   STUDENT DASHBOARD - FINAL FULL WIDTH LAYOUT FIX
+   ============================================================ */
+
+/* Student portal should use the complete available width */
+body.student-user .main-content,
+body.student-user .content-wrapper,
+body.student-user .portal-container {
+    width: 100% !important;
+    max-width: none !important;
+}
+
+/* Remove the desktop sidebar space because student sidebar is hidden */
+body.student-user .main-content {
+    margin-left: 0 !important;
+    padding-left: 28px !important;
+    padding-right: 28px !important;
+}
+
+/* Main student dashboard */
+.student-dashboard-page {
+    width: 100% !important;
+    max-width: none !important;
+    margin-left: auto !important;
+    margin-right: auto !important;
+}
+
+/* Welcome/profile hero */
+.student-dashboard-page .student-profile-hero,
+.student-dashboard-page .student-page-hero {
+    width: 100% !important;
+    max-width: none !important;
+}
+
+/* Four overview statistics in one row */
+.student-dashboard-page .student-stat-grid {
+    display: grid !important;
+    width: 100% !important;
+    max-width: none !important;
+    grid-template-columns:
+        repeat(4, minmax(0, 1fr)) !important;
+    gap: 18px !important;
+}
+
+/* Every stat card fills its grid cell */
+.student-dashboard-page .student-stat-grid > * {
+    width: 100% !important;
+    min-width: 0 !important;
+    max-width: none !important;
+    margin: 0 !important;
+}
+
+/* Main panels */
+.student-dashboard-page .student-panel {
+    width: 100% !important;
+    max-width: none !important;
+    margin-left: 0 !important;
+    margin-right: 0 !important;
+}
+
+/* Timetable / classes / join / services / settings */
+.student-dashboard-page .student-tab-section {
+    width: 100% !important;
+    max-width: none !important;
+}
+
+/* Two-column sections where applicable */
+.student-dashboard-page .student-dashboard-grid,
+.student-dashboard-page .student-content-grid {
+    width: 100% !important;
+    max-width: none !important;
+}
+
+/* Large desktop */
+@media (min-width: 1400px) {
+
+    body.student-user .main-content {
+        padding-left: 32px !important;
+        padding-right: 32px !important;
+    }
+
+    .student-dashboard-page {
+        padding-left: 0 !important;
+        padding-right: 0 !important;
+    }
+
+}
+
+/* Tablet */
+@media (max-width: 1100px) {
+
+    .student-dashboard-page .student-stat-grid {
+        grid-template-columns:
+            repeat(2, minmax(0, 1fr)) !important;
+    }
+
+}
+
+/* Mobile */
+@media (max-width: 700px) {
+
+    body.student-user .main-content {
+        padding-left: 12px !important;
+        padding-right: 12px !important;
+    }
+
+    .student-dashboard-page .student-stat-grid {
+        grid-template-columns:
+            1fr !important;
+        gap: 12px !important;
+    }
+
+    .student-dashboard-page .student-profile-hero,
+    .student-dashboard-page .student-page-hero {
+        width: 100% !important;
+    }
+
+}
+
+/* Prevent hidden sidebar from reserving Bootstrap column space */
+body.student-user .student-sidebar-hidden {
+    display: none !important;
+}
+
+/* Student navigation stays full width */
+body.student-user .student-portal-tabs {
+    width: 100% !important;
+    max-width: none !important;
+}
+
+
+
+/* ============================================================
+   STUDENT DASHBOARD HASH TABS
+   Only the selected section is visible.
+============================================================ */
+
+.student-dashboard-page .student-tab-section[hidden] {
+    display: none !important;
+}
+
+.student-dashboard-page .student-tab-section.is-active {
+    display: revert;
 }
 

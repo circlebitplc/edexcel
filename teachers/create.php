@@ -51,8 +51,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             // Generate a unique temporary password instead of using a shared default.
             $temporaryPassword = bin2hex(random_bytes(6));
             $password_hash = password_hash($temporaryPassword, PASSWORD_DEFAULT);
-            $stmt = $pdo->prepare("INSERT INTO users (username, password_hash, role, teacher_id) VALUES (?, ?, 'teacher', ?)");
-            $stmt->execute([$username, $password_hash, $teacher_id]);
+            $stmt = $pdo->prepare("INSERT INTO users (username, password_hash, role, teacher_id, google_email) VALUES (?, ?, 'teacher', ?, ?)");
+            $stmt->execute([$username, $password_hash, $teacher_id, $email]);
 
             $pdo->commit();
             $_SESSION['success'] = "Teacher '$name' added successfully. Username: $username, Temporary password: $temporaryPassword";

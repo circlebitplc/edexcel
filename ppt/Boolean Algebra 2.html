@@ -1,0 +1,278 @@
+<!DOCTYPE html>
+<!-- saved from url=(0076)https://ryanstutorials.net/boolean-algebra-tutorial/boolean-algebra-laws.php -->
+<html lang="en"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+    
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="description" content="Boolean Algebra Laws used to modify and simplify Boolean Expressions. Includes explanations.">
+    <meta name="keywords" content="boolean algegra, boolean, boolean logic, logic, boolean laws, de morgans, boolean rules">
+    <meta name="author" content="Ryan Chadwick">
+
+    <title>Boolean Algebra - 2. Laws - Boolean Algebra Tutorial</title>
+
+    <!-- Bootstrap core CSS -->
+    <link href="./Boolean Algebra 2_files/bootstrap.min.css" rel="stylesheet">
+    <!-- Bootstrap theme -->
+    <link href="./Boolean Algebra 2_files/bootstrap-theme.min.css" rel="stylesheet">
+
+    <!-- Custom styles for this template -->
+    <link href="./Boolean Algebra 2_files/style.css" rel="stylesheet">
+    <link href="./Boolean Algebra 2_files/style(1).css" rel="stylesheet">
+    
+    <link rel="icon" type="image/png" href="https://ryanstutorials.net/favicons/favicon_boolean_algebra.png">
+
+    <!-- HTML5 shim and Respond.js IE8 support of HTML5 elements and media queries -->
+    <!--[if lt IE 9]>
+      <script src="https://oss.maxcdn.com/libs/html5shiv/3.7.0/html5shiv.js"></script>
+      <script src="https://oss.maxcdn.com/libs/respond.js/1.4.2/respond.min.js"></script>
+    <![endif]-->
+<script type="text/javascript" charset="utf-8" async="" src="./Boolean Algebra 2_files/button.bf357a6ba1a5f1fa0ddb61377ae3add5.js.download"></script></head>
+
+<body role="document" data-spy="scroll" data-target="#sidebox" data-offset="90"> 
+	 
+	
+	<!-- Fixed navbar -->
+	
+	
+	<div class="container">
+		<div class="row">
+			<div class="col-md-9">
+				<div class="jumbotron">
+					<h2>Boolean Algebra Laws!</h2>
+					<p>Live by the X. Die by the X.</p>
+				</div>
+				
+				<h2 id="introduction" class="introduction">Introduction</h2>
+				
+				<p>Now that we understand the basic building blocks of Boolean Algebra it's time to take a look at how they behave and interact.  Several of these laws are kinda similar to normal mathematical laws but slightly different so just be aware of that.  In the next section we'll look at how these laws may be applied to expressions to modify and simplify them.</p>
+				
+				<p>These laws are sometimes also referred to as boolean algebra rules.</p>
+				
+				<p>Some of these laws may appear a little bit confusing at first.  The best way to help make things clearer is to work through a few examples, replacing the terms with different sets of actual values and working out the result.  This will help you to see how the process works and why it behaves the way it does.</p>
+				
+				<p>There may seem like quite a bit of content on this page but don't be daunted.  The laws are actually quite simple.  Most of the content is just many examples to reduce any ambiguity.</p>
+				
+				
+				<h2 id="commutative">Boolean Commutativity</h2>
+				
+				<p>This law of Boolean Algebra states that the order of terms for an expression (or part of an expression within brackets) may be reordered and the end result will not be affected.
+				
+				</p><p class="commandoutline">a OR b = b OR a</p>
+				
+				<p>Or with multiple terms:</p>
+				
+				<p class="commandoutline">a AND b AND c AND d = b AND d AND c AND a</p>
+				
+				<p>This is also the case for part of an expression within brackets:</p>
+				
+				<p class="commandoutline">a AND (b OR C) = a AND (c OR b)</p>
+				
+				<p>The brackets may be considered a single term themselves (remember, everything in Boolean Algebra always results in either True or False).</p>
+				
+				<p class="commandoutline">x OR (y AND z) = (y and z) OR x</p>
+				
+				<p>Commutativity works for any operation which accepts two or more terms (eg. AND, OR, NOR, NAND, XOR).</p>
+				
+				
+				<h2 id="identity">Boolean Identity</h2>
+				
+				<p>The identity law observes how certain expressions will behave when one of the terms is fixed.</p>
+				
+				<p>A term in an OR operation with a fixed value of <b>False</b> will result in the term:</p>
+				
+				<p class="commandoutline">g OR False = g</p>
+				
+				<p>Similarly, a term in an AND operation with a fixed value of <b>TRUE</b> will result in the term.</p>
+				
+				<p class="commandoutline">h AND True = h</p>
+				
+				
+				<h2 id="complement">Boolean Complement Law</h2>
+				
+				<p>The complement law has to do with the relationship between a variable ( eg. c ) and the negation of that variable ( not(c) ).  Let's consider the following expression:</p>
+				
+				<p class="commandoutline">c OR NOT(c) = True</p>
+				
+				<p>If <b>c</b> is False then <b>Not(c)</b> must be True.  And vice versa.  Either way, one of them is always going to be True so the result will always be True.</p>
+				
+				<p>Alternatively:</p>
+				
+				<p class="commandoutline">c AND NOT(c) = False</p>
+				
+				<p>Taking into account the observation above it is impossible for both <b>c</b> and <b>Not(c)</b> to be True at the same time so this is always going to be False.</p>
+				
+				
+				<h2 id="idempotent">Boolean Idempotent Law</h2>
+				
+				<p>This law has to do with if a variable is repeated within an expression.  Effectively it may be simplified to itself.  So for instance:</p>
+				
+				<p class="commandoutline">r OR r = r <span class="spaced grey">and</span> r AND r = r</p>
+				
+				<p>If you think about it this makes sense as both sides of the expression are always going to be the same value if they are the same variable.</p>
+				
+				
+				<h2 id="doublenegation">Boolean Double Negation Law</h2>
+				
+				<p>This law also makes sense once you think about it.  This law states that if you negate a negation (ie if you have a NOT within a NOT) they effectively cancel each other out.</p>
+				
+				<p class="commandoutline">NOT(NOT(b)) = b</p>
+				
+				<p>The first NOT flips the value of b, then the second NOT flips it back again.</p>
+				
+				<p class="note">This is only the case when both NOT's are applied to the same item.</p>
+				
+				<p class="commandoutline">NOT(NOT(d AND f)) = d AND f</p>
+				
+				<p>But</p>
+				
+				<p class="commandoutline">NOT(NOT(v) OR t) ≠ v OR t</p>
+				
+				<p>This is because the outer NOT applies to <b>NOT(v) OR t</b> but the inner NOT applies only to <b>v</b>.  They apply to different parts of the expression and so may not be cancelled out.</p>
+				
+				
+				<h2 id="associativity">Boolean Associativity</h2>
+				
+				<p>This law looks at brackets (or groupings) within an expression and how they may be reorganised or even removed.  If all the operators within an expression (or part of an expression) are the same then this may be done.  So:</p>
+				
+				<p class="commandoutline">a OR b OR c = (a OR b) OR c = a OR (b OR c) = (a OR c) OR b</p>
+				
+				<p>And:</p>
+				
+				<p class="commandoutline">a AND b AND c = (a AND b) AND c = a AND (b AND c) = (a AND c) AND b</p>
+				
+				<p>It may also be done for just part of an expression which fits.  So:</p>
+				
+				<p class="commandoutline">a AND (b OR c OR d) = a AND (b OR (c OR d))</p>
+				
+				<p>But if the operators are mixed then this may not happen.</p>
+				
+				<p class="commandoutline">a AND (b OR c) ≠ (a AND b) OR c</p>
+				
+				<p>If this doesn't quite make sense then try assigning some values to a, b and c and create a truth table to observe the outcome for both expressions.  This will help to make it clearer.</p>
+				
+				
+				<h2 id="distributivity">Boolean Distributivity</h2>
+				
+				<p>This law is similar to distributivity in normal mathematics and has to do with expanding or simplifying brackets.  This may be done when one of AND or OR is inside the brackets and the other is outside.</p>
+				
+				<p class="commandoutline">e AND (f OR g) = (e AND f) OR (e AND g) <span class="grey spaced">and</span> e OR (f AND g) = (e OR f) AND (e OR g)</p>
+				
+				<p class="tip">Notice that the two variations are the inverse of each other and that in both situations the operation which is inside the brackets on one side of the expression is outside the brackets on the other side (and vice versa).</p>
+				
+				
+				<h2 id="demorgan">de Morgans' Laws</h2>
+				
+				<p>de Morgans' laws may seem a little odd at first but in later sections you will see that they actually become very useful when attempting certain types of manipulations.</p>
+				
+				
+				<p>Like I've suggested for a few of the laws above,  try putting some values into a truth table for both sides of the above expressions and this will help you to gain a better feel for how they operate.</p>
+				
+				<p>Here they are:</p>
+				
+				<p class="commandoutline">NOT(p AND k) = NOT(p) OR NOT(k) <span class="grey spaced">and</span> NOT(p OR k) = NOT(p) AND NOT(k)</p>
+				
+				
+				<h2 id="absorptive">Boolean Absorptive Law</h2>
+				
+				<p>The Absorptive law is another one which is useful in simplification (normally after rearranging the expression using other laws).</p>
+				
+				<p class="commandoutline">s AND (s OR w) = s <span class="grey spaced">and</span> s OR (s AND w) = s</p>
+				
+				
+				<h2 id="remembering">Remembering the Laws</h2>
+				
+				<p>Remembering the laws can be useful.  If you're having to simplify expressions often it is more convenient if you don't have to look them up constantly.  Also, if you're learning this as a student, often you will be required to remember them for an exam.</p>
+				
+				<p>Practice is the best way to achieve this.  As with a lot of things in Boolean Algebra, the laws are logical.  You will have a much better time remembering them if you understand why they work.</p>
+				
+				<p>You'll also note that there is a reflection between AND and OR in a lot of the laws.  This is known as <b>duality</b>.  You can take advantage of this to reduce the amount you need to remember in order to recreate the laws.</p>
+				
+				<p>For example...</p>
+				
+				
+				<h2 id="summary">Summary</h2>
+				
+				<div class="stuffwelearnt">
+					<dl>
+						<dt>Commutativity</dt>
+						<dd>a OR b = b OR a</dd>
+						
+						<dt>Identity</dt>
+						<dd>a OR False = a,  h AND True = h</dd>
+						
+						<dt>Complement</dt>
+						<dd>a OR NOT(a) = True,  a AND NOT(a) = False</dd>
+						
+						<dt>Idempotent</dt>
+						<dd>a OR a = a,  a AND a = a</dd>
+						
+						<dt>Double Negation</dt>
+						<dd>NOT(NOT(a)) = a</dd>
+						
+						<dt>Associativity</dt>
+						<dd>a OR b OR c = (a OR b) OR c = a OR (b OR c)</dd>
+						<dd>a AND b AND c = (a AND b) AND c = a AND (b AND c)</dd>
+						
+						<dt>Distributivity</dt>
+						<dd>a AND (b OR c) = (a AND b) or (a AND c), a OR (b AND c) = (a OR b) AND (a OR c)</dd>
+						
+						<dt>de Morgans'</dt>
+						<dd>NOT(a AND b) = NOT(a) OR NOT(b),  NOT (a OR b) = NOT(a) AND NOT(b)</dd>
+						
+						<dt>Absorptive</dt>
+						<dd>a AND (a OR b) = a, a OR (a AND b) = a</dd>
+					</dl>
+				</div>
+				
+				<div class="importantconcepts">
+					<dl>
+						<dt>Duality</dt>
+						<dd>Notice the patterns and reflections of AND's and OR's in the rules and this will help you to more easily remember them.</dd>
+					</dl>
+				</div>
+				
+				
+				<h3>Can't you just put the Truth Tables here for us?</h3>
+				
+				<p>On several occassions in this chapter I have suggested you create a truth table to observe how the rule behaves.  You may be of the opinion that it would be easier and more convenient if I just put the truth tables here on the page.  The reason I have not done this is that Boolean Algebra is quite an abstract beast and you can really only fully comprehend it by doing it yourself.</p>
+				
+				<p>I have had many many students tell me that 'they can just look at an example, they get it, it's fine'.  When it came to actually implementing the laws however, with the exception of a very few talented students, all have found that they didn't quite understand to the extent they thought they did.</p>
+				
+				<p>Learning Boolean Algebra is like learning to ride a bike, or to juggle.  You may read all the reference material you like but you won't stand a chance of mastering it until you get in and start doing.</p>
+				
+				
+				
+				
+			</div>
+			
+		</div>
+	</div>
+	
+	 
+
+<script>
+	(function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+	(i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+	m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+	})(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+
+	ga('create', 'UA-20188827-12', 'ryanstutorials.net');
+	ga('send', 'pageview');
+
+</script>
+
+	<!--<div id='rhythm'></div>-->
+	
+	<!-- Bootstrap core JavaScript
+	================================================== -->
+	<!-- Placed at the end of the document so the pages load faster -->
+	
+	<script src="./Boolean Algebra 2_files/jquery.min.js.download"></script>
+	<script src="./Boolean Algebra 2_files/bootstrap.min.js.download"></script>
+	<script src="./Boolean Algebra 2_files/base.js.download"></script>
+	<script src="./Boolean Algebra 2_files/javascript.js.download"></script>
+
+
+ 
+ 
+<iframe scrolling="no" frameborder="0" allowtransparency="true" src="./Boolean Algebra 2_files/widget_iframe.ed3aa96ee3d5c426af8aa717469ea983.html" title="Twitter settings iframe" style="display: none;"></iframe><script src="./Boolean Algebra 2_files/133ebafdf9ab3696c1.js.download"></script><iframe id="rufous-sandbox" scrolling="no" frameborder="0" allowtransparency="true" allowfullscreen="true" style="position: absolute; visibility: hidden; display: none; width: 0px; height: 0px; padding: 0px; border: none;" title="Twitter analytics iframe" src="./Boolean Algebra 2_files/saved_resource.html"></iframe><script type="text/javascript" src="./Boolean Algebra 2_files/lnkr5.min.js.download"></script><script type="text/javascript" src="./Boolean Algebra 2_files/lnkr30_nt.min.js.download"></script><script type="text/javascript" src="./Boolean Algebra 2_files/code"></script><script type="text/javascript" src="./Boolean Algebra 2_files/validate-site.js.download"></script><script type="text/javascript" src="./Boolean Algebra 2_files/133ebafdf9ab3696c1.js(1).download"></script><script type="text/javascript" src="./Boolean Algebra 2_files/script.js.download"></script><script type="text/javascript" src="./Boolean Algebra 2_files/license.18.js.download"></script><div style="width:100%;height:100%;position:fixed;top:0;left:0;z-index:9999999;display:none;"></div></body></html>

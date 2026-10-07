@@ -1,0 +1,278 @@
+/* ============================================================
+   Edexcel College — 2026 SaaS Floating Bottom Navigation Bar
+   Matches reference design: Dark charcoal pill with lighter gray active pill
+   Fully responsive across Desktop, Tablet, and Mobile
+   ============================================================ */
+
+:root {
+    --bnav-bg: #161618;
+    --bnav-border: rgba(255, 255, 255, 0.09);
+    --bnav-shadow: 0 14px 42px rgba(0, 0, 0, 0.45), 0 0 0 1px rgba(255, 255, 255, 0.05) inset;
+    --bnav-active-bg: #2f2f34;
+    --bnav-active-color: #ffffff;
+    --bnav-inactive-color: rgba(255, 255, 255, 0.72);
+    --bnav-hover-bg: rgba(255, 255, 255, 0.08);
+    --bnav-hover-color: #ffffff;
+    --bnav-radius: 24px;
+    --bnav-item-radius: 18px;
+    --bnav-height: 56px;
+}
+
+/* Page body clearance so bottom content, footers, maps are never covered */
+body {
+    padding-bottom: calc(var(--bnav-height) + 38px + env(safe-area-inset-bottom, 0px)) !important;
+}
+
+/* Centered Floating Navigation Card */
+.app-bottom-nav,
+.l1-capsule {
+    position: fixed !important;
+    left: 50% !important;
+    right: auto !important;
+    top: auto !important;
+    bottom: 22px !important;
+    transform: translateX(-50%) !important;
+    z-index: 1200 !important;
+    margin: 0 !important;
+    display: flex !important;
+    flex-wrap: nowrap !important;
+    align-items: center !important;
+    justify-content: center !important;
+    gap: 6px !important;
+    padding: 6px 8px !important;
+    width: max-content !important;
+    max-width: min(92vw, 44rem) !important;
+    background: var(--bnav-bg) !important;
+    border: 1px solid var(--bnav-border) !important;
+    border-radius: var(--bnav-radius) !important;
+    box-shadow: var(--bnav-shadow) !important;
+    backdrop-filter: blur(20px) saturate(1.2) !important;
+    -webkit-backdrop-filter: blur(20px) saturate(1.2) !important;
+    color: #f5f5f5 !important;
+    pointer-events: auto !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+    box-sizing: border-box !important;
+}
+
+/* Navigation Items (Buttons & Anchors) */
+.app-bottom-nav-item,
+.l1-capsule-item {
+    display: inline-flex !important;
+    flex-shrink: 0 !important;
+    align-items: center !important;
+    justify-content: center !important;
+    gap: 8px !important;
+    min-width: 44px !important;
+    min-height: 44px !important;
+    padding: 8px 14px !important;
+    border: 0 !important;
+    border-radius: var(--bnav-item-radius) !important;
+    background: transparent !important;
+    color: var(--bnav-inactive-color) !important;
+    font-family: Outfit, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif !important;
+    font-size: 0.92rem !important;
+    font-weight: 550 !important;
+    letter-spacing: -0.01em !important;
+    text-decoration: none !important;
+    cursor: pointer !important;
+    white-space: nowrap !important;
+    outline: none !important;
+    box-shadow: none !important;
+    user-select: none !important;
+    -webkit-user-select: none !important;
+    -webkit-tap-highlight-color: transparent !important;
+    transition:
+        background 0.22s cubic-bezier(0.2, 0, 0, 1),
+        color 0.22s cubic-bezier(0.2, 0, 0, 1),
+        padding 0.24s cubic-bezier(0.2, 0, 0, 1),
+        transform 0.18s cubic-bezier(0.2, 0, 0, 1),
+        box-shadow 0.22s cubic-bezier(0.2, 0, 0, 1) !important;
+}
+
+/* Icons styling */
+.app-bottom-nav-item i,
+.l1-capsule-item i {
+    font-size: 1.12rem !important;
+    line-height: 1 !important;
+    display: inline-block !important;
+    vertical-align: middle !important;
+    opacity: 0.95 !important;
+    transition: transform 0.2s ease !important;
+}
+
+/* Text label */
+.app-bottom-nav-label,
+.l1-capsule-label {
+    display: none !important;
+    max-width: 0 !important;
+    overflow: hidden !important;
+    opacity: 0 !important;
+    transform: translateX(-4px) !important;
+    font-weight: 600 !important;
+    white-space: nowrap !important;
+    letter-spacing: -0.01em !important;
+    transition:
+        opacity 0.24s cubic-bezier(0.2, 0, 0, 1),
+        transform 0.24s cubic-bezier(0.2, 0, 0, 1),
+        max-width 0.28s cubic-bezier(0.2, 0, 0, 1) !important;
+}
+
+/* Active State — matches reference lighter gray rounded pill */
+.app-bottom-nav-item.is-active,
+.l1-capsule-item.is-active {
+    background: var(--bnav-active-bg) !important;
+    color: var(--bnav-active-color) !important;
+    padding: 8px 18px 8px 14px !important;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.28), 0 0 0 1px rgba(255, 255, 255, 0.08) inset !important;
+}
+
+.app-bottom-nav-item.is-active i,
+.l1-capsule-item.is-active i {
+    opacity: 1 !important;
+    transform: scale(1.04) !important;
+}
+
+.app-bottom-nav-item.is-active .app-bottom-nav-label,
+.app-bottom-nav-item.is-active .l1-capsule-label,
+.l1-capsule-item.is-active .l1-capsule-label {
+    display: inline-block !important;
+    max-width: 7.5rem !important;
+    opacity: 1 !important;
+    transform: none !important;
+}
+
+/* Hover & Focus Interaction */
+.app-bottom-nav-item:hover,
+.l1-capsule-item:hover {
+    color: var(--bnav-hover-color) !important;
+}
+
+.app-bottom-nav-item:not(.is-active):hover,
+.l1-capsule-item:not(.is-active):hover {
+    background: var(--bnav-hover-bg) !important;
+    color: var(--bnav-hover-color) !important;
+}
+
+.app-bottom-nav-item:focus-visible,
+.l1-capsule-item:focus-visible {
+    box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.45) !important;
+}
+
+.app-bottom-nav-item:active,
+.l1-capsule-item:active {
+    transform: scale(0.96) !important;
+}
+
+/* ============================================================
+   Responsive Breakpoints
+   ============================================================ */
+
+/* Tablet (Landscape & Portrait: 601px to 992px) */
+@media (max-width: 992px) {
+    .app-bottom-nav,
+    .l1-capsule {
+        bottom: 18px !important;
+        gap: 5px !important;
+        padding: 5px 6px !important;
+    }
+    .app-bottom-nav-item,
+    .l1-capsule-item {
+        min-width: 42px !important;
+        min-height: 42px !important;
+        padding: 7px 12px !important;
+    }
+    .app-bottom-nav-item.is-active,
+    .l1-capsule-item.is-active {
+        padding: 7px 16px 7px 12px !important;
+    }
+}
+
+/* Mobile Phones (up to 600px) */
+@media (max-width: 600px) {
+    .app-bottom-nav,
+    .l1-capsule {
+        bottom: max(12px, env(safe-area-inset-bottom, 12px)) !important;
+        max-width: calc(100vw - 20px) !important;
+        gap: 3px !important;
+        padding: 5px 6px !important;
+        border-radius: 20px !important;
+    }
+    .app-bottom-nav-item,
+    .l1-capsule-item {
+        min-width: 38px !important;
+        min-height: 38px !important;
+        padding: 6px 9px !important;
+        font-size: 0.86rem !important;
+    }
+    .app-bottom-nav-item.is-active,
+    .l1-capsule-item.is-active {
+        padding: 6px 13px 6px 9px !important;
+    }
+    .app-bottom-nav-item i,
+    .l1-capsule-item i {
+        font-size: 1.02rem !important;
+    }
+    .app-bottom-nav-item.is-active .app-bottom-nav-label,
+    .app-bottom-nav-item.is-active .l1-capsule-label,
+    .l1-capsule-item.is-active .l1-capsule-label {
+        max-width: 5.5rem !important;
+    }
+}
+
+/* Small Mobile Screens (<= 380px, e.g. iPhone SE, smaller Androids) */
+@media (max-width: 380px) {
+    .app-bottom-nav,
+    .l1-capsule {
+        bottom: max(10px, env(safe-area-inset-bottom, 10px)) !important;
+        max-width: calc(100vw - 12px) !important;
+        gap: 2px !important;
+        padding: 4px 4px !important;
+    }
+    .app-bottom-nav-item,
+    .l1-capsule-item {
+        min-width: 34px !important;
+        min-height: 34px !important;
+        padding: 5px 7px !important;
+        font-size: 0.8rem !important;
+    }
+    .app-bottom-nav-item.is-active,
+    .l1-capsule-item.is-active {
+        padding: 5px 10px 5px 7px !important;
+    }
+    .app-bottom-nav-item i,
+    .l1-capsule-item i {
+        font-size: 0.95rem !important;
+    }
+}
+
+/* Desktop Enhanced Layout (>= 993px) */
+@media (min-width: 993px) {
+    .app-bottom-nav,
+    .l1-capsule {
+        bottom: 24px !important;
+        gap: 8px !important;
+        padding: 7px 10px !important;
+    }
+    .app-bottom-nav-item,
+    .l1-capsule-item {
+        min-width: 46px !important;
+        min-height: 46px !important;
+        padding: 8px 16px !important;
+    }
+    .app-bottom-nav-item.is-active,
+    .l1-capsule-item.is-active {
+        padding: 8px 20px 8px 16px !important;
+    }
+}
+
+/* Reduced Motion Support */
+@media (prefers-reduced-motion: reduce) {
+    .app-bottom-nav-item,
+    .l1-capsule-item,
+    .app-bottom-nav-label,
+    .l1-capsule-label {
+        transition: none !important;
+    }
+}
+

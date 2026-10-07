@@ -3,7 +3,7 @@
 require_once 'config/database.php';
 require_once 'config/auth.php';
 require_once 'config/security.php';
-require_login();
+require_staff();
 
 $user = get_logged_in_user($pdo);
 $error = '';
@@ -43,6 +43,8 @@ $role = $user['role'];
 include 'includes/header.php';
 ?>
 <h1><i class="bi bi-key"></i> Change Password</h1>
+
+<?php if (function_exists('app_theme_render_settings_section')) { app_theme_render_settings_section(); } ?>
 
 <?php if ($error): ?>
     <div class="alert alert-danger"><?= htmlspecialchars($error) ?></div>

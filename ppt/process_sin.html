@@ -1,0 +1,226 @@
+<!doctype html>
+<html lang='en'>
+<head>
+<!-- Global site tag (gtag.js) - Google Analytics -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=UA-117524735-1"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+
+  gtag('config', 'UA-117524735-1');
+</script>
+
+<script async src="//pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"></script>
+<script>
+  (adsbygoogle = window.adsbygoogle || []).push({
+    google_ad_client: "ca-pub-6345478157963217",
+    enable_page_level_ads: true
+  });
+</script>
+	<meta charset='utf-8'>
+
+	<title class='hightlight-blue'>Enidu Batuwanthudawe</title>
+
+	<meta name='description' content='Computer Architecture'>
+	<meta name='author' content='Enidu Batuwanthudawe'>
+
+	<meta name='apple-mobile-web-app-capable' content='yes' />
+	<meta name='apple-mobile-web-app-status-bar-style' content='black-translucent' />
+
+	<meta name='viewport' content='width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no'>
+
+	<link rel='stylesheet' href='css/reveal.min.css'>
+	<link rel='stylesheet' href='css/theme/default.css' id='theme'>
+	<link rel='stylesheet' href='css/custom.css'>
+
+	<!-- For syntax highlighting -->
+	<link rel='stylesheet' href='lib/css/zenburn.css'>
+
+	<!-- If the query includes 'print-pdf', use the PDF print sheet -->
+	<link rel="stylesheet" href="css/print/pdf.css">
+
+		<!--[if lt IE 9]>
+		<script src='lib/js/html5shiv.js'></script>
+		<![endif]-->
+		<script src='js/moment.min.js'></script>
+	</head>
+
+	<body>
+
+		<div class='reveal'>
+			<div class='slides'>
+				<section>
+					<h2> processes management <br> ක්‍රියායන කළමනාකරණය</h2>
+					<p>
+						 by <a href='http://www.hodamapanthiya.com/enidu/' target="_blank">Enidu Batuwanthudawe </a><font size="3" color="white">C&nbsp;&nbsp;i&nbsp;&nbsp;v&nbsp;&nbsp;i&nbsp;&nbsp;l&nbsp;&nbsp;&nbsp;&nbsp;E&nbsp;&nbsp;n&nbsp;&nbsp;g&nbsp;&nbsp;.&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;| &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;B&nbsp;&nbsp;.&nbsp;&nbsp;S&nbsp;&nbsp;c&nbsp;&nbsp;.&nbsp;&nbsp;&nbsp;&nbsp;i&nbsp;&nbsp;n&nbsp;&nbsp;&nbsp;&nbsp;I&nbsp;&nbsp;T </font>
+					</p>
+					<p>
+						<small>
+							. . . . . . . . . . . . . . . . . . . .. . . . . . . . . . . . . . . . . . . . <br>
+							<script type='text/javascript'>
+								document.write(moment().format('dddd, MMMM D, YYYY'));
+							</script>
+						</small>
+					</p>
+				</section>
+
+				<section>
+				<section>
+					<h1>ක්‍රියායනයේ <br><br>නිර්වචනය</h1>
+				</section>
+				<section>
+				<p><p>පද්ධතියේ ක්‍රියාවට නැංවිය යුතු මූලික ඒකකය<br> නියෝජනය වන ආයතනයක් ලෙස ක්‍රියායනය අර්ථ දැක්වේ.</p><br><br>
+					<p>ක්‍රියායනය යනු පරිගණකයක ක්‍රියාත්මක වන වැඩසටහනකි.</p><br><br>
+					<p>ක්‍රියායනය මූලික වශයෙන් ක්‍රියාත්මක කිරීමේ වැඩසටහනකි. ක්‍රියායනය ක්‍රියාත්මක කිරීම අනුක්රමික ආකාරයකින් ප්‍ර​ගතියක් ලබා ගත යුතුය.</p>		
+				</section>
+				<section>
+				<font color=#d8ff00><strong><p>එහි වැඩසටහන් කේතය <br><br>සහ <br><br>එහි වර්තමාන ක්‍රියාකාරකම් <br><br>අඩංගු වේ. </strong> </font><br> <br><br>මෙහෙයුම් පද්ධතියේ (OS) මත පදනම්ව, උපදෙස් ක්‍රියාවට නංවන කාර්යයන් කිහිපයක් ක්‍රියාත්මක කිරීමේ ක්‍රියායනයක් සෑදිය හැක</p>
+				</section>
+				</section>
+				<section>
+				<section>
+				<p>ක්‍රියායනය  නිර්මාණය කළ පසු මෙහෙයුම් පද්ධතියේ කාර්යයනන්</p><br>
+				<p><font color=#d8ff00><strong>*</strong> </font>ප්‍ර​ධාන මතකය තුල ක්‍රියායනය</p>
+				</section>
+				<section>
+				<p>ප්‍ර​ධාන මතකය තුල ක්‍රියායනය</p>
+				<img src="img/process_inside_si.png" height=450px >
+				</section>
+				<section>
+				<h1>අට්ටය​</h1>
+				<p>ක්‍ර​මවේදය <br><br>ක්‍රියාකාරී ප්‍ර​මිතීන්<br><br>ආපසු ලිපිනය <br><br>සහ<br><br> දේශීය විචල්යයන් <br><br>වැනි තාවකාලික දත්ත අඩංගු වේ.</p>
+				</section>
+				<section>
+				<h1>ගොඩ</h1><br>
+				<p>මෙය ගතික කාලය තුල ක්‍රියායනය සඳහා ගතිකව වෙන් කරන ලද මතකය වේ.</p>
+				</section>
+				<section>
+				<h1>දත්ත​</h1><br>
+				<p>මෙම කොටස ගෝලීය සහ ස්ථිතික විචල්යයන් අඩංගු වේ.</p>
+				</section>
+				<section>
+				<h1>පෙළ​</h1><br>
+				<p>වැඩසටහන් කවුළුවේ වටිනාකම සහ සකසනයේ ලේඛන වල අන්තර්ගතය නියෝජනය කරන වත්මන් ක්‍රියාකාරිත්වය මෙයට ඇතුළත් වේ.</p>
+				</section>
+				</section>
+				<section>
+				<section>
+				<h1>වැඩසටහනක් </h1><br>
+				<p>පරිගණක වැඩසටහනක් යනු පරිගණකයක් විසින් <br><br> ක්‍රියාත්මක කරන විට නිශ්චිත කර්තව්‍යයක් ඉටු කරන<br><br> උපදෙස් එකතුවකි. ක්‍රියායනයක් සමග වැඩසටහනක් <br><br>සැසදීමේදී,  ක්‍රියායනයක් යනු පරිගණක වැඩසටහනක<br><br> ඩිජිටල් උදාහරණයක් බව නිගමනය කළ හැකිය​.</p>
+				</section>
+				<section>
+				<p>නිශ්චිත කර්තව්යයක් ඉටු කරන පරිගණක වැඩසටහනක කොටසක් <br><br><font color=#d8ff00><strong>ඇල්ගොරිතම ලෙස හැඳින්වේ.</font></strong><br><br> පරිගණක වැඩසටහන්, පුස්තකාල සහ අදාළ දත්ත එක්රැස් කිරීම මෘදුකාංගයක් ලෙස හැඳින්වේ.</p>
+				</section>
+				</section>
+				 <section>
+					<section>
+						<h2>ක්‍රියායනයේ ජීවන චක්‍රය</h2>
+					</section>
+					<section>
+						<img src="img/Process_Life_Cycle.gif" height=650px width=100%>
+					</section>
+					<section>
+						<h1>සුදානම</h1><br>
+						<p>ක්‍රියායනය මුලින්ම ආරඹ්හ තත්වය. <br><br> නිර්මාණය කරන විට ආරඹ්හක තත්වය.</p>
+					</section>
+					<section>
+						<h1>ධාවන</h1><br>
+						<p>ක්‍රියායනය මෙහෙයුම් කරුවෙකුට ප්‍රොසෙසරයකට පවරනු<br><br> ලැබූ පසු ක්‍රියා ක්‍රියායනය ක්‍රියාත්මක වන අතර ප්‍රොසෙසරය<br><br> එහි උපදෙස් ක්‍රියාත්මක කරයි.</p>
+					</section>
+					<section>
+						<h2>බලා සිටීන​</h2><br>
+						<p>නැවතී සිටින ක්‍රියායනය සඳහා පරිශීලක ආයායයක් බලා <br><br>සිටීම​, හෝ ගොනුව ලබා ගැනීම සඳහා බලා සිටීම වැනි<br><br> සම්පතක් බලා සිටීමට අවශ්‍ය නම්, ක්‍රියායනය බලා <br><br>පොරොත්තු තත්වයට මාරු වේ.ක්‍රියායනය සඳහා පරිශීලක<br><br> ආයායයක් බලා සිටීම​, හෝ ගොනුව ලබා <br><br>ගැනීම සඳහා බලා සිටීම වැනි සම්පතක් බලා සිටීමට අවශ්‍ය<br><br> නම්, ක්‍රියායනය බලා පොරොත්තු තත්වයට මාරු වේ.</p>
+					</section>
+					<section>
+						<h2>අවලංගු කිරීම හෝ නිමවීම​</h2><br>
+						<p>ක්‍රියායනය එහි ක්‍රියාකාරිත්වය අවසන් වූ පසු <br><br> හෝ <br><br>මෙහෙයුම් පද්ධතිය විසින් එය අවසන් කරනු ලැබුවහොත් <br><br> එය ප්‍රධාන මතකය වෙතින් ඉවත් කිරීමට බලා සිටින අවසන් <br><br>වූ තත්ත්වය අවසන් වී ඇත​.</p>
+					</section>
+				</section> 
+				<section>
+					<section>
+				<h2>ක්‍රියායන පාලන ඛණ්ඩය (PCB) </h2>	
+					</section>
+					<section><p>ක්‍රියායනය පාලන ඒකකය යනු සෑම ක්‍රියායනයකටම මෙහෙයුම් පද්ධතිය විසින් පවත්වාගෙන යන දත්ත ව්‍යුහයකි.<BR> PCB යනු පූර්ණ සංඛ්‍යා ක්‍රියායනය (PID) මගින් හඳුනාගෙන ඇත​. ක්‍රියායනය පිළිබඳව සොයා බැලීම සඳහා අවශ්‍ය තොරතුරු සියල්ලම PCB පවත්වාගෙන යයි </p>
+					</section>
+					<section>
+						<img src="img/pcb_sin.gif" height=450px width="250px" >
+					</section>
+					<section>
+						<h2>ක්‍රියායන තත්ත්වය</h2>
+						<p>ක්‍රියායනයෙහි වර්තමාන තත්ත්වය,<br> එය සූදානම්, <br>ධාවනය, <br>බලා සිටීම <br>හෝ වෙනත් කුමන හෝ වේවා.</p>	
+					</section>
+					
+					<section>
+						<h2>ක්‍රියායන වරප්රසාද</h2>
+						<p>පද්ධති සම්පත් වලට<br>  ප්‍රවේශ වීමට / <br> අවලංගු කිරීමට <br> මෙය අවශ්‍ය වේ</p>	
+					</section>
+					<section>
+						<h2>ක්‍රියායන අංකය</h2>
+						<p>මෙහෙයුම් පද්ධතියේ එක් ක්‍රියායනයක් සඳහා අනන්‍ය හඳුනාගැනීම​. </p>	
+					</section>
+					<section>
+						<h2> සුවකය / දර්ශකය​</h2>
+						<p>මුලික ක්‍රියායනය සුවකයක් එක්කිර්‍රම​</p>	
+					</section>
+					<section>
+						<h2>වැඩසටහන් ගණකය​</h2>
+						<p>වැඩසටහන් කවුන්ටරය (PC) යනු පරිගණකයේ ප්‍රොසෙසරයේ කොටසකි. ඊළඟ උපදෙස් මතකයේ සිට ක්‍රියාත්මක කළ යුතු ලිපිනය අන්තර්ගත වේ.  </p>	
+					</section>
+					<section>
+						<h2></h2>
+						<p></p>	
+					</section>
+					<section>
+						<h2></h2>
+						<p></p>	
+					</section>
+					<section>
+						<h2></h2>
+						<p></p>	
+					</section>
+					<section>
+						<h2></h2>
+						<p></p>	
+					</section>
+				</section>
+			</div>
+
+		</div>
+
+		<script src="lib/js/head.min.js"></script>
+		<script src="js/reveal.min.js"></script>
+
+		<script>
+
+			// Full list of configuration options available here:
+			// https://github.com/hakimel/reveal.js#configuration
+			Reveal.initialize({
+				controls: true,
+				progress: true,
+				history: true,
+				center: true,
+
+				theme: Reveal.getQueryHash().theme, // available themes are in /css/theme
+				transition: Reveal.getQueryHash().transition || 'default', // default/cube/page/concave/zoom/linear/fade/none
+
+				// Parallax scrolling
+				// parallaxBackgroundImage: 'https://s3.amazonaws.com/hakim-static/reveal-js/reveal-parallax-1.jpg',
+				// parallaxBackgroundSize: '2100px 900px',
+
+				// Optional libraries used to extend on reveal.js
+				dependencies: [
+					{ src: 'lib/js/classList.js', condition: function() { return !document.body.classList; } },
+					{ src: 'plugin/markdown/marked.js', condition: function() { return !!document.querySelector( '[data-markdown]' ); } },
+					{ src: 'plugin/markdown/markdown.js', condition: function() { return !!document.querySelector( '[data-markdown]' ); } },
+					{ src: 'plugin/highlight/highlight.js', async: true, callback: function() { hljs.initHighlightingOnLoad(); } },
+					{ src: 'plugin/zoom-js/zoom.js', async: true, condition: function() { return !!document.body.classList; } },
+					
+				]
+			});
+
+		</script>
+
+	</body>
+</html>
+

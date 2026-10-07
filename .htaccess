@@ -1,11 +1,106 @@
-Options -Indexes
-
 RewriteEngine On
-RewriteRule (^|/)\.env(?:\..*)?$ - [F,L,NC]
-RewriteRule \.(?:sql|log)$ - [F,L,NC]
+RewriteBase /
 
+# Canonical host first so http://www → https://apex in one hop
+RewriteCond %{HTTP_HOST} ^www\.edexcel\.college$ [NC]
+RewriteRule ^ https://edexcel.college%{REQUEST_URI} [L,R=301]
+
+# Force HTTPS (also when TLS is terminated upstream)
+RewriteCond %{HTTPS} !=on
+RewriteCond %{SERVER_PORT} !^443$
+RewriteCond %{HTTP:X-Forwarded-Proto} !https [NC]
+RewriteRule ^ https://%{HTTP_HOST}%{REQUEST_URI} [L,R=301]
+
+# Block sensitive paths/files (OpenLiteSpeed often ignores nested Deny/.htaccess)
+RewriteRule (^|/)\.env($|\.) - [F,L]
+RewriteRule (^|/)\.git(/|$) - [F,L]
+RewriteRule (^|/)\.user\.ini$ - [F,L]
+RewriteRule \.(?:env|sql|log|bak)$ - [F,L]
+# Internal runbooks. They are not public pages.
+RewriteRule ^(SYSTEM|DEPLOYMENT_NOTES|SYSTEM_AUDIT)\.md$ - [F,L]
+RewriteRule ^(storage|backups|cache)(/|$) - [F,L]
+RewriteRule ^database(/|$) - [F,L]
+RewriteRule ^data(/|$) - [F,L]
+RewriteRule ^deploy(/|$) - [F,L]
+RewriteRule ^(cron|tools|bin|tests|src|config|vendor)(/|$) - [F,L]
+# Diagnostic and retired entry points. Not part of the live homepage or portals.
+RewriteRule ^(test_schema\.php|index2\.php|test\.php|scratch_test\.php|db_check\.php)$ - [F,L]
+RewriteRule ^student/test\.php$ - [F,L]
+RewriteRule \.(?:old|orig|backup|swp)$ - [F,L]
+# Root FTP/backup archives (do not blanket-block all zips)
+RewriteRule ^(backup.*\.zip|public_html_backup\.zip)$ - [F,L,NC]
+
+RewriteRule ^privacy-policy/?$ privacy.php [L]
+RewriteRule ^terms/?$ terms.php [L]
+RewriteRule ^terms-and-conditions/?$ terms.php [L]
+RewriteRule ^refund-policy/?$ refund.php [L]
+RewriteRule ^refund/?$ refund.php [L]
+RewriteRule ^contact/?$ contact.php [L]
+RewriteRule ^class/?$ class/index.php [L]
+RewriteRule ^edexcel-classes/?$ edexcel-classes.php [L]
+RewriteRule ^edexcel-o-level/?$ edexcel-o-level.php [L]
+RewriteRule ^edexcel-a-level/?$ edexcel-a-level.php [L]
+RewriteRule ^exam-preparation/?$ exam-preparation.php [L]
+RewriteRule ^pearson-exams/?$ pearson-exams.php [L]
+RewriteRule ^pearson-exams/(sri-lanka|italy|qatar|oman|uae|maldives|united-kingdom|india|gulf)/?$ pearson-exams-country.php?country=$1 [L,QSA]
+RewriteRule ^faq/?$ faq.php [L]
+RewriteRule ^about/?$ about.php [L]
+RewriteRule ^glossary/?$ glossary.php [L]
+RewriteRule ^resources/?$ resources.php [L]
+RewriteRule ^resources/search/?$ resources-search.php [L,QSA]
+RewriteRule ^online-classes/igcse$ /online-classes/igcse/ [R=301,L]
+RewriteRule ^online-classes/ial$ /online-classes/ial/ [R=301,L]
+RewriteRule ^subjects/([a-z0-9-]+)$ /subjects/$1/ [R=301,L]
+RewriteRule ^online-classes/igcse/?$ online-classes/igcse.php [L]
+RewriteRule ^online-classes/ial/?$ online-classes/ial.php [L]
+RewriteRule ^online-classes/?$ online-classes/index.php [L]
+RewriteRule ^subjects/([a-z0-9-]+)/?$ subjects/subject.php?slug=$1 [L,QSA]
+RewriteRule ^subjects/?$ subjects/index.php [L]
+RewriteRule ^locations/kandy/?$ locations/kandy.php [L]
+RewriteRule ^guides/how-pearson-edexcel-exams-work/?$ guides/how-pearson-edexcel-exams-work.php [L]
+RewriteRule ^guides/how-to-register-for-pearson-exams/?$ guides/how-to-register-for-pearson-exams.php [L]
+RewriteRule ^guides/what-to-bring-to-a-pearson-exam/?$ guides/what-to-bring-to-a-pearson-exam.php [L]
+RewriteRule ^guides/results-and-certificates/?$ guides/results-and-certificates.php [L]
+RewriteRule ^guides/private-candidates/?$ guides/private-candidates.php [L]
+RewriteRule ^guides/igcse-vs-edexcel-o-level/?$ guides/igcse-vs-edexcel-o-level.php [L]
+RewriteRule ^igcse/?$ /edexcel-o-level [L,R=301]
+RewriteRule ^ial/?$ /edexcel-a-level [L,R=301]
+RewriteRule ^o-level/?$ /edexcel-o-level [L,R=301]
+RewriteRule ^a-level/?$ /edexcel-a-level [L,R=301]
+RewriteRule ^pearson-exams-sri-lanka/?$ /pearson-exams/sri-lanka [L,R=301]
+
+ErrorDocument 403 /error_page.php?code=403
+ErrorDocument 404 /error_page.php?code=404
+ErrorDocument 429 /error_page.php?code=429
+ErrorDocument 500 /error_page.php?code=500
+ErrorDocument 503 /error_page.php?code=503
+
+# Reject oversized bodies before PHP. Classroom PDFs stay under the 30MB app cap.
+LimitRequestBody 41943040
+
+# Static asset caching (JS lacked Cache-Control on OLS)
 <IfModule mod_headers.c>
-    Header always set X-Content-Type-Options "nosniff"
-    Header always set Referrer-Policy "strict-origin-when-cross-origin"
-    Header always set X-Frame-Options "SAMEORIGIN"
+    <FilesMatch "\.(css|js|mjs|woff2?|ttf|otf|eot|png|jpe?g|gif|webp|svg|ico)$">
+        Header set Cache-Control "public, max-age=604800"
+    </FilesMatch>
+    <FilesMatch "^(service-worker\.js|sw\.js|manifest\.json)$">
+        Header set Cache-Control "no-cache"
+    </FilesMatch>
+    Header set X-Content-Type-Options "nosniff"
+    Header set X-Frame-Options "SAMEORIGIN"
+    Header set Referrer-Policy "strict-origin-when-cross-origin"
 </IfModule>
+
+<FilesMatch "(^\.env|\.sql$|\.log$|official_exams\.json$|\.zip$|^(SYSTEM|DEPLOYMENT_NOTES|SYSTEM_AUDIT)\.md$)">
+    Require all denied
+</FilesMatch>
+
+<FilesMatch "^\.env">
+    <IfModule mod_authz_core.c>
+        Require all denied
+    </IfModule>
+    <IfModule !mod_authz_core.c>
+        Order allow,deny
+        Deny from all
+    </IfModule>
+</FilesMatch>

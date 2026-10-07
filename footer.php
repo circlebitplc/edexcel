@@ -18,7 +18,7 @@
             <div class="col-lg-4 col-md-6">
                 <div class="footer-brand">
                     <i class="fas fa-graduation-cap"></i>
-                    <span>Edexcel College Kandy</span>
+                    <span>Edexcel College</span>
                 </div>
                 <p class="footer-desc">International academic pathways, modern classrooms and steady guidance for learners preparing for global next steps.</p>
                 <div class="footer-social">
@@ -40,14 +40,18 @@
                     <li><a href="#timetable">Timetable</a></li>
                     <li><a href="#features">Why Us</a></li>
                     <li><a href="#cta">Contact</a></li>
+                    <li><a href="/contact">Contact</a></li>
+                    <li><a href="/privacy-policy">Privacy policy</a></li>
+                    <li><a href="/terms">Terms and Conditions</a></li>
+                    <li><a href="/refund-policy">Refund policy</a></li>
                 </ul>
             </div>
             <div class="col-lg-3 col-md-6">
                 <h5>Contact</h5>
                 <ul class="footer-contact">
-                    <li><i class="fas fa-map-marker-alt"></i> Kandy, Sri Lanka</li>
-                    <li><i class="fas fa-phone"></i> <a href="tel:+94785858585">+94 785858585</a></li>
-                    <li><i class="fas fa-envelope"></i> <a href="mailto:info@edexcel.lk">info@edexcel.lk</a></li>
+                    <li><i class="fas fa-map-marker-alt"></i> No 83 Katugatota Road, Kandy</li>
+                    <li><i class="fas fa-phone"></i> <a href="tel:+94785858585">+94 78 585 8585</a></li>
+                    <li><i class="fas fa-envelope"></i> <a href="mailto:info@edexcel.college">info@edexcel.college</a></li>
                     <li><i class="fab fa-whatsapp"></i> <a href="https://wa.me/94785858585" target="_blank">WhatsApp</a></li>
                 </ul>
             </div>
@@ -64,7 +68,9 @@
             </div>
         </div>
         <div class="footer-bottom">
-            <p>&copy; <?= date('Y') ?> Edexcel College Kandy. All rights reserved.</p>
+            <p>&copy; <?= date('Y') ?> Edexcel College. All rights reserved.
+                <a href="/privacy-policy">Privacy</a> · <a href="/terms">Terms</a>
+            </p>
         </div>
     </div>
 </footer>
@@ -85,5 +91,11 @@
         }
     });
 </script>
+<?php
+if (is_file(__DIR__ . '/includes/visitor_tracking.php')) {
+    require_once __DIR__ . '/includes/visitor_tracking.php';
+    visitor_tracking_tag();
+}
+?>
 </body>
 </html>

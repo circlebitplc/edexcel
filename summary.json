@@ -1,0 +1,48 @@
+{
+  "summary": "Edexcel College is a proprietary single-product PHP and MySQL web portal for timetable scheduling, campus operations, student and parent access, live online classes, lesson recordings, fees, and WhatsApp automation for one Sri Lankan college.",
+  "source_type": "closed_source",
+  "company": "Edexcel College",
+  "codebase_type": "professional",
+  "multi_root": false,
+  "low_quality": false,
+  "frameworks_and_dependencies": [
+    "PHP",
+    "Composer",
+    "MySQL",
+    "Bootstrap",
+    "PHPUnit",
+    "vlucas/phpdotenv",
+    "dompdf/dompdf"
+  ],
+  "third_party_services": [
+    "Meta WhatsApp Cloud API",
+    "Evolution API",
+    "Bunny.net Stream",
+    "OnePay",
+    "Groq",
+    "Google Gemini",
+    "LiveKit",
+    "MinIO"
+  ],
+  "ui_quality": "functional",
+  "test_density": "moderate",
+  "domains": [
+    "education"
+  ],
+  "descriptions": {
+    "domain": "Sri Lankan college operations including Pearson Edexcel exam timetables, lesson fees in LKR, and trilingual WhatsApp student and parent support.",
+    "technique": "Courso and WhatsApp assistants answer from live enrolment and timetable rows with Groq or Gemini, intent mapping, and a learned Q&A memory store for adaptive quizzes and chat.",
+    "architecture": "PHP page scripts with a PSR-4 service layer coordinate LiveKit online classrooms, composite egress through S3, Bunny Stream playback, cron-driven WhatsApp outbox and reminders, and a self-hosted LiveKit stack on a separate VPS.",
+    "ui": "",
+    "testing": "PHPUnit unit tests and custom gate scripts cover recording access, LiveKit JWT tokens, OnePay callbacks, Bunny webhooks, and classroom fee paywall rules.",
+    "benchmarks": "",
+    "environment_and_build": "docker-compose runs Evolution API locally, and deploy/livekit bundles Caddy, LiveKit, egress, and MinIO for self-hosted video on a VPS.",
+    "non_code_assets": "Numbered SQL migrations and a compressed Pearson official exam timetable seed for admin import."
+  },
+  "notable_components": [
+    {
+      "path": "deploy/livekit/",
+      "text": "Self-hosted LiveKit SFU, TURN, composite egress, and MinIO stack with Docker Compose for video separate from the college PHP portal."
+    }
+  ]
+}

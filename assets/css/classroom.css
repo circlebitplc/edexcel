@@ -1,0 +1,6989 @@
+/* Live classroom — Meet-style three-pane room */
+:root {
+    --ck-bg: #0e1218;
+    --ck-panel: #171c26;
+    --ck-line: rgba(255, 255, 255, 0.08);
+    --ck-text: #f4f6fb;
+    --ck-muted: #9aa3b5;
+    --ck-accent: #5b7cfa;
+    --ck-danger: #e25b5b;
+    --ck-live: #e23b3b;
+    --ck-ok: #3dbe7a;
+    --ck-focus: #fff;
+}
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+html, body.ck-body { height: 100%; margin: 0; }
+.ck-body {
+    background: var(--ck-bg);
+    color: var(--ck-text);
+    font-family: "Segoe UI", system-ui, sans-serif;
+    display: flex;
+    flex-direction: column;
+    min-height: 100%;
+}
+.ck-body.ck-in-room { overflow: hidden; }
+.visually-hidden {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+}
+.ck-top {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 16px;
+    border-bottom: 1px solid var(--ck-line);
+    background: var(--ck-panel);
+    min-height: 56px;
+    flex-shrink: 0;
+    z-index: 8;
+}
+.ck-brand { font-weight: 800; letter-spacing: 0.02em; font-size: 0.85rem; }
+.ck-title { flex: 1; min-width: 0; }
+.ck-title strong { display: block; font-size: 1rem; }
+.ck-title span { color: var(--ck-muted); font-size: 0.8rem; }
+.ck-status {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+}
+.ck-rec {
+    color: var(--ck-live);
+    font-size: 0.72rem;
+    font-weight: 800;
+    letter-spacing: 0.08em;
+    border: 1px solid var(--ck-live);
+    border-radius: 4px;
+    padding: 1px 6px;
+}
+.ck-elapsed {
+    font-variant-numeric: tabular-nums;
+    font-size: 0.8rem;
+    font-weight: 700;
+    color: var(--ck-text);
+}
+.ck-qos {
+    font-size: 0.72rem;
+    font-weight: 700;
+    letter-spacing: 0.02em;
+    padding: 2px 7px;
+    border-radius: 999px;
+    background: #222a38;
+    color: var(--ck-muted);
+}
+.ck-qos[data-qos="excellent"] { color: var(--ck-ok); background: rgba(61, 190, 122, 0.12); }
+.ck-qos[data-qos="good"] { color: #e2b03b; background: rgba(226, 176, 59, 0.12); }
+.ck-qos[data-qos="poor"] { color: var(--ck-danger); background: rgba(226, 91, 91, 0.12); }
+.ck-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--ck-muted);
+}
+.ck-status[data-state="live"] .ck-dot { background: var(--ck-live); }
+.ck-status[data-state="starting_soon"] .ck-dot { background: #e2b03b; }
+.ck-status[data-state="ended"] .ck-dot { background: var(--ck-ok); }
+.ck-leave-link {
+    color: var(--ck-muted);
+    text-decoration: none;
+    font-weight: 600;
+}
+.ck-leave-link:focus, .ck-ctrl:focus, .ck-btn:focus, .ck-icon-btn:focus,
+.ck-tabs button:focus, .ck-chat-form input:focus, .ck-announce-form input:focus,
+.ck-field select:focus, .ck-people button:focus, .ck-fs-btn:focus {
+    outline: 2px solid var(--ck-focus);
+    outline-offset: 2px;
+}
+.ck-main {
+    flex: 1;
+    display: grid;
+    grid-template-columns: 1fr;
+    min-height: 0;
+    position: relative;
+    overflow: hidden;
+}
+.ck-main.ck-people-off,
+.ck-main.ck-side-off,
+.ck-main.ck-people-off.ck-side-off {
+    grid-template-columns: 1fr;
+}
+.ck-stage {
+    position: relative;
+    min-height: 0;
+    min-width: 0;
+    height: 100%;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    background: #090c11;
+}
+.ck-hero {
+    display: none;
+    flex: 1;
+    min-height: 0;
+    position: relative;
+    background: #000;
+}
+.ck-hero.is-on {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+.ck-hero video {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    background: #000;
+}
+.ck-hero > .ck-tile {
+    flex: 1;
+    width: 100%;
+    height: 100%;
+    min-height: 0;
+    border-radius: 0;
+    border: 0;
+}
+.ck-presenting {
+    flex: 1;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    text-align: center;
+    padding: 24px;
+    background:
+        radial-gradient(ellipse at center, #1a2340 0%, #090c11 70%);
+}
+.ck-presenting[hidden] { display: none !important; }
+.ck-presenting i { font-size: 2.4rem; color: var(--ck-accent); }
+.ck-presenting p { margin: 0; font-size: 1.25rem; font-weight: 700; }
+.ck-presenting span { color: var(--ck-muted); max-width: 22rem; font-size: 0.9rem; }
+.ck-grid {
+    display: grid;
+    gap: 8px;
+    padding: 10px 12px;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    align-content: center;
+    flex: 1;
+    min-height: 0;
+    overflow: auto;
+}
+.ck-is-sharing .ck-grid,
+.ck-filmstrip .ck-grid {
+    flex: 0 0 118px;
+    display: flex;
+    flex-direction: row;
+    flex-wrap: nowrap;
+    align-items: center;
+    overflow-x: auto;
+    overflow-y: hidden;
+    padding: 8px 16px 10px;
+    gap: 10px;
+    background: #0b0e14;
+    border-top: 1px solid var(--ck-line);
+}
+.ck-tile {
+    position: relative;
+    background: #11161f;
+    border-radius: 12px;
+    overflow: hidden;
+    min-height: 140px;
+    border: 2px solid transparent;
+}
+.ck-is-sharing .ck-tile,
+.ck-filmstrip .ck-grid .ck-tile {
+    flex: 0 0 176px;
+    width: 176px;
+    height: 100px;
+    min-height: 100px;
+}
+body.ck-body.ck-is-host.ck-in-room .ck-grid,
+body.ck-body[data-role="teacher"].ck-in-room .ck-grid {
+    position: absolute;
+    right: 10px;
+    top: 10px;
+    z-index: 5;
+    width: 140px;
+    max-height: calc(100% - 20px);
+    flex: none;
+    display: flex;
+    flex-direction: column;
+    flex-wrap: nowrap;
+    align-items: stretch;
+    justify-content: flex-start;
+    overflow-x: hidden;
+    overflow-y: auto;
+    padding: 0;
+    gap: 8px;
+    background: transparent;
+    border: 0;
+    pointer-events: none;
+}
+body.ck-body.ck-is-host.ck-in-room .ck-grid .ck-tile,
+body.ck-body[data-role="teacher"].ck-in-room .ck-grid .ck-tile,
+body.ck-body.ck-is-host.ck-in-room.ck-filmstrip .ck-grid .ck-tile,
+body.ck-body.ck-is-host.ck-in-room.ck-is-sharing .ck-tile {
+    flex: 0 0 auto;
+    width: 140px;
+    height: 80px;
+    min-height: 80px;
+    pointer-events: auto;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.45);
+}
+body.ck-body.ck-is-host.ck-in-room .ck-grid .ck-tile-staff,
+body.ck-body.ck-is-host.ck-in-room .ck-grid .ck-tile-self {
+    order: -1;
+    border-color: rgba(91, 124, 250, 0.55);
+}
+body.ck-body.ck-is-host.ck-in-room .ck-grid .ck-tile:fullscreen,
+body.ck-body.ck-is-host.ck-in-room .ck-grid .ck-tile:-webkit-full-screen,
+body.ck-body[data-role="teacher"].ck-in-room .ck-grid .ck-tile:fullscreen,
+body.ck-body[data-role="teacher"].ck-in-room .ck-grid .ck-tile:-webkit-full-screen {
+    width: 100% !important;
+    height: 100% !important;
+    min-height: 0;
+    flex: 1 1 auto;
+    border-radius: 0;
+    box-shadow: none;
+}
+body.ck-body[data-role="student"] .ck-tile.ck-tile-student {
+    display: none !important;
+}
+.ck-tile.is-speaking { border-color: var(--ck-ok); }
+.ck-tile video {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    background: #000;
+}
+.ck-fs-btn {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    z-index: 3;
+    width: 36px;
+    height: 36px;
+    border: 0;
+    border-radius: 10px;
+    background: rgba(0, 0, 0, 0.55);
+    color: #fff;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+.ck-fs-btn:hover { background: rgba(0, 0, 0, 0.8); }
+.ck-hero:fullscreen,
+.ck-hero:-webkit-full-screen,
+.ck-tile:fullscreen,
+.ck-tile:-webkit-full-screen {
+    background: #000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    height: 100%;
+}
+.ck-hero:fullscreen video,
+.ck-hero:-webkit-full-screen video,
+.ck-tile:fullscreen video,
+.ck-tile:-webkit-full-screen video {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+}
+.ck-board-stage {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    min-height: 0;
+}
+.ck-board-stage:fullscreen,
+.ck-board-stage:-webkit-full-screen,
+#ckBoardPanel:fullscreen,
+#ckBoardPanel:-webkit-full-screen {
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    height: 100%;
+    max-height: none;
+    background: #10151d;
+    padding: 0;
+}
+#ckBoardPanel:fullscreen .ck-board-stage,
+#ckBoardPanel:-webkit-full-screen .ck-board-stage {
+    flex: 1;
+    min-height: 0;
+    height: 100%;
+}
+.ck-board-stage:fullscreen .ck-board-tools,
+.ck-board-stage:-webkit-full-screen .ck-board-tools,
+#ckBoardPanel:fullscreen .ck-board-tools,
+#ckBoardPanel:-webkit-full-screen .ck-board-tools {
+    flex-shrink: 0;
+    flex-wrap: nowrap;
+    overflow-x: auto;
+}
+.ck-board-stage:fullscreen .ck-board-main-col,
+.ck-board-stage:-webkit-full-screen .ck-board-main-col,
+#ckBoardPanel:fullscreen .ck-board-main-col,
+#ckBoardPanel:-webkit-full-screen .ck-board-main-col {
+    flex: 1;
+    min-height: 0;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    height: 100%;
+    padding: 10px 14px;
+}
+.ck-board-stage:fullscreen #ckBoard,
+.ck-board-stage:-webkit-full-screen #ckBoard,
+#ckBoardPanel:fullscreen #ckBoard,
+#ckBoardPanel:-webkit-full-screen #ckBoard,
+:fullscreen .ck-board-stage #ckBoard,
+:-webkit-full-screen .ck-board-stage #ckBoard {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: transparent !important;
+    display: block;
+}
+.ck-board-stage:fullscreen .ck-board-viewport,
+.ck-board-stage:-webkit-full-screen .ck-board-viewport,
+#ckBoardPanel:fullscreen .ck-board-viewport,
+#ckBoardPanel:-webkit-full-screen .ck-board-viewport {
+    flex: 1 1 auto;
+    min-height: 0;
+    max-height: none;
+    height: 100%;
+    width: 100%;
+    aspect-ratio: auto;
+    border-radius: 0;
+    position: relative;
+}
+.ck-board-stage:fullscreen .ck-board-world,
+.ck-board-stage:-webkit-full-screen .ck-board-world,
+#ckBoardPanel:fullscreen .ck-board-world,
+#ckBoardPanel:-webkit-full-screen .ck-board-world {
+    width: min(98%, calc((100vh - 120px) * (900 / 560)));
+    max-height: 98%;
+    aspect-ratio: 900 / 560;
+}
+.ck-board-top-toolbar #ckBoardFs,
+.ck-board-top-toolbar .ck-pill-fs-btn {
+    width: 32px;
+    height: 32px;
+    border-radius: 8px;
+    background: #f1f5f9;
+    border: 1px solid #e2e8f0;
+    color: #334155;
+    font-size: 1rem;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    margin-left: 4px;
+    flex-shrink: 0;
+}
+.ck-board-top-toolbar #ckBoardFs:hover,
+.ck-board-top-toolbar .ck-pill-fs-btn:hover {
+    background: #e2e8f0;
+    color: #0f172a;
+}
+:fullscreen .ck-board-top-toolbar #ckBoardFs,
+:fullscreen .ck-board-top-toolbar .ck-pill-fs-btn,
+:-webkit-full-screen .ck-board-top-toolbar #ckBoardFs,
+:-webkit-full-screen .ck-board-top-toolbar .ck-pill-fs-btn,
+.ck-board-stage:fullscreen .ck-board-top-toolbar #ckBoardFs,
+.ck-board-stage:fullscreen .ck-board-top-toolbar .ck-pill-fs-btn {
+    background: #2563eb;
+    color: #ffffff;
+    border-color: #2563eb;
+}
+.ck-is-sharing .ck-tile .ck-fs-btn,
+.ck-filmstrip .ck-grid .ck-tile .ck-fs-btn,
+body.ck-body.ck-is-host.ck-in-room .ck-grid .ck-tile .ck-fs-btn {
+    width: 28px;
+    height: 28px;
+    top: 4px;
+    right: 4px;
+    font-size: 0.8rem;
+}
+body.ck-body.ck-is-host.ck-in-room .ck-grid .ck-tile figcaption {
+    left: 4px;
+    bottom: 4px;
+    padding: 2px 6px;
+    font-size: 0.65rem;
+    max-width: calc(100% - 8px);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+.ck-tile figcaption {
+    position: absolute;
+    left: 8px;
+    bottom: 8px;
+    background: rgba(0, 0, 0, 0.55);
+    padding: 4px 8px;
+    border-radius: 8px;
+    font-size: 0.75rem;
+}
+.ck-lobby {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 24px;
+    text-align: center;
+    gap: 12px;
+    z-index: 4;
+    background: var(--ck-bg);
+}
+.ck-lobby.is-off { display: none; }
+.ck-kicker { color: var(--ck-muted); margin: 0; }
+.ck-lobby h1 { margin: 0; font-size: 1.6rem; }
+.ck-lead { color: var(--ck-muted); max-width: 36rem; }
+.ck-preview-wrap {
+    width: min(420px, 90vw);
+    aspect-ratio: 16/10;
+    background: #000;
+    border-radius: 16px;
+    overflow: hidden;
+}
+.ck-preview-wrap video { width: 100%; height: 100%; object-fit: cover; }
+.ck-btn, .ck-ctrl {
+    border: 0;
+    border-radius: 999px;
+    padding: 10px 18px;
+    font-weight: 700;
+    cursor: pointer;
+    background: #2a3140;
+    color: var(--ck-text);
+}
+.ck-btn-primary { background: var(--ck-accent); }
+.ck-hint { color: var(--ck-muted); }
+.ck-people-rail {
+    position: fixed;
+    top: auto;
+    bottom: calc(56px + env(safe-area-inset-bottom, 0px));
+    left: 16px;
+    right: auto;
+    width: min(320px, calc(50vw - 24px));
+    max-width: calc(100vw - 32px);
+    height: min(520px, calc(100dvh - 150px));
+    max-height: calc(100dvh - 150px);
+    z-index: 140;
+    display: flex;
+    flex-direction: column;
+    overflow: auto;
+    background: #0d131f;
+    min-height: 0;
+    min-width: 0;
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 16px;
+    box-shadow: 0 16px 48px rgba(0, 0, 0, 0.6);
+    will-change: transform;
+    pointer-events: none;
+    visibility: hidden;
+    transform: translateY(calc(100% + 72px));
+    transition: transform 0.28s cubic-bezier(0.16, 1, 0.3, 1), visibility 0.28s ease;
+}
+
+.ck-side {
+    position: fixed;
+    bottom: calc(56px + env(safe-area-inset-bottom));
+    right: 16px;
+    top: auto;
+    left: auto;
+    width: 360px;
+    max-width: calc(100vw - 32px);
+    height: min(620px, calc(100vh - 120px));
+    max-height: calc(100vh - 120px);
+    z-index: 100;
+    display: flex;
+    flex-direction: column;
+    background: #0d131f;
+    border-radius: 16px;
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    box-shadow: 0 16px 48px rgba(0, 0, 0, 0.6), 0 0 0 1px rgba(255, 255, 255, 0.08);
+    will-change: transform, opacity;
+    pointer-events: none;
+    visibility: hidden;
+    transform: translateY(calc(100% + 72px));
+    transition: transform 0.28s cubic-bezier(0.16, 1, 0.3, 1), visibility 0.28s ease;
+    overflow: hidden;
+}
+
+.ck-people-rail.is-open,
+.ck-people-rail.is-hovered,
+.ck-people-rail.is-pinned {
+    transform: translateY(0) !important;
+    visibility: visible !important;
+    pointer-events: auto !important;
+}
+
+.ck-side.is-open,
+.ck-side.is-hovered,
+.ck-side.is-pinned {
+    transform: translateY(0) !important;
+    visibility: visible !important;
+    pointer-events: auto !important;
+}
+
+body:not(.ck-is-host) #ckPeopleRail,
+body.ck-is-student #ckPeopleRail,
+body[data-role="student"] #ckPeopleRail {
+    display: none !important;
+}
+body:not(.ck-is-host) #ckPeopleToggle,
+body.ck-is-student #ckPeopleToggle,
+body[data-role="student"] #ckPeopleToggle {
+    display: none !important;
+}
+
+/* Edge Activation Zones & Floating Handles */
+.ck-edge-trigger {
+    position: absolute;
+    z-index: 90;
+    display: flex;
+    pointer-events: auto;
+}
+body:not(.ck-in-room) .ck-edge-trigger,
+body:not(.ck-in-room) #ckChatRail {
+    display: none !important;
+}
+.ck-edge-trigger-left {
+    top: 60px;
+    bottom: 60px;
+    left: 0;
+    width: 24px;
+    align-items: center;
+    justify-content: flex-start;
+}
+body:not(.ck-is-host) .ck-edge-trigger-left,
+body:not(.ck-is-host) .ck-edge-trigger-bottom-left,
+body.ck-is-student .ck-edge-trigger-bottom-left {
+    display: none !important;
+}
+.ck-edge-trigger-bottom-left {
+    position: fixed;
+    bottom: calc(10px + env(safe-area-inset-bottom, 0px));
+    left: 16px;
+    top: auto;
+    right: auto;
+    width: auto;
+    height: auto;
+    z-index: 95;
+    align-items: center;
+    justify-content: flex-start;
+}
+.ck-edge-trigger-left .ck-edge-handle {
+    width: 26px;
+    height: 52px;
+    background: rgba(16, 23, 38, 0.88);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-left: none;
+    border-top-right-radius: 12px;
+    border-bottom-right-radius: 12px;
+    color: #94a3b8;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
+    padding: 0;
+}
+.ck-edge-trigger-left .ck-edge-handle:hover {
+    background: #2563eb;
+    color: #ffffff;
+    width: 30px;
+}
+
+/* Bottom Right Corner Chat Trigger Handle */
+.ck-edge-trigger-right,
+.ck-edge-trigger-bottom-right {
+    position: fixed;
+    bottom: calc(10px + env(safe-area-inset-bottom));
+    right: 16px;
+    top: auto;
+    left: auto;
+    width: auto;
+    height: auto;
+    z-index: 95;
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    pointer-events: auto;
+}
+.ck-chat-corner-handle {
+    height: 38px;
+    padding: 0 16px;
+    border-radius: 9999px;
+    background: rgba(16, 23, 38, 0.92);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid rgba(255, 255, 255, 0.14);
+    color: #cbd5e1;
+    font-size: 0.82rem;
+    font-weight: 600;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    cursor: pointer;
+    box-shadow: 0 4px 18px rgba(0, 0, 0, 0.45);
+    transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.ck-chat-corner-handle i {
+    font-size: 0.95rem;
+}
+.ck-chat-corner-handle:hover {
+    background: #2563eb;
+    color: #ffffff;
+    border-color: #3b82f6;
+    transform: translateY(-2px);
+    box-shadow: 0 6px 22px rgba(37, 99, 235, 0.45);
+}
+.ck-chat-corner-handle .ck-edge-badge {
+    position: static;
+    margin-left: 2px;
+}
+.ck-edge-badge {
+    position: absolute;
+    top: -4px;
+    right: -4px;
+    background: #ef4444;
+    color: #ffffff;
+    font-size: 0.65rem;
+    font-weight: 700;
+    border-radius: 9999px;
+    min-width: 16px;
+    height: 16px;
+    padding: 0 4px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.4);
+}
+.ck-edge-badge[hidden] {
+    display: none !important;
+}
+
+/* Sidebar headers & pin buttons */
+.ck-rsb-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px 14px;
+    background: #101726;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+.ck-rsb-header-title {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 0.84rem;
+    font-weight: 700;
+    color: #f8fafc;
+}
+.ck-rsb-header-actions,
+.ck-rail-head-actions {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+.ck-rail-pin,
+.ck-rsb-pin {
+    color: #94a3b8;
+    background: transparent;
+    border: none;
+    padding: 4px 6px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 0.9rem;
+    transition: all 0.15s ease;
+}
+.ck-rail-pin:hover,
+.ck-rsb-pin:hover {
+    color: #ffffff;
+    background: rgba(255, 255, 255, 0.08);
+}
+.ck-rail-pin.is-pinned,
+.ck-rsb-pin.is-pinned {
+    color: #38bdf8;
+    background: rgba(56, 189, 248, 0.15);
+}
+
+.ck-dock[hidden],
+.ck-toast[hidden],
+.ck-ctrl[hidden],
+.ck-rec[hidden],
+.ck-elapsed[hidden],
+.ck-qos[hidden],
+.ck-enable-sound[hidden],
+.ck-drawer-mask[hidden],
+.ck-modal[hidden],
+.ck-stage-board[hidden],
+.ck-stage-exit[hidden] {
+    display: none !important;
+}
+.ck-rail-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    padding: 10px 12px;
+    border-bottom: 1px solid var(--ck-line);
+    flex-shrink: 0;
+}
+.ck-rail-head h2 {
+    margin: 0;
+    font-size: 0.9rem;
+    font-weight: 800;
+}
+.ck-rail-close {
+    width: 36px;
+    height: 36px;
+    flex-shrink: 0;
+}
+.ck-tabs {
+    display: flex;
+    gap: 4px;
+    padding: 8px;
+    border-bottom: 1px solid var(--ck-line);
+    flex-shrink: 0;
+}
+.ck-tabs button {
+    flex: 1;
+    background: transparent;
+    border: 0;
+    color: var(--ck-muted);
+    font-weight: 700;
+    padding: 8px 4px;
+    cursor: pointer;
+    border-radius: 8px;
+}
+.ck-tabs button.is-on { background: #222a38; color: var(--ck-text); }
+.ck-panel { display: none; flex: 1; min-height: 0; flex-direction: column; }
+.ck-panel.is-on { display: flex; }
+#ckPeoplePanel { flex: 1 1 auto; min-height: 80px; }
+#ckBoardPanel, #ckInfoPanel, #ckMaterialsPanel { flex: 0 1 auto; max-height: 42%; }
+/* Keep the canvas bitmap alive while the Board tab is closed (display:none zeros it). */
+#ckBoardPanel:not(.is-on) {
+    display: flex !important;
+    flex: 0 0 0 !important;
+    width: 0;
+    height: 0;
+    min-height: 0;
+    max-height: none;
+    margin: 0;
+    padding: 0;
+    overflow: hidden;
+    opacity: 0;
+    pointer-events: none;
+}
+#ckBoardPanel:not(.is-on) #ckBoard {
+    width: 900px;
+    height: 560px;
+    max-height: none;
+}
+#ckBoardPanel.is-on {
+    flex: 1 1 45%;
+    max-height: none;
+    min-height: 180px;
+}
+.ck-chat-log, .ck-people, .ck-info, .ck-list {
+    flex: 1;
+    overflow: auto;
+    padding: 12px;
+    margin: 0;
+}
+.ck-msg { margin-bottom: 10px; }
+.ck-msg b { display: block; font-size: 0.75rem; color: var(--ck-muted); }
+.ck-msg time {
+    font-weight: 600;
+    margin-left: 6px;
+    opacity: 0.8;
+}
+.ck-msg.is-announcement { background: #222a38; padding: 8px; border-radius: 8px; }
+.ck-msg.is-private { border-left: 2px solid var(--ck-accent); padding-left: 8px; }
+.ck-msg-lock {
+    font-weight: 700;
+    font-size: 0.65rem;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: var(--ck-accent);
+    margin-left: 6px;
+}
+.ck-chat-tabs button.has-unread::after {
+    content: "";
+    display: inline-block;
+    width: 8px;
+    height: 8px;
+    margin-left: 6px;
+    border-radius: 50%;
+    background: var(--ck-accent);
+    vertical-align: middle;
+}
+#ckChatToggle {
+    position: relative;
+}
+#ckChatToggle.has-unread::after {
+    content: "";
+    position: absolute;
+    top: 6px;
+    right: 10px;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--ck-accent);
+    box-shadow: 0 0 0 2px var(--ck-panel);
+}
+.ck-private-bar {
+    padding: 8px 12px;
+    border-bottom: 1px solid var(--ck-line);
+    flex-shrink: 0;
+}
+.ck-private-bar select {
+    width: 100%;
+    background: #10151d;
+    color: var(--ck-text);
+    border: 1px solid var(--ck-line);
+    border-radius: 10px;
+    padding: 8px 10px;
+    font-weight: 600;
+}
+.ck-private-with {
+    margin: 0;
+    font-size: 0.8rem;
+    color: var(--ck-muted);
+}
+.ck-chat-log[hidden],
+.ck-private-bar[hidden],
+.ck-announce-form[hidden],
+.ck-private-with[hidden] {
+    display: none !important;
+}
+.ck-chat-form,
+.ck-announce-form {
+    display: flex;
+    gap: 8px;
+    padding: 10px;
+    border-top: 1px solid var(--ck-line);
+    flex-shrink: 0;
+}
+.ck-announce-form { background: #1c2433; }
+.ck-chat-form input,
+.ck-announce-form input {
+    flex: 1;
+    background: #10151d;
+    border: 1px solid var(--ck-line);
+    color: var(--ck-text);
+    border-radius: 10px;
+    padding: 10px 12px;
+}
+.ck-announce-form .ck-btn { padding: 8px 12px; font-size: 0.8rem; border-radius: 10px; }
+.ck-icon-btn {
+    width: 42px;
+    border: 0;
+    border-radius: 10px;
+    background: var(--ck-accent);
+    color: #fff;
+    cursor: pointer;
+}
+.ck-people { list-style: none; }
+.ck-people li {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    flex-wrap: wrap;
+    gap: 8px;
+    padding: 8px 0;
+    border-bottom: 1px solid var(--ck-line);
+}
+.ck-people .ck-mini {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+    gap: 6px;
+    flex: 1 1 140px;
+}
+.ck-people .ck-mini button[data-ck-action="mute"],
+.ck-people .ck-mini button[data-ck-action="allow_mic"] {
+    background: #3a4558;
+    font-weight: 700;
+}
+.ck-people button,
+.ck-hands button {
+    background: #2a3140;
+    color: var(--ck-text);
+    border: 0;
+    border-radius: 8px;
+    padding: 4px 8px;
+    cursor: pointer;
+    font-size: 0.75rem;
+}
+.ck-hands {
+    padding: 10px 12px 0;
+    flex-shrink: 0;
+    border-bottom: 1px solid var(--ck-line);
+}
+.ck-hands h3 {
+    margin: 0 0 6px;
+    font-size: 0.72rem;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: var(--ck-muted);
+}
+.ck-hands-list {
+    list-style: none;
+    margin: 0;
+    padding: 0 0 8px;
+}
+.ck-hands-list li {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 4px 0;
+    font-size: 0.85rem;
+}
+.ck-hands-list .ck-hand-n {
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    background: var(--ck-accent);
+    color: #fff;
+    font-size: 0.7rem;
+    font-weight: 800;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+.ck-hands-list span { flex: 1; min-width: 0; }
+.ck-hands-empty { color: var(--ck-muted); font-size: 0.8rem; margin: 0 0 8px; }
+.ck-waiting .ck-wait-deny { color: var(--ck-muted); }
+.ck-lobby-wait {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    color: var(--ck-muted);
+    font-size: 0.95rem;
+}
+.ck-host-panel {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    padding: 10px 12px;
+    border-bottom: 1px solid var(--ck-line);
+    flex-shrink: 0;
+}
+.ck-host-panel .ck-btn {
+    padding: 6px 10px;
+    font-size: 0.75rem;
+    border-radius: 8px;
+}
+.ck-host-panel .ck-btn[aria-pressed="true"] { background: var(--ck-accent); }
+.ck-info dt { color: var(--ck-muted); font-size: 0.75rem; margin-top: 10px; }
+.ck-info dd { margin: 0; font-weight: 700; }
+.ck-list { list-style: none; }
+.ck-list li { padding: 8px 0; border-bottom: 1px solid var(--ck-line); }
+.ck-list span { color: var(--ck-muted); font-size: 0.8rem; margin-left: 8px; }
+.ck-list a {
+    display: inline-block;
+    margin-left: 8px;
+    color: var(--ck-accent);
+    font-weight: 700;
+    text-decoration: none;
+}
+.ck-list a:hover { text-decoration: underline; }
+.ck-mat-empty { color: var(--ck-muted); font-size: 0.85rem; padding: 12px; margin: 0; }
+.ck-board-tools {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    padding: 8px;
+    align-items: center;
+    background: #141a24;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+}
+.ck-bt-group {
+    display: inline-flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 4px;
+    padding: 3px;
+    border-radius: 12px;
+    background: rgba(255, 255, 255, 0.04);
+}
+.ck-board-tools button {
+    background: transparent;
+    color: var(--ck-text);
+    border: 0;
+    border-radius: 8px;
+    padding: 7px 9px;
+    cursor: pointer;
+    min-width: 34px;
+    min-height: 34px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    font-size: 0.78rem;
+    font-weight: 650;
+}
+.ck-board-tools button:hover { background: rgba(255, 255, 255, 0.08); }
+.ck-board-tools .ck-fs-btn,
+.ck-board-fs {
+    position: static;
+    width: auto;
+    height: auto;
+    margin-left: auto;
+    background: #2a3140;
+    color: var(--ck-text);
+    border-radius: 8px;
+    padding: 6px 10px;
+    gap: 6px;
+    font-size: 0.8rem;
+    font-weight: 700;
+}
+.ck-board-tools .ck-fs-btn:hover,
+.ck-board-fs:hover { background: #353d4e; }
+.ck-board-stage:fullscreen .ck-board-fs,
+.ck-board-stage:-webkit-full-screen .ck-board-fs,
+#ckBoardPanel:fullscreen .ck-board-fs,
+#ckBoardPanel:-webkit-full-screen .ck-board-fs {
+    background: var(--ck-accent);
+}
+.ck-board-tools button.is-on { background: var(--ck-accent); color: #fff; }
+.ck-board-tools button:disabled { opacity: 0.4; cursor: not-allowed; }
+.ck-bt-props {
+    gap: 8px;
+    padding: 4px 8px;
+}
+.ck-bt-color {
+    display: inline-flex;
+    align-items: center;
+    position: relative;
+}
+.ck-bt-color input[type="color"] {
+    width: 28px;
+    height: 28px;
+    padding: 0;
+    border: 2px solid rgba(255, 255, 255, 0.2);
+    border-radius: 999px;
+    background: transparent;
+    cursor: pointer;
+    overflow: hidden;
+}
+.ck-bt-range {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    color: var(--ck-muted);
+    font-size: 0.68rem;
+    font-weight: 700;
+}
+.ck-bt-range input[type="range"] {
+    width: 72px;
+    accent-color: var(--ck-accent);
+}
+.ck-bt-select select {
+    background: #1c2330;
+    color: var(--ck-text);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 8px;
+    padding: 5px 8px;
+    font-size: 0.72rem;
+    font-weight: 650;
+}
+.ck-bt-swatches {
+    display: inline-flex;
+    gap: 4px;
+    align-items: center;
+}
+.ck-bt-swatch {
+    width: 16px !important;
+    height: 16px !important;
+    min-width: 16px !important;
+    min-height: 16px !important;
+    padding: 0 !important;
+    border-radius: 999px !important;
+    border: 1px solid rgba(255, 255, 255, 0.25) !important;
+}
+.ck-allow-draw {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    color: var(--ck-muted);
+    font-size: 0.75rem;
+    font-weight: 600;
+    margin-left: 4px;
+}
+.ck-board-hint {
+    color: var(--ck-muted);
+    font-size: 0.75rem;
+    margin: 0 8px 6px;
+}
+.ck-board-viewport {
+    position: relative;
+    flex: 1 1 auto;
+    min-height: 180px;
+    width: 100%;
+    aspect-ratio: 900 / 560;
+    max-height: min(56vh, 420px);
+    overflow: hidden;
+    background: #0b1220;
+    touch-action: none;
+    border-radius: 0 0 10px 10px;
+}
+.ck-board-world {
+    position: absolute;
+    inset: 0;
+    transform-origin: 0 0;
+    width: 100%;
+    height: 100%;
+    background: #fff;
+}
+#ckBoard {
+    display: block;
+    width: 100%;
+    height: 100%;
+    max-height: none;
+    aspect-ratio: auto;
+    background: transparent;
+    touch-action: none;
+    position: relative;
+    z-index: 2;
+}
+#ckBoardPanel.is-on {
+    overflow: auto;
+}
+#ckBoardPanel:not(.is-on) .ck-board-viewport {
+    min-height: 560px;
+    max-height: none;
+    aspect-ratio: auto;
+    width: 900px;
+    height: 560px;
+}
+.ck-board-overlay,
+.ck-board-lasers {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    z-index: 2;
+}
+.ck-sel-box {
+    position: absolute;
+    border: 1.5px solid #3b82f6;
+    box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.7);
+    border-radius: 2px;
+}
+.ck-sel-handle {
+    position: absolute;
+    width: 9px;
+    height: 9px;
+    background: #fff;
+    border: 1.5px solid #3b82f6;
+    border-radius: 2px;
+}
+.ck-sel-nw { left: -5px; top: -5px; }
+.ck-sel-ne { right: -5px; top: -5px; }
+.ck-sel-sw { left: -5px; bottom: -5px; }
+.ck-sel-se { right: -5px; bottom: -5px; }
+.ck-laser-dot {
+    position: absolute;
+    width: 18px;
+    height: 18px;
+    margin: -9px 0 0 -9px;
+    border-radius: 999px;
+    background: #ef4444;
+    box-shadow: 0 0 0 4px rgba(239, 68, 68, 0.25), 0 0 16px rgba(239, 68, 68, 0.55);
+    pointer-events: none;
+    transition: left 40ms linear, top 40ms linear;
+}
+@media (max-width: 860px) {
+    .ck-board-tools {
+        flex-wrap: nowrap;
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+        gap: 6px;
+        padding: 6px;
+    }
+    .ck-bt-group { flex-wrap: nowrap; }
+    .ck-bt-range span,
+    .ck-allow-draw { display: none; }
+    .ck-board-tools .ck-fs-btn span { display: none; }
+}
+.ck-dock {
+    display: flex;
+    justify-content: center;
+    flex-wrap: wrap;
+    gap: 8px;
+    padding: 10px 12px calc(10px + env(safe-area-inset-bottom));
+    background: var(--ck-panel);
+    border-top: 1px solid var(--ck-line);
+    flex-shrink: 0;
+    z-index: 8;
+}
+.ck-view-group {
+    display: inline-flex;
+    gap: 4px;
+    padding: 2px;
+    border-radius: 16px;
+    background: #10151d;
+}
+.ck-ctrl {
+    display: inline-flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2px;
+    min-width: 64px;
+    padding: 8px 10px;
+    font-size: 0.7rem;
+}
+.ck-ctrl i { font-size: 1.1rem; }
+.ck-ctrl[aria-pressed="false"] { opacity: 0.55; }
+.ck-ctrl.ck-danger { background: #3a1f24; color: #ffd6d6; }
+.ck-ctrl.is-on { background: var(--ck-accent); opacity: 1; }
+.ck-ctrl:disabled,
+.ck-ctrl.is-blocked {
+    opacity: 0.45;
+    cursor: not-allowed;
+}
+.ck-toast {
+    position: absolute;
+    left: 50%;
+    bottom: 16px;
+    transform: translateX(-50%);
+    background: #222a38;
+    padding: 10px 14px;
+    border-radius: 10px;
+    font-weight: 600;
+    z-index: 7;
+}
+.ck-audio-sink {
+    position: absolute;
+    width: 0;
+    height: 0;
+    overflow: hidden;
+    pointer-events: none;
+}
+.ck-enable-sound {
+    position: absolute;
+    left: 50%;
+    top: 16px;
+    transform: translateX(-50%);
+    z-index: 6;
+    border: 0;
+    border-radius: 999px;
+    padding: 10px 18px;
+    font-weight: 800;
+    cursor: pointer;
+    background: var(--ck-accent);
+    color: #fff;
+}
+.ck-sharing-banner {
+    position: absolute;
+    top: 12px;
+    left: 12px;
+    background: rgba(14, 18, 24, 0.82);
+    padding: 6px 10px;
+    border-radius: 8px;
+    font-weight: 700;
+    font-size: 0.8rem;
+    z-index: 4;
+}
+.ck-stage-board {
+    display: none;
+    flex-direction: column;
+    flex: 1;
+    min-height: 0;
+    min-width: 0;
+    position: relative;
+    background: #10151d;
+}
+.ck-stage-board.is-on {
+    display: flex;
+}
+.ck-stage-board .ck-board-stage.ck-board-chrome {
+    flex: 1;
+    min-height: 0;
+    height: 100%;
+}
+.ck-stage-board .ck-board-chrome .ck-board-viewport {
+    flex: 1 1 auto;
+    width: 100%;
+    height: 100%;
+    min-height: 0;
+    min-width: 0;
+    max-height: none;
+    aspect-ratio: auto;
+    border-radius: 0;
+}
+.ck-stage-board #ckBoard {
+    flex: none;
+    width: 100%;
+    height: 100%;
+    min-height: 0;
+    aspect-ratio: auto;
+    background: transparent;
+    display: block;
+}
+.ck-stage-exit {
+    position: absolute;
+    right: 16px;
+    bottom: 130px;
+    z-index: 6;
+    border: 0;
+    border-radius: 999px;
+    padding: 8px 14px;
+    font-weight: 700;
+    font-size: 0.8rem;
+    cursor: pointer;
+    background: rgba(14, 18, 24, 0.88);
+    color: #fff;
+}
+body.ck-full-stage:not(.ck-filmstrip) .ck-stage-exit {
+    bottom: 16px;
+}
+.ck-stage-exit:hover { background: #000; }
+body.ck-full-stage #ckMain {
+    grid-template-columns: 1fr !important;
+}
+body.ck-full-stage .ck-people-rail,
+body.ck-full-stage .ck-side {
+    position: absolute;
+    visibility: hidden;
+    pointer-events: none;
+    width: 280px;
+    height: 420px;
+    overflow: hidden;
+    left: 0;
+    top: 0;
+    z-index: 0;
+    border: 0;
+    opacity: 0;
+}
+body.ck-full-stage .ck-people-rail.is-open,
+body.ck-full-stage .ck-people-rail.is-hovered,
+body.ck-full-stage .ck-people-rail.is-pinned {
+    position: fixed !important;
+    left: 16px !important;
+    top: auto !important;
+    bottom: calc(56px + env(safe-area-inset-bottom, 0px)) !important;
+    width: min(320px, calc(50vw - 24px)) !important;
+    height: min(520px, calc(100dvh - 150px)) !important;
+    opacity: 1 !important;
+    overflow: auto !important;
+    border-radius: 16px !important;
+    transform: translateY(0) !important;
+    visibility: visible !important;
+    pointer-events: auto !important;
+    z-index: 140 !important;
+}
+@media (min-width: 861px) {
+    body.ck-full-stage:not(.ck-is-host) .ck-side:not([hidden]) {
+        visibility: visible;
+        pointer-events: auto;
+        opacity: 1;
+        z-index: 25;
+        left: auto;
+        right: 0;
+        top: 0;
+        width: min(320px, 92vw);
+        height: 100%;
+        max-height: none;
+        overflow: auto;
+        border-left: 1px solid var(--ck-line);
+        box-shadow: -8px 0 24px rgba(0, 0, 0, 0.35);
+    }
+}
+.ck-drawer-mask {
+    display: none;
+    position: absolute;
+    inset: 0;
+    z-index: 15;
+    border: 0;
+    padding: 0;
+    background: rgba(0, 0, 0, 0.45);
+    cursor: pointer;
+}
+.ck-modal {
+    position: fixed;
+    inset: 0;
+    z-index: 40;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(0, 0, 0, 0.55);
+    padding: 16px;
+}
+.ck-modal-card {
+    width: min(420px, 100%);
+    background: var(--ck-panel);
+    border-radius: 16px;
+    padding: 18px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+.ck-modal-card h2 { margin: 0; font-size: 1.1rem; }
+#ckSettingsPreview {
+    width: 100%;
+    aspect-ratio: 16/10;
+    background: #000;
+    border-radius: 12px;
+    object-fit: cover;
+}
+.ck-field {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    font-size: 0.8rem;
+    font-weight: 700;
+    color: var(--ck-muted);
+}
+.ck-field select {
+    background: #10151d;
+    color: var(--ck-text);
+    border: 1px solid var(--ck-line);
+    border-radius: 10px;
+    padding: 10px 12px;
+    font-weight: 600;
+}
+
+@media (min-width: 861px) {
+    .ck-mobile-only { display: none !important; }
+    .ck-rail-close { display: inline-flex !important; }
+    body.ck-is-host.ck-full-stage #ckPeopleToggle.ck-mobile-only {
+        display: inline-flex !important;
+    }
+    body:not(.ck-is-host) #ckChatClose.ck-rail-close {
+        display: inline-flex !important;
+    }
+}
+
+@media (max-width: 860px) {
+    .ck-main {
+        grid-template-columns: 1fr !important;
+        overflow: hidden;
+    }
+    .ck-people-rail,
+    .ck-side {
+        z-index: 140;
+    }
+    .ck-people-rail {
+        position: fixed;
+        top: auto;
+        left: 12px;
+        right: auto;
+        bottom: calc(64px + env(safe-area-inset-bottom, 0px));
+        width: min(300px, calc(100vw - 24px));
+        height: min(420px, calc(100dvh - 160px));
+        max-height: calc(100dvh - 160px);
+        border-radius: 16px;
+        transform: translateY(calc(100% + 80px));
+    }
+    .ck-side {
+        right: 0;
+        left: auto;
+        transform: translateX(110%);
+        transition: transform 0.2s ease;
+    }
+    .ck-people-rail.is-open {
+        transform: translateY(0);
+    }
+    .ck-side.is-open {
+        transform: none;
+    }
+    body.ck-full-stage .ck-people-rail {
+        transform: translateX(-120%);
+        visibility: hidden;
+        pointer-events: none;
+        z-index: 0;
+        box-shadow: none;
+    }
+    body.ck-full-stage .ck-side {
+        transform: translateY(calc(100% + 24px));
+        visibility: hidden;
+        pointer-events: none;
+        z-index: 0;
+        box-shadow: none;
+    }
+    body.ck-full-stage .ck-people-rail.is-open,
+    body.ck-full-stage .ck-people-rail.is-hovered,
+    body.ck-full-stage .ck-people-rail.is-pinned {
+        transform: translateY(0) !important;
+        visibility: visible !important;
+        pointer-events: auto !important;
+        z-index: 140 !important;
+        box-shadow: 0 16px 48px rgba(0, 0, 0, 0.6) !important;
+    }
+    body.ck-full-stage .ck-side.is-open,
+    body.ck-full-stage .ck-side.is-hovered,
+    body.ck-full-stage .ck-side.is-pinned {
+        transform: translateY(0) !important;
+        visibility: visible !important;
+        pointer-events: auto !important;
+        opacity: 1 !important;
+        z-index: 100 !important;
+        box-shadow: 0 16px 48px rgba(0, 0, 0, 0.6) !important;
+    }
+    .ck-drawer-mask:not([hidden]) { display: block; }
+    html, body.ck-body { overflow-x: hidden; }
+    .ck-title span { display: none; }
+    .ck-ctrl span { display: none; }
+    .ck-ctrl { min-width: 44px; }
+    .ck-view-group { order: 8; }
+    body.ck-body.ck-is-host.ck-in-room .ck-grid,
+    body.ck-body[data-role="teacher"].ck-in-room .ck-grid {
+        right: 6px;
+        top: 6px;
+        width: 104px;
+        max-height: calc(100% - 12px);
+        gap: 6px;
+    }
+    body.ck-body.ck-is-host.ck-in-room .ck-grid .ck-tile,
+    body.ck-body[data-role="teacher"].ck-in-room .ck-grid .ck-tile,
+    body.ck-body.ck-is-host.ck-in-room.ck-filmstrip .ck-grid .ck-tile,
+    body.ck-body.ck-is-host.ck-in-room.ck-is-sharing .ck-tile {
+        width: 104px;
+        height: 60px;
+        min-height: 60px;
+        border-radius: 10px;
+    }
+    #ckBoardPanel, #ckInfoPanel { max-height: 36%; }
+    #ckBoardPanel.is-on { max-height: none; }
+}
+
+.ck-now-card {
+    border: 1px solid rgba(226, 59, 59, 0.35);
+    background: rgba(226, 59, 59, 0.08);
+    border-radius: 16px;
+    padding: 16px 18px;
+}
+.ck-now-card.is-next {
+    border-color: rgba(91, 124, 250, 0.35);
+    background: rgba(91, 124, 250, 0.08);
+}
+.ck-now-card h2 { font-size: 1.1rem; margin: 0 0 4px; }
+.ck-now-card p { margin: 0 0 12px; color: inherit; opacity: 0.85; }
+.ck-now-actions { display: flex; flex-wrap: wrap; gap: 8px; }
+.ck-live-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-weight: 800;
+    font-size: 0.75rem;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: #e23b3b;
+    margin-bottom: 6px;
+}
+.ck-live-badge .ck-dot { background: #e23b3b; }
+
+/* ===== Educational board chrome ===== */
+.ck-board-stage.ck-board-chrome {
+    display: grid;
+    grid-template-columns: 56px minmax(0, 1fr);
+    grid-template-rows: auto minmax(0, 1fr) auto;
+    grid-template-areas:
+        "rail top"
+        "rail view"
+        "rail ctx";
+    gap: 0;
+    min-height: 0;
+    height: 100%;
+    background: #0e141d;
+}
+.ck-board-chrome .ck-board-tools-legacy {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    opacity: 0;
+}
+.ck-board-rail {
+    grid-area: rail;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    padding: 8px 6px;
+    background: #121826;
+    border-right: 1px solid rgba(255,255,255,.06);
+    overflow-y: auto;
+    z-index: 3;
+}
+.ck-rail-tool, .ck-edu-fav-btn {
+    width: 42px;
+    height: 42px;
+    min-width: 42px;
+    border: 0;
+    border-radius: 12px;
+    background: transparent;
+    color: #e8eef8;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.05rem;
+}
+.ck-rail-tool:hover, .ck-edu-tool:hover { background: rgba(255,255,255,.08); }
+.ck-rail-tool.is-on, .ck-edu-tool.is-on { background: var(--ck-accent); color: #fff; }
+.ck-board-top {
+    grid-area: top;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 10px;
+    background: #141a24;
+    border-bottom: 1px solid rgba(255,255,255,.06);
+    z-index: 3;
+}
+.ck-board-top .ck-top-group {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 3px;
+    border-radius: 10px;
+    background: rgba(255,255,255,.04);
+}
+.ck-board-top button, .ck-board-ctx button {
+    border: 0;
+    border-radius: 8px;
+    background: transparent;
+    color: #e8eef8;
+    padding: 7px 10px;
+    min-height: 36px;
+    cursor: pointer;
+    font-weight: 650;
+    font-size: .78rem;
+}
+.ck-board-top button:hover, .ck-board-ctx button:hover { background: rgba(255,255,255,.08); }
+.ck-board-top button.is-on { background: var(--ck-accent); }
+.ck-board-page-name {
+    font-weight: 800;
+    font-size: .85rem;
+    color: #fff;
+    padding: 0 6px;
+    max-width: 140px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+.ck-board-chrome .ck-board-viewport {
+    grid-area: view;
+    min-height: 180px;
+    max-height: none;
+    aspect-ratio: auto;
+    height: 100%;
+    border-radius: 0;
+}
+.ck-board-chrome .ck-board-hint {
+    grid-area: view;
+    align-self: start;
+    z-index: 2;
+    pointer-events: none;
+}
+.ck-edu-panel {
+    display: none !important;
+}
+.ck-edu-search {
+    margin: 10px;
+    border: 1px solid rgba(255,255,255,.1);
+    border-radius: 10px;
+    background: #0b1220;
+    color: #fff;
+    padding: 10px 12px;
+    font-size: .85rem;
+    min-height: 40px;
+}
+.ck-edu-cats {
+    flex: 1;
+    overflow: auto;
+    padding: 0 8px 12px;
+}
+.ck-edu-cat {
+    border-radius: 12px;
+    margin-bottom: 8px;
+    background: rgba(255,255,255,.03);
+    overflow: hidden;
+}
+.ck-edu-cat-head {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    border: 0;
+    background: transparent;
+    color: #fff;
+    font-weight: 800;
+    font-size: .82rem;
+    padding: 12px;
+    cursor: pointer;
+    text-align: left;
+}
+.ck-edu-cat-body {
+    display: none;
+    padding: 0 8px 10px;
+    flex-direction: column;
+    gap: 4px;
+}
+.ck-edu-cat.ck-is-open .ck-edu-cat-body,
+.ck-edu-cat.is-open .ck-edu-cat-body { display: flex; }
+.ck-edu-tool {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    width: 100%;
+    border: 0;
+    border-radius: 10px;
+    background: transparent;
+    color: #d7dee9;
+    padding: 9px 10px;
+    min-height: 40px;
+    cursor: pointer;
+    font-size: .8rem;
+    font-weight: 650;
+    text-align: left;
+}
+.ck-edu-tool .ck-edu-star {
+    margin-left: auto;
+    opacity: .45;
+    border: 0;
+    background: transparent;
+    color: #fbbf24;
+    cursor: pointer;
+}
+.ck-edu-tool .ck-edu-star.is-on { opacity: 1; }
+.ck-edu-search-results {
+    padding: 0 8px 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+.ck-board-ctx {
+    grid-area: ctx;
+    display: none;
+    flex-wrap: wrap;
+    gap: 8px;
+    align-items: center;
+    padding: 8px 10px;
+    background: rgba(20, 26, 36, .96);
+    border-top: 1px solid rgba(255,255,255,.06);
+    z-index: 4;
+}
+.ck-board-ctx.ck-is-open { display: flex; }
+.ck-board-ctx label {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    color: #9aa6b8;
+    font-size: .72rem;
+    font-weight: 700;
+}
+.ck-edu-modal {
+    position: absolute;
+    inset: 0;
+    z-index: 20;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    background: rgba(5, 8, 14, .55);
+    padding: 16px;
+}
+.ck-edu-modal.ck-is-open, .ck-edu-modal:not([hidden]) { display: flex; }
+.ck-edu-modal[hidden] { display: none !important; }
+.ck-edu-modal-card {
+    width: min(560px, 96vw);
+    max-height: min(80vh, 640px);
+    overflow: auto;
+    background: #171e2b;
+    border: 1px solid rgba(255,255,255,.08);
+    border-radius: 16px;
+    box-shadow: 0 20px 50px rgba(0,0,0,.45);
+}
+.ck-edu-modal-head, .ck-edu-modal-foot {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    padding: 12px 14px;
+}
+.ck-edu-modal-body { padding: 0 14px 14px; color: #d7dee9; }
+.ck-edu-modal-close {
+    border: 0;
+    background: transparent;
+    color: #fff;
+    font-size: 1.4rem;
+    cursor: pointer;
+    line-height: 1;
+}
+.ck-edu-periodic {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(52px, 1fr));
+    gap: 6px;
+}
+.ck-edu-periodic button {
+    border: 1px solid rgba(255,255,255,.1);
+    border-radius: 10px;
+    background: #0f1622;
+    color: #fff;
+    padding: 8px 4px;
+    cursor: pointer;
+    min-height: 52px;
+}
+.ck-edu-periodic button strong { display: block; font-size: 1rem; }
+.ck-edu-periodic button span { font-size: .65rem; color: #9aa6b8; }
+.ck-edu-symbols {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+}
+.ck-edu-symbols button {
+    min-width: 40px;
+    min-height: 40px;
+    border-radius: 10px;
+    border: 1px solid rgba(255,255,255,.1);
+    background: #0f1622;
+    color: #fff;
+    cursor: pointer;
+    font-size: 1rem;
+}
+.ck-edu-calc {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 6px;
+}
+.ck-edu-calc input {
+    grid-column: 1 / -1;
+    padding: 12px;
+    border-radius: 10px;
+    border: 1px solid rgba(255,255,255,.1);
+    background: #0b1220;
+    color: #fff;
+    font-size: 1.1rem;
+}
+.ck-edu-calc button {
+    min-height: 42px;
+    border: 0;
+    border-radius: 10px;
+    background: #243041;
+    color: #fff;
+    cursor: pointer;
+    font-weight: 700;
+}
+.ck-spotlight, .ck-edu-spotlight {
+    position: absolute;
+    width: 120px;
+    height: 120px;
+    margin: -60px 0 0 -60px;
+    border-radius: 999px;
+    pointer-events: none;
+    box-shadow: 0 0 0 9999px rgba(0,0,0,.45), 0 0 0 3px rgba(250, 204, 21, .85);
+    z-index: 5;
+}
+.ck-edu-favs {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid rgba(255,255,255,.06);
+    margin-bottom: 6px;
+}
+.ck-subject-select, .ck-board-top select {
+    background: #1c2330;
+    color: #fff;
+    border: 1px solid rgba(255,255,255,.1);
+    border-radius: 8px;
+    padding: 7px 8px;
+    font-size: .75rem;
+    font-weight: 650;
+}
+@media (max-width: 1100px) {
+    .ck-board-stage.ck-board-chrome {
+        grid-template-columns: 52px minmax(0, 1fr);
+        grid-template-areas:
+            "rail top"
+            "rail view"
+            "rail ctx";
+    }
+    .ck-edu-panel {
+        position: absolute;
+        right: 0;
+        top: 48px;
+        bottom: 48px;
+        width: min(300px, 86vw);
+        box-shadow: -12px 0 30px rgba(0,0,0,.35);
+    }
+    .ck-edu-panel:not(.ck-is-open) { display: none; }
+}
+@media (max-width: 860px) {
+    .ck-board-rail { width: 48px; padding: 6px 4px; }
+    .ck-rail-tool { width: 40px; height: 40px; min-width: 40px; }
+    .ck-board-top { gap: 6px; padding: 6px; }
+    .ck-board-page-name { max-width: 90px; }
+}
+
+/* ===== Inline text editor + speech ===== */
+.ck-text-editor {
+    position: absolute;
+    z-index: 12;
+    min-width: 180px;
+    max-width: 72%;
+    transform: translateY(-8px);
+    filter: drop-shadow(0 10px 24px rgba(15, 23, 42, 0.22));
+    pointer-events: auto;
+}
+.ck-text-editor[hidden] { display: none !important; }
+.ck-text-editor.ck-text-pop {
+    animation: ckTextPop 160ms ease-out;
+}
+@keyframes ckTextPop {
+    from { opacity: 0; transform: translateY(-4px) scale(0.98); }
+    to { opacity: 1; transform: translateY(-8px) scale(1); }
+}
+.ck-text-fmt {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+    align-items: center;
+    padding: 6px;
+    margin-bottom: 4px;
+    border-radius: 12px;
+    background: #141a24;
+    border: 1px solid rgba(255,255,255,.08);
+}
+.ck-text-fmt button,
+.ck-text-fmt-item {
+    border: 0;
+    border-radius: 8px;
+    background: rgba(255,255,255,.06);
+    color: #e8eef8;
+    min-height: 34px;
+    min-width: 34px;
+    padding: 4px 8px;
+    cursor: pointer;
+    font-size: .78rem;
+    font-weight: 700;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+.ck-text-fmt button.is-on,
+.ck-text-fmt button.is-listening {
+    background: var(--ck-accent);
+    color: #fff;
+}
+.ck-text-fmt button.is-listening {
+    animation: ckMicPulse 1.1s ease-in-out infinite;
+}
+@keyframes ckMicPulse {
+    0%, 100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.45); }
+    50% { box-shadow: 0 0 0 6px rgba(239, 68, 68, 0); }
+}
+.ck-text-fmt select,
+.ck-text-fmt input[type="color"] {
+    border: 0;
+    background: transparent;
+    color: #fff;
+    max-width: 84px;
+    height: 28px;
+}
+.ck-text-fmt input[type="color"] {
+    width: 28px;
+    padding: 0;
+    border-radius: 999px;
+    overflow: hidden;
+}
+.ck-text-area {
+    display: block;
+    width: 220px;
+    min-height: 36px;
+    max-height: 70%;
+    border: 2px solid #3b82f6;
+    border-radius: 10px;
+    padding: 8px 10px;
+    resize: both;
+    outline: none;
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2);
+    background: rgba(255,255,255,0.97);
+    color: #111827;
+    line-height: 1.35;
+    overflow: hidden;
+}
+.ck-text-mic { white-space: nowrap; }
+@media (max-width: 860px) {
+    .ck-text-fmt { max-width: 92vw; }
+    .ck-text-fmt button { min-height: 40px; min-width: 40px; }
+    .ck-text-area { font-size: 16px !important; /* avoid iOS zoom */ }
+}
+
+/* Handwriting → Text */
+.ck-h2t-tip {
+    position: absolute;
+    left: 50%;
+    top: 10px;
+    transform: translateX(-50%);
+    z-index: 12;
+    max-width: min(92%, 460px);
+    padding: 8px 12px;
+    border-radius: 999px;
+    background: rgba(15, 23, 42, 0.92);
+    color: #e2e8f0;
+    font-size: 0.78rem;
+    font-weight: 600;
+    text-align: center;
+    pointer-events: none;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.28);
+}
+.ck-h2t-tip[hidden] { display: none !important; }
+.ck-h2t-busy {
+    position: absolute;
+    inset: 0;
+    z-index: 28;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(5, 8, 14, 0.35);
+    pointer-events: all;
+}
+.ck-h2t-busy[hidden] { display: none !important; }
+.ck-h2t-busy-card {
+    padding: 14px 18px;
+    border-radius: 14px;
+    background: rgba(15, 23, 42, 0.95);
+    color: #e2e8f0;
+    font-weight: 700;
+    font-size: 0.92rem;
+    box-shadow: 0 12px 32px rgba(0, 0, 0, 0.35);
+}
+.ck-h2t-region {
+    position: absolute;
+    border: 2px solid #0ea5e9;
+    background: rgba(14, 165, 233, 0.12);
+    pointer-events: none;
+    z-index: 3;
+    border-radius: 4px;
+}
+.ck-h2t-marquee {
+    position: absolute;
+    border: 2px dashed #2563eb;
+    background: rgba(37, 99, 235, 0.12);
+    pointer-events: none;
+    z-index: 3;
+}
+.ck-h2t-preview {
+    position: absolute;
+    inset: 0;
+    z-index: 30;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 16px;
+    background: rgba(5, 8, 14, 0.55);
+}
+.ck-h2t-preview[hidden] { display: none !important; }
+.ck-h2t-preview-card {
+    width: min(480px, 96vw);
+    max-height: min(82vh, 640px);
+    overflow: auto;
+    background: #171e2b;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 16px;
+    box-shadow: 0 20px 50px rgba(0, 0, 0, 0.45);
+    color: #e2e8f0;
+}
+.ck-h2t-preview-head,
+.ck-h2t-preview-foot {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 12px 14px;
+}
+.ck-h2t-preview-head {
+    justify-content: space-between;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+}
+.ck-h2t-preview-body {
+    padding: 12px 14px 4px;
+    display: grid;
+    gap: 8px;
+}
+.ck-h2t-preview-foot {
+    flex-wrap: wrap;
+    border-top: 1px solid rgba(255, 255, 255, 0.06);
+}
+.ck-h2t-close {
+    border: 0;
+    background: transparent;
+    color: #94a3b8;
+    font-size: 1.4rem;
+    line-height: 1;
+    cursor: pointer;
+}
+.ck-h2t-label {
+    font-size: 0.72rem;
+    font-weight: 700;
+    color: #94a3b8;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+}
+.ck-h2t-raw {
+    padding: 10px 12px;
+    border-radius: 10px;
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    white-space: pre-wrap;
+    word-break: break-word;
+    color: #cbd5e1;
+    font-size: 0.92rem;
+}
+.ck-h2t-edit {
+    width: 100%;
+    min-height: 88px;
+    border-radius: 10px;
+    border: 1px solid rgba(59, 130, 246, 0.45);
+    background: rgba(15, 23, 42, 0.65);
+    color: #f8fafc;
+    padding: 10px 12px;
+    resize: vertical;
+    font-family: Arial, Helvetica, sans-serif;
+    font-size: 1rem;
+    line-height: 1.4;
+}
+.ck-h2t-meta {
+    font-size: 0.75rem;
+    color: #94a3b8;
+}
+.ck-h2t-note {
+    margin: 0;
+    font-size: 0.75rem;
+    color: #94a3b8;
+    line-height: 1.35;
+}
+.ck-h2t-alts {
+    display: grid;
+    gap: 6px;
+}
+.ck-h2t-alts-title {
+    font-size: 0.78rem;
+    font-weight: 700;
+    color: #fbbf24;
+}
+.ck-h2t-alt {
+    text-align: left;
+    border: 1px solid rgba(251, 191, 36, 0.35);
+    background: rgba(251, 191, 36, 0.08);
+    color: #fde68a;
+    border-radius: 10px;
+    padding: 8px 10px;
+    cursor: pointer;
+}
+.ck-h2t-btn {
+    border: 0;
+    border-radius: 10px;
+    padding: 9px 14px;
+    background: rgba(255, 255, 255, 0.08);
+    color: #e2e8f0;
+    font-weight: 700;
+    cursor: pointer;
+    min-height: 38px;
+}
+.ck-h2t-btn.ck-h2t-apply {
+    background: var(--ck-accent, #2563eb);
+    color: #fff;
+}
+@media (max-width: 860px) {
+    .ck-h2t-tip { font-size: 0.72rem; top: 6px; }
+    .ck-h2t-btn { min-height: 40px; }
+}
+
+/* ─── PDF Whiteboard & Student Download Button ─────────────────────────────── */
+
+.ck-pdf-canvas {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    z-index: 1;
+    background: #ffffff;
+}
+
+#ckBoard {
+    position: relative;
+    z-index: 2;
+}
+
+.ck-pdf-download-btn {
+    position: absolute;
+    top: 10px;
+    right: 12px;
+    z-index: 10;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 12px;
+    font-size: 0.82rem;
+    font-weight: 600;
+    color: #ffffff;
+    background: rgba(37, 99, 235, 0.9);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 20px;
+    text-decoration: none;
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.35);
+    transition: background 0.15s ease, transform 0.15s ease, box-shadow 0.15s ease;
+    cursor: pointer;
+    user-select: none;
+}
+
+.ck-pdf-download-btn:hover {
+    background: rgba(29, 78, 216, 0.95);
+    color: #ffffff;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.45);
+}
+
+.ck-pdf-download-btn:active {
+    transform: translateY(0);
+}
+
+.ck-pdf-download-btn i {
+    font-size: 0.95rem;
+}
+
+.ck-pdf-toolbar-group {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.ck-board-top .ck-pdf-toolbar-group {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    margin: 0 4px;
+}
+
+.ck-board-top #ckPdfUploadBtn,
+.ck-pdf-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 12px;
+    border-radius: 8px;
+    border: 1px solid rgba(59, 130, 246, 0.5);
+    background: rgba(37, 99, 235, 0.25);
+    color: #93c5fd;
+    font-size: 0.82rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+}
+
+.ck-board-top #ckPdfUploadBtn:hover,
+.ck-pdf-btn:hover {
+    background: rgba(37, 99, 235, 0.45);
+    border-color: #60a5fa;
+    color: #ffffff;
+}
+
+.ck-pdf-nav {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.ck-pdf-page-indicator {
+    font-size: 0.78rem;
+    font-weight: 700;
+    color: #94a3b8;
+    padding: 0 4px;
+    min-width: 48px;
+    text-align: center;
+    user-select: none;
+}
+
+@media (max-width: 768px) {
+    .ck-pdf-download-btn {
+        top: 6px;
+        right: 8px;
+        padding: 4px 8px;
+        font-size: 0.72rem;
+    }
+    .ck-pdf-download-btn span {
+        display: none;
+    }
+    .ck-pdf-download-btn i {
+        font-size: 1rem;
+    }
+}
+
+/* =============================================================
+   Detachable Student Cameras, Chat & Teaching Monitor (Secondary Screen)
+   ============================================================= */
+
+/* Floating In-Classroom Student Camera Panel */
+.ck-student-cam-panel {
+    position: fixed;
+    right: 20px;
+    top: 70px;
+    width: 380px;
+    max-width: calc(100vw - 40px);
+    height: 320px;
+    max-height: calc(100vh - 140px);
+    min-width: 280px;
+    min-height: 180px;
+    z-index: 100;
+    resize: both;
+    overflow: hidden;
+    background: rgba(23, 28, 38, 0.94);
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+    border: 1px solid rgba(255, 255, 255, 0.14);
+    border-radius: 14px;
+    box-shadow: 0 16px 40px rgba(0, 0, 0, 0.65), 0 0 0 1px rgba(255, 255, 255, 0.05);
+    display: flex;
+    flex-direction: column;
+}
+.ck-student-cam-panel[hidden] {
+    display: none !important;
+}
+.ck-student-cam-panel.is-minimized {
+    height: 46px !important;
+    min-height: 46px !important;
+    resize: none !important;
+    overflow: hidden !important;
+}
+.ck-student-cam-panel.is-minimized .ck-scp-body {
+    display: none !important;
+}
+
+/* SCP Header / Drag Handle */
+.ck-scp-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    padding: 8px 12px;
+    background: rgba(14, 18, 24, 0.96);
+    border-bottom: 1px solid var(--ck-line);
+    cursor: grab;
+    user-select: none;
+    touch-action: none;
+    flex-shrink: 0;
+}
+.ck-scp-head:active {
+    cursor: grabbing;
+}
+.ck-scp-drag-title {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 0.82rem;
+    color: var(--ck-text);
+    min-width: 0;
+}
+.ck-scp-drag-title i {
+    color: var(--ck-muted);
+    font-size: 0.9rem;
+}
+.ck-scp-actions {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    flex-shrink: 0;
+}
+.ck-btn-xs {
+    padding: 2px 6px;
+    font-size: 0.72rem;
+    height: 24px;
+    line-height: 1;
+    border-radius: 4px;
+    background: #202736;
+    color: var(--ck-text);
+    border: 1px solid var(--ck-line);
+    cursor: pointer;
+}
+.ck-btn-xs.is-on {
+    background: var(--ck-accent);
+    color: #fff;
+    border-color: var(--ck-accent);
+}
+.ck-scp-btn {
+    width: 24px;
+    height: 24px;
+    padding: 0;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.78rem;
+    border-radius: 4px;
+    color: var(--ck-muted);
+    background: transparent;
+    border: 0;
+    cursor: pointer;
+}
+.ck-scp-btn:hover {
+    color: var(--ck-text);
+    background: rgba(255, 255, 255, 0.08);
+}
+
+/* SCP Body & Grid */
+.ck-scp-body {
+    flex: 1;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    position: relative;
+    background: #0b0e14;
+}
+.ck-scp-popped-state {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    padding: 20px;
+    text-align: center;
+    color: var(--ck-muted);
+}
+.ck-scp-popped-state i {
+    font-size: 2rem;
+    color: var(--ck-accent);
+}
+.ck-scp-popped-state p {
+    margin: 0;
+    font-size: 0.85rem;
+    color: var(--ck-text);
+}
+.ck-scp-popped-btns {
+    display: flex;
+    gap: 8px;
+    margin-top: 4px;
+}
+.ck-scp-stage {
+    flex: 1;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    overflow-y: auto;
+    padding: 8px;
+    gap: 8px;
+}
+.ck-scp-spotlight {
+    flex: 0 0 auto;
+    width: 100%;
+    margin-bottom: 4px;
+}
+.ck-scp-spotlight .ck-scp-tile {
+    aspect-ratio: 16/9;
+    min-height: 140px;
+}
+.ck-scp-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+    gap: 8px;
+    align-content: start;
+}
+.ck-scp-empty {
+    grid-column: 1 / -1;
+    text-align: center;
+    color: var(--ck-muted);
+    font-size: 0.8rem;
+    padding: 24px 10px;
+    margin: 0;
+}
+
+/* SCP Tile */
+.ck-scp-tile {
+    position: relative;
+    background: #151b26;
+    border-radius: 8px;
+    overflow: hidden;
+    border: 2px solid rgba(255, 255, 255, 0.08);
+    display: flex;
+    flex-direction: column;
+    aspect-ratio: 16/10;
+    min-height: 80px;
+    transition: border-color 0.2s, box-shadow 0.2s;
+}
+.ck-scp-tile.is-speaking {
+    border-color: var(--ck-ok);
+    box-shadow: 0 0 10px rgba(61, 190, 122, 0.4);
+}
+.ck-scp-tile.is-pinned {
+    border-color: var(--ck-accent);
+}
+.ck-scp-video-wrap {
+    flex: 1;
+    min-height: 0;
+    position: relative;
+    background: #000;
+}
+.ck-scp-video {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: none;
+}
+.ck-scp-tile.has-video .ck-scp-video {
+    display: block;
+}
+.ck-scp-avatar {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    background: #111620;
+    color: var(--ck-muted);
+}
+.ck-scp-tile.has-video .ck-scp-avatar {
+    display: none;
+}
+.ck-scp-avatar-initials {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    background: #252e3d;
+    color: var(--ck-text);
+    font-weight: 700;
+    font-size: 0.8rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+.ck-scp-avatar-label {
+    font-size: 0.65rem;
+    color: var(--ck-muted);
+}
+.ck-scp-meta {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 4px;
+    padding: 3px 6px;
+    background: linear-gradient(transparent, rgba(0, 0, 0, 0.8));
+    color: #fff;
+    font-size: 0.72rem;
+    z-index: 2;
+}
+.ck-scp-info {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    min-width: 0;
+}
+.ck-scp-name {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-size: 0.72rem;
+}
+.ck-scp-mic-icon {
+    font-size: 0.72rem;
+    line-height: 1;
+}
+.ck-scp-tile-actions {
+    display: none;
+    align-items: center;
+    gap: 2px;
+}
+.ck-scp-tile:hover .ck-scp-tile-actions {
+    display: flex;
+}
+.ck-scp-tile-btn {
+    width: 20px;
+    height: 20px;
+    padding: 0;
+    border-radius: 4px;
+    border: 0;
+    background: rgba(0, 0, 0, 0.65);
+    color: #fff;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.68rem;
+}
+.ck-scp-tile-btn:hover {
+    background: rgba(0, 0, 0, 0.9);
+}
+
+/* =============================================================
+   Pop-out Monitoring Window Layout (monitor.php)
+   ============================================================= */
+body.ck-monitor-window {
+    height: 100vh;
+    overflow: hidden;
+    background: var(--ck-bg);
+}
+.ck-monitor-top {
+    height: 52px;
+    padding: 6px 14px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    background: #141822;
+    border-bottom: 1px solid var(--ck-line);
+}
+.ck-audio-indicator {
+    background: rgba(91, 124, 250, 0.15);
+    border: 1px solid rgba(91, 124, 250, 0.35);
+    color: #8ba5ff;
+    padding: 3px 9px;
+    border-radius: 999px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+}
+.ck-sync-badge {
+    padding: 3px 8px;
+    border-radius: 999px;
+    font-size: 0.72rem;
+    font-weight: 600;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+}
+.ck-sync-badge.is-connected {
+    background: rgba(61, 190, 122, 0.14);
+    color: var(--ck-ok);
+}
+.ck-sync-badge.is-disconnected {
+    background: rgba(226, 91, 91, 0.18);
+    color: var(--ck-danger);
+}
+
+.ck-monitor-offline-banner {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 16px;
+    background: #7c2d12;
+    color: #fed7aa;
+    font-size: 0.82rem;
+    font-weight: 600;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+.ck-monitor-offline-banner[hidden] {
+    display: none !important;
+}
+
+/* Monitor Main Panes */
+.ck-monitor-main {
+    flex: 1;
+    min-height: 0;
+    display: flex;
+    overflow: hidden;
+    position: relative;
+}
+
+/* Mode: Monitor (split screen) */
+body.ck-monitor-monitor .ck-monitor-cam-section {
+    flex: 1;
+    min-width: 0;
+    border-right: 1px solid var(--ck-line);
+}
+body.ck-monitor-monitor .ck-monitor-chat-section {
+    width: 380px;
+    flex-shrink: 0;
+}
+
+/* Mode: Camera only */
+body.ck-monitor-camera .ck-monitor-cam-section {
+    flex: 1;
+    width: 100%;
+}
+body.ck-monitor-camera .ck-monitor-chat-section {
+    display: none !important;
+}
+
+/* Mode: Chat only */
+body.ck-monitor-chat .ck-monitor-chat-section {
+    flex: 1;
+    width: 100%;
+}
+body.ck-monitor-chat .ck-monitor-cam-section {
+    display: none !important;
+}
+
+/* Camera Section inside Monitor */
+.ck-monitor-cam-section {
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+    background: #090c11;
+}
+.ck-monitor-section-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    padding: 8px 14px;
+    background: #111620;
+    border-bottom: 1px solid var(--ck-line);
+    flex-shrink: 0;
+}
+.ck-monitor-head-title h2 {
+    margin: 0;
+    font-size: 0.92rem;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+.ck-monitor-head-actions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+.ck-monitor-sort-wrap {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 0.78rem;
+    color: var(--ck-muted);
+}
+.ck-monitor-sort-select {
+    background: #1d2432;
+    border: 1px solid var(--ck-line);
+    color: var(--ck-text);
+    font-size: 0.78rem;
+    border-radius: 4px;
+    padding: 3px 6px;
+}
+
+.ck-monitor-cam-stage {
+    flex: 1;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    overflow-y: auto;
+    padding: 12px;
+    gap: 12px;
+}
+.ck-monitor-spotlight {
+    width: 100%;
+    margin-bottom: 6px;
+}
+.ck-monitor-spotlight .ck-monitor-tile {
+    aspect-ratio: 16/9;
+    max-height: 380px;
+}
+.ck-monitor-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    gap: 12px;
+    align-content: start;
+    flex: 1;
+}
+.ck-monitor-empty {
+    grid-column: 1 / -1;
+    text-align: center;
+    padding: 60px 20px;
+    color: var(--ck-muted);
+}
+.ck-monitor-empty i {
+    font-size: 3rem;
+    color: #3b4556;
+    margin-bottom: 10px;
+    display: block;
+}
+.ck-monitor-empty p {
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: var(--ck-text);
+    margin: 0 0 4px;
+}
+.ck-monitor-empty span {
+    font-size: 0.85rem;
+}
+
+/* Large Monitor Tile */
+.ck-monitor-tile {
+    position: relative;
+    background: #151b26;
+    border-radius: 10px;
+    overflow: hidden;
+    border: 2px solid rgba(255, 255, 255, 0.08);
+    display: flex;
+    flex-direction: column;
+    aspect-ratio: 16/10;
+    min-height: 130px;
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.35);
+    transition: border-color 0.2s, box-shadow 0.2s;
+}
+.ck-monitor-tile.is-speaking {
+    border-color: var(--ck-ok);
+    box-shadow: 0 0 14px rgba(61, 190, 122, 0.5);
+}
+.ck-monitor-tile.is-pinned {
+    border-color: var(--ck-accent);
+}
+.ck-mon-video-wrap {
+    flex: 1;
+    min-height: 0;
+    position: relative;
+    background: #000;
+}
+.ck-mon-video {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: none;
+}
+.ck-monitor-tile.has-video .ck-mon-video {
+    display: block;
+}
+.ck-mon-avatar {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    background: #121722;
+    color: var(--ck-muted);
+}
+.ck-monitor-tile.has-video .ck-mon-avatar {
+    display: none;
+}
+.ck-mon-avatar-initials {
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    background: #252e3e;
+    color: var(--ck-text);
+    font-weight: 700;
+    font-size: 1rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+.ck-mon-avatar-label {
+    font-size: 0.72rem;
+    color: var(--ck-muted);
+}
+.ck-mon-meta {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 6px;
+    padding: 6px 10px;
+    background: linear-gradient(transparent, rgba(0, 0, 0, 0.85));
+    color: #fff;
+    font-size: 0.8rem;
+    z-index: 2;
+}
+.ck-mon-info {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    min-width: 0;
+}
+.ck-mon-name {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-size: 0.82rem;
+}
+.ck-mon-mic-icon {
+    font-size: 0.82rem;
+    line-height: 1;
+}
+.ck-mon-actions {
+    display: none;
+    align-items: center;
+    gap: 4px;
+}
+.ck-monitor-tile:hover .ck-mon-actions {
+    display: flex;
+}
+.ck-mon-btn {
+    width: 26px;
+    height: 26px;
+    padding: 0;
+    border-radius: 6px;
+    border: 0;
+    background: rgba(0, 0, 0, 0.65);
+    color: #fff;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.78rem;
+}
+.ck-mon-btn:hover {
+    background: rgba(0, 0, 0, 0.9);
+}
+
+/* Chat Section inside Monitor */
+.ck-monitor-chat-section {
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+    background: #11151f;
+}
+.ck-monitor-hands-panel {
+    flex-shrink: 0;
+    padding: 8px 12px;
+    background: #161c28;
+    border-bottom: 1px solid var(--ck-line);
+    max-height: 120px;
+    overflow-y: auto;
+}
+.ck-hands-head h3 {
+    margin: 0 0 6px;
+    font-size: 0.8rem;
+    color: var(--ck-muted);
+}
+.ck-monitor-chat-body {
+    flex: 1;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    padding: 10px;
+    gap: 8px;
+    overflow: hidden;
+}
+.ck-monitor-chat-body .ck-chat-log {
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
+    border-radius: 8px;
+    background: #0d1118;
+    padding: 8px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+/* Pop-up Blocked Notification Banner */
+.ck-popup-blocked-banner {
+    position: fixed;
+    bottom: 74px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 999;
+    max-width: 90vw;
+    width: 620px;
+    background: #7c2d12;
+    color: #ffedd5;
+    border: 1px solid #f97316;
+    border-radius: 12px;
+    box-shadow: 0 12px 36px rgba(0, 0, 0, 0.6);
+    padding: 10px 16px;
+}
+.ck-popup-blocked-banner[hidden] {
+    display: none !important;
+}
+.ck-pbb-inner {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+.ck-pbb-inner i {
+    font-size: 1.5rem;
+    color: #fb923c;
+    flex-shrink: 0;
+}
+.ck-pbb-text {
+    flex: 1;
+    min-width: 0;
+    font-size: 0.82rem;
+    line-height: 1.35;
+}
+.ck-pbb-text strong {
+    display: block;
+    color: #fff;
+    margin-bottom: 2px;
+}
+
+/* Dock button popped state */
+.ck-ctrl.is-popped {
+    color: var(--ck-accent);
+    border-color: rgba(91, 124, 250, 0.6);
+    background: rgba(91, 124, 250, 0.18);
+}
+
+/* ==========================================================================
+   MODERN WHITEBOARD REDESIGN & TOOL ARRANGEMENT
+   ========================================================================== */
+
+/* --- 1. Modern Classroom Top Header --- */
+.ck-top#ckTopHeader {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 8px 16px;
+    background: #0b0f19;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    min-height: 56px;
+    z-index: 30;
+    flex-shrink: 0;
+}
+
+.ck-brand-wrap {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-shrink: 0;
+}
+
+.ck-brand-icon {
+    width: 32px;
+    height: 32px;
+    border-radius: 8px;
+    background: linear-gradient(135deg, #2563eb, #1d4ed8);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #ffffff;
+    font-size: 1.1rem;
+    box-shadow: 0 2px 8px rgba(37, 99, 235, 0.4);
+}
+
+.ck-brand-text {
+    display: flex;
+    flex-direction: column;
+    line-height: 1.2;
+}
+
+.ck-brand-name {
+    font-weight: 700;
+    font-size: 0.88rem;
+    color: #ffffff;
+    letter-spacing: -0.01em;
+}
+
+.ck-brand-sub {
+    font-size: 0.68rem;
+    color: rgba(255, 255, 255, 0.55);
+    font-weight: 500;
+}
+
+.ck-class-meta {
+    display: flex;
+    flex-direction: column;
+    line-height: 1.25;
+    padding-left: 12px;
+    border-left: 1px solid rgba(255, 255, 255, 0.12);
+    flex-shrink: 0;
+}
+
+.ck-meta-subject {
+    font-size: 0.88rem;
+    font-weight: 600;
+    color: #f3f4f6;
+}
+
+.ck-meta-teacher {
+    font-size: 0.72rem;
+    color: rgba(255, 255, 255, 0.55);
+}
+
+.ck-top-center {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex: 1;
+}
+
+.ck-status-pill {
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 999px;
+    padding: 4px 14px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 0.82rem;
+    font-weight: 600;
+    color: #e5e7eb;
+}
+
+.ck-rec-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: #ef4444;
+    box-shadow: 0 0 8px #ef4444;
+    display: inline-block;
+    animation: ckPulse 2s infinite ease-in-out;
+}
+
+@keyframes ckPulse {
+    0%, 100% { transform: scale(1); opacity: 1; }
+    50% { transform: scale(1.3); opacity: 0.7; }
+}
+
+.ck-rec {
+    background: #ef4444;
+    color: #ffffff;
+    font-size: 0.65rem;
+    font-weight: 700;
+    padding: 1px 5px;
+    border-radius: 4px;
+    letter-spacing: 0.05em;
+}
+
+.ck-top-actions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-shrink: 0;
+}
+
+.ck-header-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    height: 36px;
+    padding: 0 12px;
+    border-radius: 8px;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    color: #d1d5db;
+    font-size: 0.8rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.15s ease;
+}
+
+.ck-header-btn:hover {
+    background: rgba(255, 255, 255, 0.1);
+    color: #ffffff;
+    border-color: rgba(255, 255, 255, 0.16);
+}
+
+.ck-header-btn.is-on {
+    background: rgba(37, 99, 235, 0.18);
+    border-color: rgba(37, 99, 235, 0.5);
+    color: #60a5fa;
+}
+
+.ck-header-btn.is-off,
+.ck-header-btn[aria-pressed="false"] {
+    color: #9ca3af;
+}
+
+.ck-header-btn.is-blocked {
+    background: rgba(239, 68, 68, 0.15);
+    border-color: rgba(239, 68, 68, 0.4);
+    color: #f87171;
+}
+
+.ck-count-badge {
+    background: rgba(255, 255, 255, 0.15);
+    color: #ffffff;
+    border-radius: 999px;
+    padding: 1px 6px;
+    font-size: 0.68rem;
+    font-weight: 700;
+}
+
+.ck-count-badge.ck-badge-green {
+    background: #10b981;
+    color: #ffffff;
+}
+
+.ck-count-badge.ck-badge-red {
+    background: #ef4444;
+    color: #ffffff;
+}
+
+.ck-btn-end {
+    height: 36px;
+    padding: 0 16px;
+    border-radius: 999px;
+    background: #dc2626;
+    color: #ffffff;
+    font-size: 0.82rem;
+    font-weight: 600;
+    border: none;
+    cursor: pointer;
+    box-shadow: 0 2px 6px rgba(220, 38, 38, 0.35);
+    transition: all 0.15s ease;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.ck-btn-end:hover {
+    background: #b91c1c;
+    color: #ffffff;
+}
+
+.ck-btn-leave {
+    height: 36px;
+    padding: 0 14px;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.08);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    color: #cbd5e1;
+    font-size: 0.82rem;
+    font-weight: 500;
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    transition: all 0.15s ease;
+}
+
+.ck-btn-leave:hover {
+    background: rgba(255, 255, 255, 0.15);
+    border-color: rgba(255, 255, 255, 0.25);
+    color: #ffffff;
+    text-decoration: none;
+}
+
+.ck-more-dropdown-wrap {
+    position: relative;
+}
+
+.ck-more-dropdown {
+    position: absolute;
+    top: calc(100% + 6px);
+    right: 0;
+    z-index: 100;
+    min-width: 190px;
+    background: #161b22;
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    border-radius: 10px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+    padding: 6px;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.ck-more-dropdown[hidden] {
+    display: none !important;
+}
+
+.ck-dropdown-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    width: 100%;
+    padding: 8px 10px;
+    border-radius: 6px;
+    background: transparent;
+    border: none;
+    color: #e5e7eb;
+    font-size: 0.82rem;
+    cursor: pointer;
+    text-align: left;
+    text-decoration: none;
+    transition: background 0.12s ease;
+}
+
+.ck-dropdown-item:hover {
+    background: rgba(255, 255, 255, 0.08);
+    color: #ffffff;
+}
+
+.ck-dropdown-divider {
+    height: 1px;
+    background: rgba(255, 255, 255, 0.1);
+    margin: 4px 0;
+}
+
+/* --- 2. Stage Structure & Whiteboard Container --- */
+.ck-stage-board {
+    display: flex;
+    flex: 1;
+    min-height: 0;
+    min-width: 0;
+    position: relative;
+    background: #090c12;
+    overflow: hidden;
+}
+
+.ck-stage-board[hidden] {
+    display: none !important;
+}
+
+.ck-board-stage {
+    display: flex;
+    flex: 1;
+    min-height: 0;
+    min-width: 0;
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+    position: relative;
+}
+
+/* --- 3. Sleek Compact Page Navigation Sidebar & Fullscreen Selector --- */
+.ck-page-nav-sidebar {
+    position: absolute;
+    top: 12px;
+    left: 16px;
+    z-index: 35;
+    background: rgba(15, 23, 42, 0.92);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 12px;
+    display: flex;
+    flex-direction: column;
+    padding: 4px;
+    gap: 6px;
+    box-shadow: 0 8px 30px rgba(0, 0, 0, 0.45);
+    transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+    max-width: 176px;
+}
+
+.ck-pns-bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 4px;
+    padding: 2px 4px;
+}
+
+.ck-pns-head-btn {
+    background: transparent;
+    border: none;
+    color: #f8fafc;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 6px;
+    border-radius: 6px;
+    font-size: 0.78rem;
+    font-weight: 600;
+    transition: background-color 0.15s ease;
+}
+.ck-pns-head-btn:hover {
+    background: rgba(255, 255, 255, 0.08);
+}
+.ck-pns-cur-badge {
+    background: #2563eb;
+    color: #ffffff;
+    font-size: 0.68rem;
+    font-weight: 700;
+    padding: 1px 6px;
+    border-radius: 9999px;
+}
+.ck-pns-caret {
+    font-size: 0.7rem;
+    color: #94a3b8;
+    transition: transform 0.2s ease;
+}
+.ck-page-nav-sidebar.is-collapsed .ck-pns-caret {
+    transform: rotate(-90deg);
+}
+
+.ck-pns-quick-nav {
+    display: flex;
+    align-items: center;
+    gap: 2px;
+}
+
+.ck-pns-step-btn {
+    background: transparent;
+    border: none;
+    color: #94a3b8;
+    cursor: pointer;
+    width: 24px;
+    height: 24px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 6px;
+    font-size: 0.75rem;
+    transition: all 0.12s ease;
+}
+.ck-pns-step-btn:hover:not(:disabled) {
+    background: rgba(255, 255, 255, 0.1);
+    color: #ffffff;
+}
+.ck-pns-step-btn:disabled {
+    opacity: 0.3;
+    cursor: not-allowed;
+}
+.ck-pns-add-icon-btn {
+    color: #60a5fa;
+}
+
+.ck-pns-drawer {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    padding: 4px 2px 2px 2px;
+    border-top: 1px solid rgba(255, 255, 255, 0.08);
+}
+.ck-page-nav-sidebar.is-collapsed .ck-pns-drawer {
+    display: none !important;
+}
+
+.ck-pns-list {
+    max-height: 280px;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    padding: 4px 2px;
+}
+.ck-pns-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 3px;
+    cursor: pointer;
+    width: 100%;
+    padding: 2px;
+    transition: transform 0.15s ease;
+}
+.ck-pns-item:hover {
+    transform: translateY(-1px);
+}
+.ck-pns-thumb {
+    width: 72px;
+    height: 45px;
+    background: #ffffff;
+    border-radius: 6px;
+    overflow: hidden;
+    border: 2px solid rgba(255, 255, 255, 0.15);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+    transition: all 0.15s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+.ck-thumb-canvas {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    display: block;
+}
+.ck-pns-item.is-active .ck-pns-thumb {
+    border-color: #2563eb;
+    box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.5);
+}
+.ck-pns-num {
+    font-size: 0.7rem;
+    font-weight: 600;
+    color: #94a3b8;
+    padding: 1px 8px;
+    border-radius: 9999px;
+}
+.ck-pns-item.is-active .ck-pns-num {
+    background: #2563eb;
+    color: #ffffff;
+    font-weight: 700;
+}
+.ck-btn-add-page {
+    width: 100%;
+    height: 32px;
+    border-radius: 6px;
+    background: rgba(37, 99, 235, 0.15);
+    border: 1px solid rgba(37, 99, 235, 0.35);
+    color: #60a5fa;
+    font-size: 0.75rem;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: all 0.15s ease;
+}
+.ck-btn-add-page:hover {
+    background: #2563eb;
+    border-color: #2563eb;
+    color: #ffffff;
+    box-shadow: 0 2px 8px rgba(37, 99, 235, 0.4);
+}
+
+/* --- Students May Draw Teacher Control --- */
+.ck-allow-draw-toggle {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    cursor: pointer;
+    user-select: none;
+    padding: 4px 10px;
+    border-radius: 9999px;
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    transition: all 0.15s ease;
+}
+.ck-allow-draw-toggle:hover {
+    background: rgba(255, 255, 255, 0.12);
+}
+.ck-allow-draw-toggle input[type="checkbox"] {
+    position: absolute;
+    opacity: 0;
+    width: 0;
+    height: 0;
+    pointer-events: none;
+}
+.ck-toggle-track {
+    width: 32px;
+    height: 18px;
+    background: #475569;
+    border-radius: 9999px;
+    position: relative;
+    transition: background-color 0.2s ease;
+    flex-shrink: 0;
+}
+.ck-toggle-thumb {
+    position: absolute;
+    top: 2px;
+    left: 2px;
+    width: 14px;
+    height: 14px;
+    background: #ffffff;
+    border-radius: 50%;
+    transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.35);
+}
+.ck-allow-draw-toggle input:checked + .ck-toggle-track {
+    background: #10b981; /* Green = Allowed */
+}
+.ck-allow-draw-toggle input:checked + .ck-toggle-track .ck-toggle-thumb {
+    transform: translateX(14px);
+}
+.ck-toggle-text {
+    font-size: 0.78rem;
+    font-weight: 600;
+    color: #e2e8f0;
+    white-space: nowrap;
+}
+.ck-host-draw-toggle {
+    width: 100%;
+    justify-content: space-between;
+    margin-bottom: 8px;
+    padding: 8px 12px;
+    border-radius: 8px;
+    background: rgba(255, 255, 255, 0.04);
+}
+
+/* --- Student Display Mode Segmented Controls --- */
+.ck-student-display-modes {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 3px;
+    border-radius: 20px;
+    background: #10151d;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+}
+.ck-sd-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 7px 14px;
+    border-radius: 16px;
+    background: transparent;
+    border: none;
+    color: #94a3b8;
+    font-size: 0.78rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.15s cubic-bezier(0.16, 1, 0.3, 1);
+    white-space: nowrap;
+}
+.ck-sd-btn i {
+    font-size: 0.95rem;
+}
+.ck-sd-btn:hover {
+    color: #ffffff;
+    background: rgba(255, 255, 255, 0.06);
+}
+.ck-sd-btn.is-active {
+    background: #2563eb;
+    color: #ffffff;
+    box-shadow: 0 2px 8px rgba(37, 99, 235, 0.4);
+}
+
+/* Student Left Drawing Tools Auto-Slide */
+body:not(.ck-is-host) .ck-board-rail {
+    position: absolute;
+    left: 0;
+    top: 50px;
+    bottom: 50px;
+    z-index: 30;
+    transform: translateX(-100%);
+    transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+    border-radius: 0 12px 12px 0;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-left: none;
+    box-shadow: 4px 0 18px rgba(0, 0, 0, 0.35);
+}
+body:not(.ck-is-host):not(.ck-students-can-draw) .ck-board-rail {
+    display: none !important;
+}
+body:not(.ck-is-host).ck-students-can-draw .ck-board-rail::after {
+    content: '\F4C8';
+    font-family: 'bootstrap-icons';
+    position: absolute;
+    right: -24px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 24px;
+    height: 48px;
+    background: rgba(16, 23, 38, 0.9);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    border-left: none;
+    border-radius: 0 8px 8px 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 13px;
+    color: #94a3b8;
+    cursor: pointer;
+    box-shadow: 2px 0 8px rgba(0, 0, 0, 0.3);
+    transition: all 0.2s ease;
+}
+body:not(.ck-is-host).ck-students-can-draw .ck-board-rail:hover::after,
+body:not(.ck-is-host).ck-students-can-draw .ck-board-rail.is-open::after {
+    opacity: 0;
+    pointer-events: none;
+}
+body:not(.ck-is-host) .ck-board-rail:hover,
+body:not(.ck-is-host) .ck-board-rail.is-open {
+    transform: translateX(0);
+}
+
+/* --- 4. Center Whiteboard Column & White Top Toolbar --- */
+.ck-board-main-col {
+    flex: 1;
+    min-width: 0;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    position: relative;
+    background: #0a0f1d;
+    padding: 12px 14px 10px 14px;
+}
+
+.ck-board-top-toolbar {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    padding: 6px 14px;
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 12px;
+    box-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.18), 0 2px 6px -1px rgba(0, 0, 0, 0.08);
+    z-index: 25;
+    margin: 0 auto 10px auto;
+    width: fit-content;
+    max-width: 100%;
+    flex-wrap: nowrap;
+}
+
+.ck-wb-group {
+    display: flex;
+    align-items: center;
+    gap: 2px;
+}
+
+.ck-wb-tool {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    height: 36px;
+    padding: 6px 12px;
+    border-radius: 8px;
+    background: transparent;
+    border: none;
+    color: #334155;
+    font-size: 0.82rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.12s ease;
+    white-space: nowrap;
+}
+
+.ck-wb-tool i {
+    font-size: 0.95rem;
+}
+
+.ck-wb-tool:hover {
+    background: #f1f5f9;
+    color: #0f172a;
+}
+
+.ck-wb-tool.is-on {
+    background: #2563eb;
+    color: #ffffff;
+    font-weight: 600;
+    box-shadow: 0 2px 8px rgba(37, 99, 235, 0.35);
+}
+
+.ck-wb-tool.is-on i {
+    color: #ffffff !important;
+}
+
+.ck-wb-tool:disabled {
+    opacity: 0.35;
+    cursor: not-allowed;
+}
+
+.ck-wb-tool .ck-caret {
+    font-size: 0.65rem;
+    margin-left: 2px;
+}
+
+.ck-wb-tool.ck-wb-extra {
+    display: none;
+}
+
+.ck-wb-tool.ck-wb-extra.is-visible {
+    display: inline-flex;
+}
+
+.ck-wb-sep {
+    width: 1px;
+    height: 24px;
+    background: #e2e8f0;
+    margin: 0 6px;
+}
+
+.ck-wb-overflow-btn {
+    min-width: 32px;
+    padding: 6px 8px;
+    color: #64748b;
+}
+
+/* --- 5. Canvas Viewport & World Sheet --- */
+.ck-board-viewport {
+    flex: 1;
+    min-height: 0;
+    min-width: 0;
+    position: relative;
+    overflow: hidden;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #0a0f1d;
+    border-radius: 12px;
+    container-type: size;
+    container-name: ckboard;
+}
+
+.ck-board-world {
+    position: relative;
+    width: min(100%, 98%);
+    width: min(100cqw, calc(100cqh * 900 / 560), 100%);
+    aspect-ratio: 900 / 560;
+    height: auto;
+    max-width: 100%;
+    max-height: 100%;
+    background: #ffffff;
+    border-radius: 10px;
+    box-shadow: 0 12px 48px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(255, 255, 255, 0.1);
+    overflow: hidden;
+}
+
+.ck-pdf-canvas,
+#ckPdfCanvas {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    display: block;
+    z-index: 1;
+}
+
+#ckBoard {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    display: block;
+    z-index: 2;
+    cursor: crosshair;
+}
+
+.ck-board-overlay,
+.ck-board-lasers {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    z-index: 3;
+}
+
+/* --- 6. Slide-Out Tool Properties Panel (Hidden by default, hover/touch activated) --- */
+.ck-props-trigger-zone {
+    position: absolute;
+    top: 60px;
+    bottom: 60px;
+    right: 0;
+    width: 28px;
+    z-index: 35;
+    cursor: pointer;
+    background: transparent;
+}
+
+.ck-props-open-handle {
+    position: absolute;
+    top: 50%;
+    right: 0;
+    transform: translateY(-50%);
+    width: 26px;
+    height: 54px;
+    border-radius: 12px 0 0 12px;
+    background: rgba(16, 23, 38, 0.88);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-right: none;
+    color: #94a3b8;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    z-index: 38;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
+    transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.ck-props-open-handle:hover {
+    background: #2563eb;
+    color: #ffffff;
+    width: 30px;
+}
+
+.ck-props-open-handle.is-open {
+    right: 288px;
+    border-radius: 0 12px 12px 0;
+    border-left: none;
+    border-right: 1px solid rgba(255, 255, 255, 0.14);
+}
+
+body:not(.ck-is-host):not(.ck-students-can-draw) .ck-props-open-handle,
+body:not(.ck-is-host):not(.ck-students-can-draw) .ck-props-trigger-zone {
+    display: none !important;
+}
+
+.ck-tool-props-panel {
+    position: absolute;
+    top: 16px;
+    right: 16px;
+    bottom: 16px;
+    width: 272px;
+    background: rgba(15, 23, 42, 0.95);
+    backdrop-filter: blur(16px);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 16px;
+    box-shadow: -10px 10px 40px rgba(0, 0, 0, 0.55);
+    padding: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    z-index: 45;
+    overflow-y: auto;
+    transition: transform 0.32s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.22s ease;
+}
+
+.ck-tool-props-panel.ck-props-hidden {
+    transform: translateX(calc(100% + 32px));
+    opacity: 0;
+    pointer-events: none;
+}
+
+.ck-tool-props-panel.ck-props-visible {
+    transform: translateX(0);
+    opacity: 1;
+    pointer-events: auto;
+}
+
+.ck-tpp-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding-bottom: 10px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.ck-tpp-title {
+    font-size: 0.9rem;
+    font-weight: 700;
+    color: #f8fafc;
+}
+
+.ck-tpp-close-btn {
+    background: transparent;
+    border: none;
+    color: #94a3b8;
+    cursor: pointer;
+    font-size: 0.85rem;
+    padding: 4px;
+    border-radius: 6px;
+    transition: color 0.15s ease;
+}
+
+.ck-tpp-close-btn:hover {
+    color: #ffffff;
+}
+
+.ck-tpp-tool-badge {
+    background: #1e293b;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 10px;
+    padding: 8px 12px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    color: #cbd5e1;
+    font-size: 0.82rem;
+    cursor: pointer;
+}
+
+.ck-tpp-tool-info {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-weight: 600;
+    color: #ffffff;
+}
+
+.ck-tpp-tool-info i {
+    color: #3b82f6;
+}
+
+.ck-tpp-section {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.ck-tpp-label {
+    font-size: 0.72rem;
+    font-weight: 700;
+    color: #94a3b8;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+.ck-tpp-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.ck-tpp-val {
+    font-size: 0.76rem;
+    font-weight: 700;
+    color: #60a5fa;
+}
+
+.ck-tpp-swatches {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.ck-color-swatch {
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    border: 2px solid transparent;
+    cursor: pointer;
+    transition: transform 0.15s ease, box-shadow 0.15s ease;
+    padding: 0;
+    flex-shrink: 0;
+}
+
+.ck-color-swatch:hover {
+    transform: scale(1.15);
+}
+
+.ck-color-swatch.is-active {
+    box-shadow: 0 0 0 2px #ffffff, 0 0 0 4px #2563eb;
+    transform: scale(1.1);
+}
+
+.ck-custom-color-picker {
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    overflow: hidden;
+    cursor: pointer;
+    border: 2px solid rgba(255, 255, 255, 0.4);
+    display: inline-block;
+    position: relative;
+    background: conic-gradient(red, yellow, lime, aqua, blue, magenta, red);
+    flex-shrink: 0;
+    transition: transform 0.15s ease;
+}
+
+.ck-custom-color-picker:hover {
+    transform: scale(1.15);
+}
+
+.ck-custom-color-picker input[type="color"] {
+    opacity: 0;
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    cursor: pointer;
+}
+
+.ck-slider-wrap input[type="range"] {
+    width: 100%;
+    accent-color: #2563eb;
+    height: 5px;
+    cursor: pointer;
+    background: #334155;
+    border-radius: 3px;
+}
+
+/* Advanced section with toggles */
+.ck-tpp-advanced {
+    border-top: 1px solid rgba(255, 255, 255, 0.08);
+    padding-top: 10px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.ck-tpp-adv-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    font-size: 0.78rem;
+    font-weight: 600;
+    color: #94a3b8;
+    cursor: pointer;
+    padding: 4px 0;
+}
+
+.ck-tpp-adv-body {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    padding-top: 4px;
+}
+
+.ck-switch-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    font-size: 0.78rem;
+    color: #cbd5e1;
+    cursor: pointer;
+}
+
+.ck-switch-input {
+    appearance: none;
+    width: 34px;
+    height: 18px;
+    background: #334155;
+    border-radius: 9999px;
+    position: relative;
+    cursor: pointer;
+    outline: none;
+    transition: background 0.2s ease;
+}
+
+.ck-switch-input:checked {
+    background: #2563eb;
+}
+
+.ck-switch-input::before {
+    content: '';
+    position: absolute;
+    top: 2px;
+    left: 2px;
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    background: #ffffff;
+    transition: transform 0.2s ease;
+}
+
+.ck-switch-input:checked::before {
+    transform: translateX(16px);
+}
+
+.ck-tpp-font-row {
+    display: flex;
+    gap: 6px;
+}
+
+.ck-tpp-font-row select {
+    flex: 1;
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    color: #ffffff;
+    border-radius: 6px;
+    padding: 6px 8px;
+    font-size: 0.78rem;
+}
+
+.ck-tpp-fmt-row {
+    display: flex;
+    justify-content: space-between;
+    gap: 6px;
+}
+
+.ck-fmt-btn-group {
+    display: flex;
+    border-radius: 6px;
+    overflow: hidden;
+    border: 1px solid rgba(255, 255, 255, 0.12);
+}
+
+.ck-fmt-btn,
+.ck-align-btn {
+    width: 28px;
+    height: 28px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(255, 255, 255, 0.05);
+    border: none;
+    color: #d1d5db;
+    font-size: 0.78rem;
+    cursor: pointer;
+    transition: all 0.1s ease;
+}
+
+.ck-fmt-btn:hover,
+.ck-align-btn:hover {
+    background: rgba(255, 255, 255, 0.12);
+    color: #ffffff;
+}
+
+.ck-fmt-btn.is-active,
+.ck-align-btn.is-active {
+    background: #2563eb;
+    color: #ffffff;
+}
+
+/* --- 7. Bottom Floating Controls Pill --- */
+.ck-board-bottom-pill {
+    position: absolute;
+    bottom: 18px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 30;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 5px 14px;
+    background: rgba(15, 23, 42, 0.94);
+    backdrop-filter: blur(12px);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 9999px;
+    box-shadow: 0 8px 30px rgba(0, 0, 0, 0.55);
+}
+
+.ck-pill-btn {
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(255, 255, 255, 0.06);
+    border: none;
+    color: #cbd5e1;
+    font-size: 0.85rem;
+    cursor: pointer;
+    transition: all 0.12s ease;
+}
+
+.ck-pill-btn:hover {
+    background: rgba(255, 255, 255, 0.16);
+    color: #ffffff;
+}
+
+.ck-pill-extra {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+}
+.ck-student-pill-fs {
+    display: none;
+}
+.ck-pill-page-text {
+    font-size: 0.78rem;
+    font-weight: 600;
+    color: #e2e8f0;
+    min-width: 44px;
+    text-align: center;
+}
+
+.ck-pill-divider {
+    width: 1px;
+    height: 18px;
+    background: rgba(255, 255, 255, 0.14);
+    margin: 0 3px;
+}
+
+.ck-pill-val-btn {
+    height: 24px;
+    padding: 0 8px;
+    border-radius: 12px;
+    background: rgba(255, 255, 255, 0.08);
+    border: none;
+    color: #60a5fa;
+    font-size: 0.75rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.12s ease;
+}
+
+.ck-pill-val-btn:hover {
+    background: rgba(255, 255, 255, 0.16);
+    color: #93c5fd;
+}
+
+.ck-pill-select {
+    background: transparent;
+    border: none;
+    color: #cbd5e1;
+    font-size: 0.75rem;
+    font-weight: 500;
+    padding: 3px 6px;
+    cursor: pointer;
+    outline: none;
+}
+
+.ck-pill-select option {
+    background: #0f172a;
+    color: #ffffff;
+}
+
+/* --- 8. Bottom Action Dock Bar --- */
+.ck-board-bottom-bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px 8px 4px 8px;
+    width: 100%;
+    z-index: 20;
+}
+
+.ck-bbb-left {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.ck-btn-pdf-upload {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    height: 36px;
+    padding: 0 16px;
+    border-radius: 10px;
+    background: #2563eb;
+    border: none;
+    color: #ffffff;
+    font-size: 0.82rem;
+    font-weight: 600;
+    cursor: pointer;
+    box-shadow: 0 2px 8px rgba(37, 99, 235, 0.35);
+    transition: background 0.15s ease, transform 0.15s ease;
+}
+
+.ck-btn-pdf-upload:hover {
+    background: #1d4ed8;
+    transform: translateY(-1px);
+}
+
+.ck-btn-pdf-download {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    height: 36px;
+    padding: 0 14px;
+    border-radius: 10px;
+    background: #0f172a;
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    color: #e2e8f0;
+    font-size: 0.82rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.15s ease;
+}
+
+.ck-btn-pdf-download:hover {
+    background: #1e293b;
+    border-color: rgba(255, 255, 255, 0.2);
+    color: #ffffff;
+}
+
+.ck-bbb-more-wrap {
+    position: relative;
+}
+
+.ck-btn-bbb-more {
+    width: 36px;
+    height: 36px;
+    border-radius: 10px;
+    background: #0f172a;
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    color: #94a3b8;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.15s ease;
+}
+
+.ck-btn-bbb-more:hover {
+    background: #1e293b;
+    color: #ffffff;
+}
+
+.ck-bbb-more-menu {
+    position: absolute;
+    bottom: calc(100% + 8px);
+    left: 0;
+    min-width: 180px;
+    background: #0f172a;
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 12px;
+    padding: 6px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+    z-index: 50;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+.ck-bbb-more-menu[hidden] {
+    display: none !important;
+}
+
+.ck-bbb-menu-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 12px;
+    border-radius: 8px;
+    background: transparent;
+    border: none;
+    color: #cbd5e1;
+    font-size: 0.8rem;
+    cursor: pointer;
+    text-align: left;
+    transition: all 0.12s ease;
+}
+
+.ck-bbb-menu-item:hover {
+    background: #1e293b;
+    color: #ffffff;
+}
+
+.ck-bbb-menu-sep {
+    height: 1px;
+    background: rgba(255, 255, 255, 0.08);
+    margin: 4px 0;
+}
+
+.ck-bbb-center {
+    display: flex;
+    align-items: center;
+}
+
+.ck-mode-dock {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    background: #0f172a;
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 12px;
+    padding: 4px;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
+}
+
+.ck-mode-dock-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    height: 32px;
+    padding: 0 14px;
+    border-radius: 8px;
+    background: transparent;
+    border: none;
+    color: #94a3b8;
+    font-size: 0.8rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    white-space: nowrap;
+}
+
+.ck-mode-dock-btn:hover {
+    color: #ffffff;
+    background: rgba(255, 255, 255, 0.06);
+}
+
+.ck-mode-dock-btn.is-active {
+    background: #2563eb;
+    color: #ffffff;
+    font-weight: 600;
+    box-shadow: 0 2px 8px rgba(37, 99, 235, 0.35);
+}
+
+.ck-bbb-right {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-right: 90px;
+}
+
+.ck-conn-status-pill {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    background: #0f172a;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 9999px;
+    padding: 4px 12px;
+    font-size: 0.75rem;
+    color: #10b981;
+    font-weight: 600;
+}
+
+.ck-conn-dot {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: #10b981;
+    box-shadow: 0 0 6px #10b981;
+}
+
+.ck-brand-tag {
+    font-size: 0.75rem;
+    color: #64748b;
+    font-weight: 500;
+}
+
+/* --- 9. Right Sidebar Dual Stacked Cards --- */
+.ck-dual-card-sidebar {
+    width: 320px;
+    flex-shrink: 0;
+    background: #0a0f1d;
+    border-left: 1px solid rgba(255, 255, 255, 0.06);
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    padding: 12px;
+    overflow-y: auto;
+    z-index: 10;
+}
+
+.ck-side-card {
+    background: #0f172a;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 14px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+.ck-students-card {
+    flex-shrink: 0;
+}
+
+.ck-sc-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px 14px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.ck-sc-title {
+    margin: 0;
+    font-size: 0.85rem;
+    font-weight: 700;
+    color: #f8fafc;
+}
+
+.ck-sc-nav {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 0.75rem;
+    color: #94a3b8;
+}
+
+.ck-sc-nav-btn {
+    background: transparent;
+    border: none;
+    color: #94a3b8;
+    cursor: pointer;
+    font-size: 0.8rem;
+    padding: 2px 4px;
+    transition: color 0.12s ease;
+}
+
+.ck-sc-nav-btn:hover {
+    color: #ffffff;
+}
+
+.ck-sc-collapse-btn {
+    background: transparent;
+    border: none;
+    color: #94a3b8;
+    cursor: pointer;
+    font-size: 0.8rem;
+    padding: 4px;
+    transition: transform 0.2s ease, color 0.12s ease;
+}
+
+.ck-sc-collapse-btn:hover {
+    color: #ffffff;
+}
+
+.ck-sc-collapse-btn.is-collapsed {
+    transform: rotate(-90deg);
+}
+
+.ck-sc-body {
+    padding: 10px;
+    display: flex;
+    flex-direction: column;
+}
+
+.ck-students-subgrid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 8px;
+    width: 100%;
+}
+
+.ck-student-subcard {
+    height: 72px;
+    border-radius: 8px;
+    overflow: hidden;
+    position: relative;
+    background: #1e293b;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.ck-student-subcard.is-speaking {
+    border-color: #10b981;
+    box-shadow: 0 0 0 1.5px #10b981;
+}
+
+.ck-subcard-media {
+    width: 100%;
+    height: 100%;
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.ck-subcard-video {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.ck-subcard-avatar {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #ffffff;
+    font-size: 0.85rem;
+    font-weight: 700;
+}
+
+/* Avatar colored backgrounds */
+.ck-avatar-ahmed { background: #2563eb; }
+.ck-avatar-sarah { background: #8b5cf6; }
+.ck-avatar-daniel { background: #f59e0b; }
+.ck-avatar-priya { background: #10b981; }
+.ck-avatar-james { background: #06b6d4; }
+.ck-avatar-aisha { background: #ec4899; }
+
+.ck-subcard-badge {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background: rgba(15, 23, 42, 0.88);
+    backdrop-filter: blur(4px);
+    padding: 2px 5px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.ck-subcard-name {
+    font-size: 0.68rem;
+    font-weight: 600;
+    color: #f1f5f9;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 52px;
+}
+
+.ck-subcard-mic {
+    font-size: 0.68rem;
+    display: flex;
+    align-items: center;
+}
+
+.ck-sc-foot {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 10px;
+    border-top: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.ck-btn-view-all {
+    flex: 1;
+    height: 34px;
+    border-radius: 8px;
+    background: #1e293b;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    color: #f1f5f9;
+    font-size: 0.78rem;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    cursor: pointer;
+    transition: all 0.15s ease;
+}
+
+.ck-btn-view-all:hover {
+    background: #2563eb;
+    border-color: #2563eb;
+    color: #ffffff;
+}
+
+.ck-btn-popout-icon {
+    width: 34px;
+    height: 34px;
+    border-radius: 8px;
+    background: #1e293b;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    color: #94a3b8;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.15s ease;
+}
+
+.ck-btn-popout-icon:hover {
+    background: #2563eb;
+    color: #ffffff;
+}
+
+/* Chat Card */
+.ck-chat-card {
+    flex: 1;
+    min-height: 220px;
+    display: flex;
+    flex-direction: column;
+}
+
+.ck-chat-sc-body {
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
+    padding: 10px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.ck-chat-msg {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.ck-msg-meta {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding-left: 2px;
+}
+
+.ck-msg-author {
+    font-size: 0.72rem;
+    font-weight: 600;
+    color: #60a5fa;
+}
+
+.ck-msg-time {
+    font-size: 0.65rem;
+    color: #64748b;
+}
+
+.ck-msg-bubble {
+    background: #1e293b;
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    border-radius: 8px;
+    padding: 6px 10px;
+}
+
+.ck-msg-bubble p {
+    margin: 0;
+    font-size: 0.78rem;
+    color: #e2e8f0;
+    line-height: 1.35;
+}
+
+.ck-modern-chat-form {
+    display: flex;
+    align-items: center;
+    background: #1e293b;
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 9999px;
+    padding: 3px 4px 3px 10px;
+    gap: 6px;
+    width: 100%;
+}
+
+.ck-chat-emoji-btn {
+    background: transparent;
+    border: none;
+    color: #94a3b8;
+    font-size: 1rem;
+    cursor: pointer;
+    padding: 0;
+    display: flex;
+    align-items: center;
+}
+
+.ck-chat-emoji-btn:hover {
+    color: #fbbf24;
+}
+
+.ck-modern-chat-form input {
+    flex: 1;
+    background: transparent;
+    border: none;
+    outline: none;
+    color: #ffffff;
+    font-size: 0.78rem;
+}
+
+.ck-modern-chat-form input::placeholder {
+    color: #64748b;
+}
+
+.ck-chat-send-btn {
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    background: #2563eb;
+    border: none;
+    color: #ffffff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.75rem;
+    cursor: pointer;
+    box-shadow: 0 2px 6px rgba(37, 99, 235, 0.4);
+    transition: background 0.15s ease, transform 0.12s ease;
+}
+
+.ck-chat-send-btn:hover {
+    background: #1d4ed8;
+    transform: scale(1.05);
+}
+
+/* Educational Footer */
+.ck-bottom-footer {
+    display: none;
+}
+
+@media (max-width: 900px) {
+    .ck-page-nav-sidebar {
+        top: 8px;
+        left: 8px;
+        max-width: 155px;
+    }
+    .ck-pns-thumb {
+        width: 64px;
+        height: 40px;
+    }
+    .ck-board-top-toolbar {
+        padding: 4px 8px;
+        gap: 2px;
+    }
+    .ck-wb-tool span {
+        display: none;
+    }
+    .ck-dual-card-sidebar {
+        width: 260px;
+    }
+    .ck-students-subgrid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+    .ck-tool-props-panel {
+        width: 240px;
+        right: 8px;
+        top: 8px;
+        bottom: 8px;
+    }
+}
+
+/* ==========================================================================
+   Comprehensive Mobile Classroom Experience (Phones & Tablets)
+   ========================================================================== */
+
+/* Base Styles for Mobile Components (Hidden on Desktop) */
+.ck-mobile-header-actions {
+    display: none;
+}
+
+.ck-mobile-dock-bar {
+    display: none;
+}
+
+.ck-wb-props-tool-btn {
+    display: none;
+}
+
+/* Mobile More Sheet Modal */
+.ck-mobile-sheet-backdrop {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.65);
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
+    z-index: 9999;
+    display: flex;
+    align-items: flex-end;
+    justify-content: center;
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.25s ease, visibility 0.25s ease;
+}
+
+.ck-mobile-sheet-backdrop:not([hidden]) {
+    opacity: 1;
+    visibility: visible;
+}
+
+.ck-mobile-sheet {
+    width: 100%;
+    max-width: 520px;
+    max-height: 85dvh;
+    background: #141a24;
+    border-top: 1px solid rgba(255, 255, 255, 0.15);
+    border-radius: 20px 20px 0 0;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    box-shadow: 0 -12px 48px rgba(0, 0, 0, 0.7);
+    transform: translateY(100%);
+    transition: transform 0.28s cubic-bezier(0.16, 1, 0.3, 1);
+    padding-bottom: env(safe-area-inset-bottom, 16px);
+}
+
+.ck-mobile-sheet.is-open {
+    transform: translateY(0);
+}
+
+.ck-sheet-handle-bar {
+    width: 100%;
+    padding: 10px 0 4px;
+    display: flex;
+    justify-content: center;
+    cursor: grab;
+}
+
+.ck-sheet-handle {
+    width: 38px;
+    height: 4px;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.3);
+}
+
+.ck-sheet-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 6px 18px 12px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.ck-sheet-title {
+    margin: 0;
+    font-size: 1.05rem;
+    font-weight: 700;
+    color: #f8fafc;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.ck-sheet-close {
+    background: rgba(255, 255, 255, 0.08);
+    border: none;
+    color: #cbd5e1;
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: background 0.15s ease;
+}
+
+.ck-sheet-close:hover {
+    background: rgba(255, 255, 255, 0.16);
+    color: #fff;
+}
+
+.ck-sheet-body {
+    padding: 14px 18px 18px;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.ck-sheet-section {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.ck-sheet-sec-title {
+    font-size: 0.72rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: #94a3b8;
+}
+
+.ck-sheet-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.ck-sheet-action-item,
+.ck-sheet-toggle-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    width: 100%;
+    padding: 10px 14px;
+    border-radius: 12px;
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    color: #f1f5f9;
+    text-align: left;
+    cursor: pointer;
+    text-decoration: none;
+    min-height: 48px;
+    transition: background 0.15s ease, border-color 0.15s ease;
+    box-sizing: border-box;
+}
+
+.ck-sheet-action-item:hover,
+.ck-sheet-action-item:active,
+.ck-sheet-toggle-item:hover {
+    background: rgba(255, 255, 255, 0.08);
+    border-color: rgba(255, 255, 255, 0.12);
+}
+
+.ck-sheet-action-item.is-on {
+    background: rgba(56, 189, 248, 0.15);
+    border-color: rgba(56, 189, 248, 0.35);
+}
+
+.ck-sheet-action-item.text-danger {
+    color: #fca5a5;
+}
+
+.ck-sheet-action-item.text-danger:hover {
+    background: rgba(239, 68, 68, 0.12);
+    border-color: rgba(239, 68, 68, 0.3);
+}
+
+.ck-sheet-item-icon {
+    font-size: 1.25rem;
+    width: 30px;
+    height: 30px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+.ck-sheet-item-text {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    flex: 1;
+    min-width: 0;
+}
+
+.ck-sheet-item-text strong {
+    font-size: 0.88rem;
+    font-weight: 600;
+    color: #f8fafc;
+    line-height: 1.2;
+}
+
+.ck-sheet-action-item.text-danger .ck-sheet-item-text strong {
+    color: #fca5a5;
+}
+
+.ck-sheet-item-text span {
+    font-size: 0.72rem;
+    color: #94a3b8;
+    line-height: 1.2;
+}
+
+/* Switch styling for mobile sheet */
+.ck-sheet-toggle-item {
+    cursor: pointer;
+    position: relative;
+}
+
+.ck-sheet-toggle-item input.ck-switch-input {
+    position: absolute;
+    opacity: 0;
+    pointer-events: none;
+}
+
+.ck-switch-slider {
+    position: relative;
+    width: 44px;
+    height: 24px;
+    background: rgba(255, 255, 255, 0.16);
+    border-radius: 999px;
+    flex-shrink: 0;
+    transition: background 0.2s ease;
+}
+
+.ck-switch-slider::before {
+    content: '';
+    position: absolute;
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    background: #ffffff;
+    top: 2px;
+    left: 2px;
+    transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+}
+
+.ck-switch-input:checked + .ck-switch-slider {
+    background: #10b981;
+}
+
+.ck-switch-input:checked + .ck-switch-slider::before {
+    transform: translateX(20px);
+}
+
+/* Student Mode Tabs in More Sheet */
+.ck-sheet-mode-tabs {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 6px;
+    background: rgba(0, 0, 0, 0.3);
+    padding: 4px;
+    border-radius: 12px;
+}
+
+.ck-sheet-tab-btn {
+    min-height: 48px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 3px;
+    border: none;
+    background: transparent;
+    color: #94a3b8;
+    border-radius: 8px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    padding: 6px 4px;
+}
+
+.ck-sheet-tab-btn i {
+    font-size: 1.15rem;
+}
+
+.ck-sheet-tab-btn.is-active {
+    background: #2563eb;
+    color: #ffffff;
+    box-shadow: 0 2px 8px rgba(37, 99, 235, 0.4);
+}
+
+/* ==========================================================================
+   Responsive Breakpoint: Max-Width 860px (Phones & Tablets)
+   ========================================================================== */
+@media (max-width: 860px) {
+    /* Safe Area Insets & Full Height */
+    html, body.ck-body {
+        height: 100dvh !important;
+        overflow: hidden !important;
+        touch-action: manipulation;
+    }
+
+    /* Top Header */
+    .ck-header {
+        height: 48px !important;
+        padding: 0 10px calc(env(safe-area-inset-top, 0px)) !important;
+        flex-shrink: 0 !important;
+    }
+
+    .ck-top-actions {
+        display: none !important;
+    }
+
+    .ck-mobile-header-actions {
+        display: flex !important;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .ck-mobile-header-btn {
+        width: 36px;
+        height: 36px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: rgba(255, 255, 255, 0.08);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        color: #f1f5f9;
+        font-size: 16px;
+        cursor: pointer;
+        text-decoration: none;
+        transition: background 0.15s ease, transform 0.1s ease;
+    }
+
+    .ck-mobile-header-btn:active {
+        transform: scale(0.95);
+        background: rgba(255, 255, 255, 0.15);
+    }
+
+    .ck-mobile-header-btn.ck-btn-leave-compact {
+        color: #ef4444;
+        background: rgba(239, 68, 68, 0.12);
+        border-color: rgba(239, 68, 68, 0.25);
+    }
+
+    .ck-header h1 {
+        max-width: 140px !important;
+        white-space: nowrap !important;
+        overflow: hidden !important;
+        text-overflow: ellipsis !important;
+        font-size: 0.85rem !important;
+    }
+
+    .ck-brand-mark {
+        width: 28px !important;
+        height: 28px !important;
+    }
+
+    /* Main Stage */
+    .ck-main {
+        grid-template-columns: 1fr !important;
+        position: relative !important;
+        overflow: hidden !important;
+        height: calc(100dvh - 48px - 60px) !important;
+    }
+
+    /* Hide desktop hover edge triggers so they never block touch drawing */
+    .ck-edge-trigger {
+        display: none !important;
+    }
+
+    /* Whiteboard Viewport and Strict Aspect Ratio World */
+    .ck-board-viewport {
+        display: flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+        padding: 4px !important;
+        position: relative !important;
+        overflow: hidden !important;
+        touch-action: none !important;
+        height: 100% !important;
+    }
+
+    .ck-board-world {
+        aspect-ratio: 900 / 560 !important;
+        width: min(920px, 100%) !important;
+        height: auto !important;
+        max-height: 100% !important;
+        margin: auto !important;
+        position: relative !important;
+        border-radius: 6px !important;
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4) !important;
+    }
+
+    /* Whiteboard Top Toolbar */
+    .ck-board-top-toolbar {
+        padding: 4px 6px !important;
+        gap: 4px !important;
+        overflow-x: auto !important;
+        -webkit-overflow-scrolling: touch !important;
+        scrollbar-width: none !important;
+        flex-wrap: nowrap !important;
+        max-width: 98% !important;
+        justify-content: flex-start !important;
+    }
+
+    .ck-board-top-toolbar::-webkit-scrollbar {
+        display: none !important;
+    }
+
+    .ck-wb-tool {
+        min-width: 38px !important;
+        min-height: 38px !important;
+        width: 38px !important;
+        height: 38px !important;
+        padding: 0 !important;
+        flex-shrink: 0 !important;
+    }
+
+    .ck-wb-tool span {
+        display: none !important;
+    }
+
+    .ck-wb-props-tool-btn {
+        display: inline-flex !important;
+    }
+
+    /* Whiteboard Bottom Pill */
+    .ck-board-bottom-pill {
+        padding: 4px 8px !important;
+        gap: 6px !important;
+        bottom: 8px !important;
+    }
+
+    .ck-bbb-btn,
+    .ck-bbb-zoom-btn,
+    .ck-btn-pdf-download {
+        min-height: 38px !important;
+        min-width: 38px !important;
+    }
+
+    /* Whiteboard Tool Properties Panel as Mobile Bottom Sheet */
+    .ck-tool-props-panel {
+        position: fixed !important;
+        left: 0 !important;
+        right: 0 !important;
+        bottom: 0 !important;
+        top: auto !important;
+        width: 100% !important;
+        max-width: 100% !important;
+        border-radius: 20px 20px 0 0 !important;
+        background: #141a24 !important;
+        border-top: 1px solid rgba(255, 255, 255, 0.15) !important;
+        box-shadow: 0 -12px 40px rgba(0, 0, 0, 0.6) !important;
+        z-index: 500 !important;
+        max-height: 65dvh !important;
+        overflow-y: auto !important;
+        padding: 16px 16px calc(16px + env(safe-area-inset-bottom, 16px)) !important;
+    }
+
+    .ck-tpp-swatch {
+        width: 38px !important;
+        height: 38px !important;
+    }
+
+    /* Chat Drawer as Mobile Bottom Sheet */
+    .ck-side {
+        position: fixed !important;
+        left: 0 !important;
+        right: 0 !important;
+        bottom: 0 !important;
+        top: auto !important;
+        width: 100% !important;
+        max-width: 100% !important;
+        height: 82dvh !important;
+        max-height: 82dvh !important;
+        border-radius: 20px 20px 0 0 !important;
+        border-top: 1px solid rgba(255, 255, 255, 0.15) !important;
+        transform: translateY(100%) !important;
+        transition: transform 0.28s cubic-bezier(0.16, 1, 0.3, 1), bottom 0.15s ease !important;
+        z-index: 600 !important;
+        background: #111827 !important;
+        box-shadow: 0 -12px 40px rgba(0, 0, 0, 0.7) !important;
+    }
+
+    .ck-side.is-open {
+        transform: translateY(0) !important;
+    }
+
+    .ck-chat-input-row input {
+        font-size: 16px !important; /* Prevents auto-zoom on iOS */
+    }
+
+    .ck-edge-trigger-bottom-left,
+    .ck-edge-trigger-bottom-right {
+        bottom: calc(64px + env(safe-area-inset-bottom, 0px)) !important;
+    }
+
+    .ck-people-rail {
+        position: fixed !important;
+        left: 12px !important;
+        right: auto !important;
+        top: auto !important;
+        bottom: calc(112px + env(safe-area-inset-bottom, 0px)) !important;
+        width: min(300px, calc(100vw - 24px)) !important;
+        height: min(420px, calc(100dvh - 180px)) !important;
+        max-height: calc(100dvh - 180px) !important;
+        border-radius: 16px !important;
+        z-index: 140 !important;
+        transform: translateY(calc(100% + 80px)) !important;
+        box-shadow: 0 16px 48px rgba(0, 0, 0, 0.6) !important;
+    }
+
+    .ck-people-rail.is-open,
+    .ck-people-rail.is-hovered,
+    .ck-people-rail.is-pinned {
+        transform: translateY(0) !important;
+    }
+
+    /* Floating Student Camera Panel on Mobile */
+    .ck-student-cam-panel {
+        position: fixed !important;
+        left: 8px !important;
+        right: 8px !important;
+        top: 54px !important;
+        width: calc(100% - 16px) !important;
+        max-height: 220px !important;
+        z-index: 120 !important;
+    }
+
+    /* Mobile Bottom Navigation Dock */
+    .ck-dock {
+        height: auto !important;
+        padding: 6px 8px calc(6px + env(safe-area-inset-bottom, 8px)) !important;
+        background: #10151d !important;
+        border-top: 1px solid rgba(255, 255, 255, 0.08) !important;
+        flex-shrink: 0 !important;
+        z-index: 100 !important;
+    }
+
+    .ck-dock > *:not(#ckMobileDockBar) {
+        display: none !important;
+    }
+
+    .ck-mobile-dock-bar {
+        display: flex !important;
+        width: 100%;
+        justify-content: space-around;
+        align-items: center;
+    }
+
+    .ck-mob-dock-btn {
+        flex: 1;
+        max-width: 60px;
+        height: 48px;
+        min-height: 44px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 2px;
+        border: none;
+        background: transparent;
+        color: #94a3b8;
+        font-size: 10px;
+        font-weight: 600;
+        cursor: pointer;
+        padding: 4px 2px;
+        border-radius: 8px;
+        transition: all 0.15s ease;
+        -webkit-tap-highlight-color: transparent;
+    }
+
+    .ck-mob-dock-btn:active {
+        background: rgba(255, 255, 255, 0.08);
+        transform: scale(0.96);
+    }
+
+    .ck-mob-dock-btn i {
+        font-size: 19px;
+        line-height: 1;
+    }
+
+    .ck-mob-dock-btn.is-active,
+    .ck-mob-dock-btn.is-on {
+        color: #38bdf8;
+    }
+
+    .ck-mob-dock-btn.is-off,
+    .ck-mob-dock-btn.is-blocked {
+        color: #ef4444;
+    }
+
+    .ck-mob-btn-icon-wrap {
+        position: relative;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .ck-mob-badge {
+        position: absolute;
+        top: -6px;
+        right: -9px;
+        min-width: 16px;
+        height: 16px;
+        border-radius: 999px;
+        font-size: 10px;
+        font-weight: 700;
+        line-height: 16px;
+        text-align: center;
+        padding: 0 4px;
+        color: #fff;
+    }
+
+    .ck-badge-green {
+        background: #10b981;
+    }
+
+    .ck-badge-red {
+        background: #ef4444;
+    }
+
+    /* Video Hero Fitting */
+    #ckHero video {
+        object-fit: contain !important;
+    }
+}
+
+/* ==========================================================================
+   Narrow Mobile Screens (Max-Width: 480px)
+   ========================================================================== */
+@media (max-width: 480px) {
+    .ck-header h1 {
+        max-width: 105px !important;
+        font-size: 0.8rem !important;
+    }
+
+    .ck-mob-dock-btn {
+        font-size: 9px !important;
+    }
+
+    .ck-mob-dock-btn i {
+        font-size: 18px !important;
+    }
+}
+
+/* ==========================================================================
+   Landscape Mode on Mobile (Max-Height: 500px)
+   ========================================================================== */
+@media (max-height: 500px) and (orientation: landscape) {
+    .ck-header {
+        height: 38px !important;
+    }
+
+    .ck-main {
+        height: calc(100dvh - 38px - 44px) !important;
+    }
+
+    .ck-dock {
+        padding: 2px 8px calc(2px + env(safe-area-inset-bottom, 2px)) !important;
+    }
+
+    .ck-mob-dock-btn {
+        height: 38px !important;
+        min-height: 38px !important;
+        flex-direction: row !important;
+        gap: 4px !important;
+        max-width: 80px !important;
+        font-size: 10px !important;
+    }
+
+    .ck-mob-dock-btn i {
+        font-size: 16px !important;
+    }
+
+    .ck-mobile-sheet {
+        max-height: 94dvh !important;
+    }
+}
+
+/* ==========================================================================
+   Pre-Join Lobby Screen & Complete Isolation (Before Joining)
+   ========================================================================== */
+.ck-lobby {
+    position: fixed !important;
+    inset: 0 !important;
+    z-index: 99999 !important;
+    background: #080c14 !important;
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: center !important;
+    justify-content: center !important;
+    padding: 24px 16px !important;
+    overflow-y: auto !important;
+}
+
+.ck-lobby.is-off {
+    display: none !important;
+}
+
+.ck-lobby-card {
+    background: #0f172a;
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 20px;
+    padding: 28px 32px;
+    width: min(460px, 94vw);
+    box-shadow: 0 20px 50px rgba(0, 0, 0, 0.7);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    gap: 10px;
+}
+
+.ck-lobby-brand {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    color: #38bdf8;
+    font-weight: 700;
+    font-size: 0.95rem;
+    letter-spacing: 0.02em;
+}
+
+.ck-lobby-brand-icon {
+    font-size: 1.25rem;
+}
+
+.ck-lobby-title {
+    font-size: 1.55rem;
+    font-weight: 800;
+    color: #ffffff;
+    margin: 0;
+    line-height: 1.25;
+}
+
+.ck-lobby-teacher {
+    color: #94a3b8;
+    font-size: 0.92rem;
+    margin: 0;
+}
+
+.ck-lobby-teacher strong {
+    color: #e2e8f0;
+}
+
+.ck-lobby .ck-kicker {
+    color: #64748b;
+    font-size: 0.8rem;
+    margin: 0;
+}
+
+.ck-lobby .ck-lead {
+    color: #cbd5e1;
+    font-size: 0.88rem;
+    margin: 4px 0 10px 0;
+    max-width: 380px;
+}
+
+.ck-lobby .ck-preview-wrap {
+    width: 100%;
+    max-width: 360px;
+    aspect-ratio: 16 / 10;
+    background: #000000;
+    border-radius: 14px;
+    overflow: hidden;
+    position: relative;
+    box-shadow: 0 6px 24px rgba(0, 0, 0, 0.5);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.ck-lobby .ck-preview-wrap video {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.ck-lobby-media-controls {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    margin-top: 6px;
+    width: 100%;
+}
+
+.ck-lobby-media-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 18px;
+    font-size: 0.88rem;
+    font-weight: 600;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.08);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    color: #f1f5f9;
+    cursor: pointer;
+    transition: all 0.15s ease;
+}
+
+.ck-lobby-media-btn:hover {
+    background: rgba(255, 255, 255, 0.16);
+    color: #ffffff;
+}
+
+.ck-lobby-media-btn.is-on {
+    color: #22c55e;
+    border-color: rgba(34, 197, 94, 0.4);
+}
+
+.ck-lobby-actions {
+    margin-top: 8px;
+    width: 100%;
+    display: flex;
+    justify-content: center;
+}
+
+.ck-lobby-actions .ck-btn {
+    padding: 12px 36px;
+    font-size: 1rem;
+    font-weight: 700;
+    border-radius: 999px;
+    min-width: 180px;
+}
+
+/* Complete isolation: Hide all classroom components prior to room entry */
+body:not(.ck-in-room) .ck-stage-board,
+body:not(.ck-in-room) .ck-hero,
+body:not(.ck-in-room) .ck-grid,
+body:not(.ck-in-room) .ck-board-bottom-pill,
+body:not(.ck-in-room) .ck-board-bottom-bar,
+body:not(.ck-in-room) .ck-board-top-toolbar,
+body:not(.ck-in-room) .ck-tool-props-panel,
+body:not(.ck-in-room) .ck-props-trigger-zone,
+body:not(.ck-in-room) .ck-props-open-handle,
+body:not(.ck-in-room) .ck-page-nav-sidebar,
+body:not(.ck-in-room) .ck-mobile-dock,
+body:not(.ck-in-room) .ck-chat-rail,
+body:not(.ck-in-room) .ck-people-rail,
+body:not(.ck-in-room) #ckRec,
+body:not(.ck-in-room) .ck-status-pill,
+body:not(.ck-in-room) .ck-top-actions,
+body:not(.ck-in-room) .ck-mobile-header-actions,
+body:not(.ck-in-room) .ck-bottom-footer,
+body:not(.ck-in-room) #ckStudentCamPanel {
+    display: none !important;
+}
+
+/* ==========================================================================
+   Universal Student Classroom Redesign (Desktop, Tablet & Mobile)
+   ========================================================================== */
+
+/* 1. Complete Removal of Teacher Tools & Distractions for Students */
+body.ck-is-student .ck-board-top,
+body.ck-is-student #ckBoardTop,
+body.ck-is-student .ck-fs-btn,
+body.ck-is-student #ckBoardFs,
+body.ck-is-student .ck-board-top-toolbar,
+body.ck-is-student .ck-tool-props-panel,
+body.ck-is-student .ck-props-open-handle,
+body.ck-is-student .ck-props-trigger-zone,
+body.ck-is-student .ck-board-bottom-bar,
+body.ck-is-student .ck-page-nav-sidebar,
+body.ck-is-student #ckAllowDrawWrap,
+body.ck-is-student #ckPdfUploadBtn,
+body.ck-is-student #ckBoardClear,
+body.ck-is-student #ckBoardClearAllBtn,
+body.ck-is-student #ckDockRecord,
+body.ck-is-student .ck-bottom-footer,
+body.ck-is-student #ckStudentCamPanel,
+body.ck-is-student .ck-people-rail,
+body.ck-is-student #ckPeopleToggle,
+body.ck-is-student #ckShare,
+body.ck-is-student #ckStageExit {
+    display: none !important;
+}
+
+/* 2. Compact Classroom Header for Students */
+body.ck-is-student .ck-top {
+    height: 48px !important;
+    min-height: 48px !important;
+    padding: 0 16px !important;
+    background: #0b0f17 !important;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08) !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+    z-index: 100 !important;
+    flex-shrink: 0 !important;
+}
+
+/* 3. Main Stage Container: 100% Available Screen Real Estate */
+body.ck-is-student .ck-main {
+    height: calc(100dvh - 48px - 52px) !important;
+    flex: 0 0 calc(100dvh - 48px - 52px) !important;
+    width: 100% !important;
+    position: relative !important;
+    overflow: hidden !important;
+    display: flex !important;
+    flex-direction: row !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    background: #080c14 !important;
+}
+
+body.ck-is-student .ck-stage {
+    flex: 1 !important;
+    width: 100% !important;
+    height: 100% !important;
+    position: relative !important;
+    overflow: hidden !important;
+    display: flex !important;
+    flex-direction: column !important;
+    background: #080c14 !important;
+    min-width: 0 !important;
+    padding: 0 !important;
+    margin: 0 !important;
+}
+
+/* 4. Whiteboard Full Immersion: Dynamic Responsive Resizing */
+body.ck-is-student .ck-stage-board {
+    position: absolute !important;
+    inset: 0 !important;
+    width: 100% !important;
+    height: 100% !important;
+    display: flex !important;
+    flex-direction: column !important;
+    background: #080c14 !important;
+    z-index: 10 !important;
+}
+
+body.ck-is-student .ck-stage-board[hidden] {
+    display: none !important;
+}
+
+body.ck-is-student .ck-board-stage,
+body.ck-is-student .ck-board-main-col {
+    width: 100% !important;
+    height: 100% !important;
+    display: flex !important;
+    flex-direction: column !important;
+    flex: 1 !important;
+    position: relative !important;
+    min-height: 0 !important;
+    overflow: hidden !important;
+    padding: 0 !important;
+}
+
+body.ck-is-student .ck-board-viewport {
+    width: 100% !important;
+    height: 100% !important;
+    flex: 1 !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    position: relative !important;
+    overflow: hidden !important;
+    padding: 10px 16px 65px 16px !important;
+    touch-action: none !important;
+}
+
+body.ck-is-student .ck-board-world {
+    width: 100% !important;
+    width: min(100cqw, calc(100cqh * 900 / 560)) !important;
+    max-width: 100% !important;
+    max-height: 100% !important;
+    aspect-ratio: 900 / 560 !important;
+    height: auto !important;
+    margin: auto !important;
+    position: relative !important;
+    border-radius: 8px !important;
+    box-shadow: 0 12px 48px rgba(0, 0, 0, 0.65) !important;
+    background: #ffffff !important;
+    overflow: hidden !important;
+}
+
+body.ck-pdf-open #ckBoard {
+    background: transparent !important;
+}
+
+body.ck-is-student #ckPdfCanvas,
+body.ck-is-student #ckBoard {
+    width: 100% !important;
+    height: 100% !important;
+    display: block !important;
+    position: absolute !important;
+    inset: 0 !important;
+}
+
+/* 5. Floating Controls Pill for Students (Viewing & Zoom Controls) */
+body.ck-is-student .ck-board-bottom-pill {
+    position: absolute !important;
+    bottom: 12px !important;
+    left: 50% !important;
+    transform: translateX(-50%) !important;
+    z-index: 35 !important;
+    display: flex !important;
+    align-items: center !important;
+    gap: 6px !important;
+    padding: 5px 14px !important;
+    background: rgba(15, 23, 42, 0.94) !important;
+    backdrop-filter: blur(12px) !important;
+    border: 1px solid rgba(255, 255, 255, 0.15) !important;
+    border-radius: 9999px !important;
+    box-shadow: 0 8px 30px rgba(0, 0, 0, 0.6) !important;
+}
+
+/* 6. Student View Modes & Teacher Camera Handling */
+/* Board Mode: Whiteboard is primary, teacher video is floating PiP */
+body.ck-is-student[data-sd-mode="board"] .ck-stage-board {
+    display: flex !important;
+}
+
+body.ck-is-student[data-sd-mode="board"] .ck-hero {
+    display: block !important;
+    position: absolute !important;
+    top: 14px !important;
+    right: 14px !important;
+    width: 170px !important;
+    height: 110px !important;
+    border-radius: 12px !important;
+    overflow: hidden !important;
+    z-index: 50 !important;
+    box-shadow: 0 8px 30px rgba(0, 0, 0, 0.75) !important;
+    border: 2px solid rgba(255, 255, 255, 0.25) !important;
+    background: #000000 !important;
+    cursor: pointer !important;
+    transition: transform 0.15s ease, border-color 0.15s ease !important;
+}
+
+body.ck-is-student[data-sd-mode="board"] .ck-hero:hover {
+    transform: scale(1.04) !important;
+    border-color: #3b82f6 !important;
+}
+
+body.ck-is-student[data-sd-mode="board"] .ck-hero video {
+    width: 100% !important;
+    height: 100% !important;
+    object-fit: cover !important;
+}
+
+/* Teacher Mode: Teacher video is fullscreen */
+body.ck-is-student[data-sd-mode="teacher"] .ck-stage-board {
+    display: none !important;
+}
+
+body.ck-is-student[data-sd-mode="teacher"] .ck-hero {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    position: absolute !important;
+    inset: 0 !important;
+    width: 100% !important;
+    height: 100% !important;
+    z-index: 20 !important;
+    background: #000000 !important;
+}
+
+body.ck-is-student[data-sd-mode="teacher"] .ck-hero video {
+    width: 100% !important;
+    height: 100% !important;
+    object-fit: contain !important;
+}
+
+/* Screen Mode: Screen share is fullscreen */
+body.ck-is-student[data-sd-mode="share"] .ck-stage-board {
+    display: none !important;
+}
+
+body.ck-is-student[data-sd-mode="share"] .ck-hero {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    position: absolute !important;
+    inset: 0 !important;
+    width: 100% !important;
+    height: 100% !important;
+    z-index: 20 !important;
+    background: #000000 !important;
+}
+
+body.ck-is-student[data-sd-mode="share"] .ck-hero video {
+    width: 100% !important;
+    height: 100% !important;
+    object-fit: contain !important;
+}
+
+/* 7. Student navigation dock (Board | Screen | Chat | Audio | More) */
+body.ck-is-student .ck-dock:not([hidden]) {
+    display: flex !important;
+    position: fixed !important;
+    bottom: 0 !important;
+    left: 0 !important;
+    right: 0 !important;
+    width: 100% !important;
+    height: 52px !important;
+    background: #0a0f1d !important;
+    border-top: 1px solid rgba(255, 255, 255, 0.1) !important;
+    z-index: 100 !important;
+    align-items: center !important;
+    justify-content: center !important;
+    padding: 0 16px !important;
+}
+
+body.ck-is-student .ck-student-mobile-bar {
+    display: none !important;
+    align-items: center !important;
+    justify-content: center !important;
+    gap: 8px !important;
+    width: 100% !important;
+    max-width: 580px !important;
+}
+
+.ck-desktop-only-views {
+    display: flex;
+}
+
+body.ck-is-student .ck-mob-dock-btn {
+    display: flex !important;
+    flex-direction: row !important;
+    align-items: center !important;
+    justify-content: center !important;
+    gap: 6px !important;
+    padding: 7px 18px !important;
+    border-radius: 9999px !important;
+    font-size: 13px !important;
+    font-weight: 600 !important;
+    color: #94a3b8 !important;
+    background: transparent !important;
+    border: 1px solid transparent !important;
+    cursor: pointer !important;
+    transition: all 0.15s ease !important;
+    -webkit-tap-highlight-color: transparent !important;
+}
+
+body.ck-is-student .ck-mob-dock-btn:hover {
+    color: #ffffff !important;
+    background: rgba(255, 255, 255, 0.08) !important;
+}
+
+body.ck-is-student .ck-mob-dock-btn.is-active,
+body.ck-is-student .ck-mob-dock-btn.is-on {
+    color: #ffffff !important;
+    background: #2563eb !important;
+    border-color: #3b82f6 !important;
+    box-shadow: 0 2px 12px rgba(37, 99, 235, 0.45) !important;
+}
+
+body.ck-is-student .ck-mob-dock-btn i {
+    font-size: 17px !important;
+    line-height: 1 !important;
+}
+
+/* 8. Chat Rail for Students (Compact Desktop Right Panel) */
+body.ck-is-student .ck-chat-rail {
+    position: absolute !important;
+    top: 0 !important;
+    right: 0 !important;
+    bottom: 0 !important;
+    width: 340px !important;
+    max-width: 90vw !important;
+    z-index: 200 !important;
+    background: #0f172a !important;
+    border-left: 1px solid rgba(255, 255, 255, 0.1) !important;
+    box-shadow: -8px 0 32px rgba(0, 0, 0, 0.5) !important;
+}
+
+body.ck-is-student .ck-chat-rail[hidden] {
+    display: none !important;
+}
+
+/* ==========================================================================
+   Mobile Screens Breakpoint (Max-Width: 860px)
+   ========================================================================== */
+@media (max-width: 860px) {
+    .ck-desktop-only-views {
+        display: none !important;
+    }
+
+    body.ck-is-student .ck-top {
+        height: 42px !important;
+        min-height: 42px !important;
+        padding: 0 10px !important;
+    }
+
+    body.ck-is-student .ck-main {
+        height: calc(100dvh - 42px - 54px - env(safe-area-inset-bottom, 0px)) !important;
+        flex: 0 0 calc(100dvh - 42px - 54px - env(safe-area-inset-bottom, 0px)) !important;
+    }
+
+    body.ck-is-student .ck-board-viewport {
+        padding: 0 !important;
+    }
+
+    body.ck-is-student .ck-pill-extra,
+    body.ck-is-student #ckPillDownloadPdf,
+    body.ck-is-student #ckMobileFsBtn {
+        display: none !important;
+    }
+
+    body.ck-is-student .ck-student-pill-fs {
+        display: none !important;
+    }
+
+    body.ck-is-student .ck-board-bottom-pill {
+        position: absolute !important;
+        left: 50% !important;
+        right: auto !important;
+        bottom: 12px !important;
+        transform: translateX(-50%) !important;
+        width: max-content !important;
+        max-width: calc(100% - 24px) !important;
+        justify-content: flex-start !important;
+        overflow: hidden !important;
+        box-sizing: border-box !important;
+        padding: 4px 8px !important;
+        gap: 4px !important;
+        pointer-events: auto !important;
+        touch-action: manipulation !important;
+        z-index: 30 !important;
+        background: rgba(15, 23, 42, 0.55) !important;
+        backdrop-filter: blur(8px) !important;
+        -webkit-backdrop-filter: blur(8px) !important;
+        border: 1px solid rgba(255, 255, 255, 0.15) !important;
+        box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35) !important;
+    }
+
+    body.ck-is-student .ck-board-bottom-pill .ck-pill-btn {
+        min-width: 40px !important;
+        min-height: 40px !important;
+        width: 40px !important;
+        height: 40px !important;
+        pointer-events: auto !important;
+    }
+
+    body.ck-is-student .ck-board-world {
+        max-width: 100% !important;
+        max-height: 100% !important;
+        border-radius: 4px !important;
+    }
+
+    body.ck-is-student[data-sd-mode="board"] .ck-hero {
+        width: 160px !important;
+        height: 90px !important;
+        top: 0 !important;
+        left: 0 !important;
+        right: auto !important;
+        opacity: 0 !important;
+        pointer-events: none !important;
+        box-shadow: none !important;
+        border: 0 !important;
+        z-index: 0 !important;
+    }
+
+    body.ck-is-student[data-sd-mode="teacher"] .ck-stage-board {
+        display: none !important;
+    }
+
+    body.ck-is-student[data-sd-mode="teacher"] .ck-hero {
+        display: flex !important;
+        position: absolute !important;
+        inset: 0 !important;
+        top: 0 !important;
+        right: 0 !important;
+        left: 0 !important;
+        bottom: 0 !important;
+        width: 100% !important;
+        height: 100% !important;
+        aspect-ratio: auto !important;
+        z-index: 30 !important;
+        border-radius: 0 !important;
+        overflow: hidden !important;
+        box-shadow: none !important;
+        border: 0 !important;
+        background: #020617 !important;
+    }
+
+    body.ck-body.ck-is-student .ck-dock .ck-mobile-dock-bar.ck-student-mobile-bar {
+        display: flex !important;
+        width: 100% !important;
+        max-width: none !important;
+        justify-content: space-around !important;
+        gap: 2px !important;
+    }
+
+    body.ck-is-student .ck-dock:not([hidden]) {
+        display: flex !important;
+        height: calc(54px + env(safe-area-inset-bottom, 0px)) !important;
+        padding: 0 8px env(safe-area-inset-bottom, 0px) !important;
+    }
+
+    body.ck-is-student .ck-mob-dock-btn {
+        flex: 1 1 0 !important;
+        max-width: none !important;
+        min-width: 0 !important;
+        height: 48px !important;
+        flex-direction: column !important;
+        gap: 1px !important;
+        padding: 2px 1px !important;
+        font-size: 9px !important;
+        line-height: 1.05 !important;
+        border-radius: 8px !important;
+        position: relative !important;
+    }
+
+    body.ck-is-student .ck-mob-dock-btn span {
+        white-space: normal !important;
+        text-align: center !important;
+    }
+
+    body.ck-is-student .ck-student-mobile-bar .ck-mob-badge {
+        position: absolute !important;
+        top: 2px !important;
+        right: 6px !important;
+    }
+
+    body.ck-is-student .ck-chat-rail.is-open {
+        position: fixed !important;
+        inset: auto 0 0 0 !important;
+        width: 100% !important;
+        max-width: 100% !important;
+        height: 85dvh !important;
+        max-height: 85dvh !important;
+        border-radius: 20px 20px 0 0 !important;
+        z-index: 800 !important;
+    }
+}
+
+@media (max-width: 430px) {
+    body.ck-is-student .ck-class-meta .ck-meta-teacher,
+    body.ck-is-student .ck-top-center {
+        display: none !important;
+    }
+
+    body.ck-is-student .ck-mob-dock-btn {
+        min-width: 0 !important;
+        max-width: 62px !important;
+        font-size: 10px !important;
+    }
+
+    body.ck-is-student .ck-board-bottom-pill {
+        max-width: calc(100% - 24px) !important;
+    }
+}
+
+/* ==========================================================================
+   Mobile Landscape Mode (Max-Height: 500px)
+   ========================================================================== */
+@media (max-width: 860px) and (max-height: 500px) and (orientation: landscape) {
+    body.ck-is-student .ck-top {
+        height: 34px !important;
+        min-height: 34px !important;
+        padding: 0 8px !important;
+    }
+
+    body.ck-is-student .ck-main {
+        height: calc(100dvh - 34px - 40px - env(safe-area-inset-bottom, 0px)) !important;
+        flex-basis: calc(100dvh - 34px - 40px - env(safe-area-inset-bottom, 0px)) !important;
+    }
+
+    body.ck-is-student .ck-dock:not([hidden]) {
+        height: calc(40px + env(safe-area-inset-bottom, 0px)) !important;
+        min-height: 40px !important;
+    }
+
+    body.ck-is-student .ck-mob-dock-btn {
+        height: 36px !important;
+        flex-direction: row !important;
+        gap: 4px !important;
+        max-width: 82px !important;
+        font-size: 10px !important;
+    }
+
+    body.ck-is-student[data-sd-mode="board"] .ck-hero {
+        width: 160px !important;
+        height: 90px !important;
+        top: 0 !important;
+        left: 0 !important;
+        right: auto !important;
+        opacity: 0 !important;
+        pointer-events: none !important;
+    }
+
+    body.ck-is-student[data-sd-mode="teacher"] .ck-hero {
+        width: 100% !important;
+        height: 100% !important;
+        inset: 0 !important;
+    }
+    body.ck-is-student .ck-board-bottom-pill {
+        bottom: 8px !important;
+        left: 50% !important;
+        transform: translateX(-50%) !important;
+    }
+}
+
+body.ck-is-student .ck-hero.ck-cam-float {
+    cursor: grab !important;
+    touch-action: none !important;
+}
+
+body.ck-is-student .ck-hero.ck-cam-float::after {
+    content: "";
+    position: absolute;
+    top: 6px;
+    left: 50%;
+    width: 28px;
+    height: 4px;
+    transform: translateX(-50%);
+    border-radius: 99px;
+    background: rgba(255, 255, 255, 0.82);
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.45);
+    z-index: 4;
+    pointer-events: none;
+}
+
+body.ck-is-student .ck-hero.ck-cam-drag,
+body.ck-is-student .ck-hero.ck-cam-drag:hover {
+    cursor: grabbing !important;
+    transform: none !important;
+    transition: none !important;
+}
+
+.ck-hand-stack {
+    position: fixed;
+    top: calc(64px + env(safe-area-inset-top, 0px));
+    right: calc(16px + env(safe-area-inset-right, 0px));
+    z-index: 1400;
+    width: min(340px, calc(100vw - 24px));
+    pointer-events: none;
+}
+
+.ck-hand-card {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    pointer-events: auto;
+}
+
+.ck-hand-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 12px;
+    background: #0f172a;
+    color: #f8fafc;
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 14px;
+    box-shadow: 0 10px 28px rgba(0, 0, 0, 0.35);
+}
+
+.ck-hand-icon {
+    flex: 0 0 32px;
+    width: 32px;
+    height: 32px;
+    border-radius: 999px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #f59e0b;
+    color: #1c1405;
+    font-size: 16px;
+}
+
+.ck-hand-text {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 1px;
+}
+
+.ck-hand-text strong {
+    font-size: 13px;
+    line-height: 1.2;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.ck-hand-text span {
+    font-size: 12px;
+    color: #fbbf24;
+}
+
+.ck-hand-clear {
+    flex: 0 0 auto;
+    border: 0;
+    background: rgba(255, 255, 255, 0.1);
+    color: #fff;
+    border-radius: 999px;
+    padding: 6px 10px;
+    font-size: 12px;
+    cursor: pointer;
+}
+
+.ck-hand-clear:hover {
+    background: rgba(255, 255, 255, 0.2);
+}
+
+/* Student fullscreen stays on the stage while the feed inside it changes. */
+body.ck-is-student #ckStage:fullscreen,
+body.ck-is-student #ckStage:-webkit-full-screen {
+    width: 100% !important;
+    height: 100% !important;
+    max-height: none !important;
+    background: #080c14 !important;
+    display: flex !important;
+    flex-direction: column !important;
+}
+body.ck-is-student[data-sd-mode="board"] #ckStage:fullscreen .ck-stage-board,
+body.ck-is-student[data-sd-mode="board"] #ckStage:-webkit-full-screen .ck-stage-board {
+    display: flex !important;
+    position: absolute !important;
+    inset: 0 !important;
+    width: 100% !important;
+    height: 100% !important;
+}
+body.ck-is-student[data-sd-mode="teacher"] #ckStage:fullscreen .ck-stage-board,
+body.ck-is-student[data-sd-mode="share"] #ckStage:fullscreen .ck-stage-board,
+body.ck-is-student[data-sd-mode="teacher"] #ckStage:-webkit-full-screen .ck-stage-board,
+body.ck-is-student[data-sd-mode="share"] #ckStage:-webkit-full-screen .ck-stage-board {
+    display: none !important;
+}
+body.ck-is-student[data-sd-mode="teacher"] #ckStage:fullscreen .ck-hero,
+body.ck-is-student[data-sd-mode="share"] #ckStage:fullscreen .ck-hero,
+body.ck-is-student[data-sd-mode="teacher"] #ckStage:-webkit-full-screen .ck-hero,
+body.ck-is-student[data-sd-mode="share"] #ckStage:-webkit-full-screen .ck-hero {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    position: absolute !important;
+    inset: 0 !important;
+    width: 100% !important;
+    height: 100% !important;
+    max-width: none !important;
+    opacity: 1 !important;
+    pointer-events: auto !important;
+    z-index: 20 !important;
+    border-radius: 0 !important;
+    border: 0 !important;
+    background: #000 !important;
+}
+body.ck-is-student #ckStage:fullscreen .ck-hero video,
+body.ck-is-student #ckStage:-webkit-full-screen .ck-hero video,
+body.ck-is-student #ckStage:fullscreen .ck-screen,
+body.ck-is-student #ckStage:-webkit-full-screen .ck-screen {
+    width: 100% !important;
+    height: 100% !important;
+    object-fit: contain !important;
+}
+body.ck-is-student #ckStage:fullscreen .ck-stage-exit,
+body.ck-is-student #ckStage:-webkit-full-screen .ck-stage-exit {
+    display: none !important;
+}
+body.ck-is-student #ckMobileFsBtn,
+body.ck-is-student .ck-student-pill-fs {
+    display: none !important;
+}
+body.ck-is-student .ck-feed-fs {
+    position: absolute;
+    right: 12px;
+    bottom: 12px;
+    z-index: 45;
+    width: 40px;
+    height: 40px;
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    border-radius: 999px;
+    background: rgba(15, 23, 42, 0.55);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    color: #fff;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
+    pointer-events: auto;
+    cursor: pointer;
+}
+body.ck-is-student.ck-teacher-cam-off[data-sd-mode="board"] .ck-hero,
+body.ck-is-student.ck-teacher-cam-off .ck-hero video:not(.ck-screen) {
+    display: none !important;
+}
+body.ck-is-student #ckStage:fullscreen .ck-feed-fs,
+body.ck-is-student #ckStage:-webkit-full-screen .ck-feed-fs {
+    right: 16px;
+    bottom: calc(16px + env(safe-area-inset-bottom, 0px));
+    z-index: 80;
+}
+
+/* Teacher rail: drawing icons only. */
+.ck-rail-primary {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2px;
+    width: 100%;
+}
+.ck-board-rail .ck-rail-favs,
+.ck-board-rail .ck-rail-recent,
+.ck-board-rail .ck-rail-label,
+.ck-board-rail .ck-rail-empty {
+    display: none !important;
+}
+
+/* Teacher classroom controls live in the bottom dock, once. */
+body.ck-is-host .ck-edge-trigger-bottom-left,
+body.ck-is-host #ckChatTriggerZone {
+    display: none !important;
+}
+body.ck-is-host #ckDockShare {
+    display: none !important;
+}
+@media (min-width: 861px) {
+    body.ck-is-host .ck-top {
+        display: none !important;
+    }
+}
+@media (max-width: 860px) {
+    body.ck-is-host .ck-brand-wrap,
+    body.ck-is-host .ck-class-meta,
+    body.ck-is-host .ck-top-center {
+        display: none !important;
+    }
+    body.ck-is-host .ck-top {
+        justify-content: flex-end;
+        min-height: 44px;
+        padding-top: 4px;
+        padding-bottom: 4px;
+    }
+}
+body.ck-is-host .ck-board-bottom-bar {
+    display: none !important;
+}
+body.ck-is-host .ck-host-group {
+    display: inline-flex;
+    align-items: center;
+    gap: 2px;
+}
+body.ck-is-host .ck-host-sep {
+    width: 1px;
+    align-self: stretch;
+    margin: 6px 4px;
+    background: rgba(255, 255, 255, 0.14);
+    flex: 0 0 auto;
+}
+body.ck-is-host .ck-host-dock {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex-wrap: wrap;
+    gap: 2px;
+    max-width: calc(100% - 8px);
+    padding: 4px 6px;
+    border-radius: 16px;
+    background: #10151d;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.28);
+}
+body.ck-is-host .ck-host-fold,
+body.ck-is-host .ck-host-fold-body {
+    display: contents;
+}
+body.ck-is-host .ck-host-fold-btn {
+    display: none !important;
+}
+@media (max-width: 1240px) and (min-width: 861px) {
+    body.ck-is-host .ck-host-fold {
+        display: inline-flex;
+        position: relative;
+        align-items: center;
+    }
+    body.ck-is-host .ck-host-fold-btn {
+        display: inline-flex !important;
+    }
+    body.ck-is-host .ck-host-fold-body {
+        display: none;
+        position: absolute;
+        left: 50%;
+        bottom: calc(100% + 8px);
+        transform: translateX(-50%);
+        z-index: 240;
+        width: max-content;
+        max-width: min(460px, 92vw);
+        padding: 6px;
+        border-radius: 14px;
+        background: #10151d;
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        box-shadow: 0 12px 28px rgba(0, 0, 0, 0.4);
+    }
+    body.ck-is-host .ck-host-fold.is-open .ck-host-fold-body {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        justify-content: center;
+    }
+    body.ck-is-host .ck-host-fold-body .ck-host-sep {
+        display: none;
+    }
+}
+body.ck-is-host .ck-host-dock .ck-header-btn {
+    flex-direction: column;
+    justify-content: center;
+    flex: 0 0 auto;
+    gap: 1px;
+    min-width: 46px;
+    height: auto;
+    padding: 5px 4px;
+    border-radius: 10px;
+    border-color: transparent;
+    background: transparent;
+    font-size: 0.62rem;
+    line-height: 1.1;
+    white-space: nowrap;
+    text-decoration: none;
+}
+body.ck-is-host .ck-host-dock .ck-header-btn[hidden],
+body.ck-is-host .ck-host-dock [hidden] {
+    display: none !important;
+}
+body.ck-is-host .ck-host-dock .ck-header-btn i {
+    font-size: 1.05rem;
+}
+body.ck-is-host .ck-host-dock .ck-header-btn.is-on {
+    background: rgba(37, 99, 235, 0.22);
+    border-color: transparent;
+    color: #93c5fd;
+}
+body.ck-is-host .ck-host-dock .ck-btn-end,
+body.ck-is-host .ck-host-dock .ck-btn-leave {
+    height: 36px;
+    margin-left: 4px;
+    padding: 0 12px;
+    font-size: 0.78rem;
+}
+body.ck-is-host .ck-host-dock #ckRecStart i,
+body.ck-is-host .ck-host-dock #ckRecStop i {
+    color: #f87171;
+}
+
+/* PDF document viewer: stable page canvases, transparent annotation overlay. */
+.ck-pdf-scroller {
+    display: none;
+    position: absolute;
+    inset: 0;
+    z-index: 4;
+    overflow-x: hidden;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    background: #0b1220;
+    touch-action: pan-y;
+}
+body.ck-pdf-open .ck-pdf-scroller {
+    display: block;
+}
+body.ck-pdf-open .ck-board-world {
+    position: absolute !important;
+    width: 1px !important;
+    height: 1px !important;
+    overflow: hidden !important;
+    opacity: 0 !important;
+    pointer-events: none !important;
+}
+body.ck-pdf-open #ckPdfCanvas {
+    display: none !important;
+}
+.ck-pdf-stack {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 18px;
+    width: 100%;
+    padding: 16px 12px 40px;
+    box-sizing: border-box;
+}
+.ck-pdf-sheet {
+    position: relative;
+    flex: 0 0 auto;
+    background: #ffffff;
+    box-shadow: 0 10px 28px rgba(0, 0, 0, 0.35);
+}
+.ck-pdf-sheet-canvas {
+    display: block;
+    width: 100%;
+    height: 100%;
+    background: #ffffff;
+    pointer-events: none;
+}
+.ck-pdf-sheet-ink {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    background: transparent;
+}
+body.ck-pdf-open .ck-pdf-sheet.is-live #ckBoard,
+body.ck-pdf-open .ck-pdf-sheet.is-live #ckBoardOverlay,
+body.ck-pdf-open .ck-pdf-sheet.is-live #ckBoardLasers {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    background: transparent;
+    z-index: 2;
+}
+body.ck-pdf-open .ck-pdf-sheet.is-live .ck-pdf-sheet-ink {
+    visibility: hidden;
+}
+body.ck-pdf-open:not(.ck-is-host):not(.ck-students-can-draw) #ckBoard {
+    pointer-events: none;
+}
+@media (max-width: 860px) {
+    body.ck-pdf-open #ckBoard {
+        touch-action: pan-y pinch-zoom;
+    }
+}
+.ck-board-stage:fullscreen .ck-pdf-scroller,
+.ck-board-stage:-webkit-full-screen .ck-pdf-scroller,
+#ckBoardPanel:fullscreen .ck-pdf-scroller,
+#ckBoardPanel:-webkit-full-screen .ck-pdf-scroller {
+    position: absolute;
+    inset: 0;
+}
+
+/* ==========================================================================
+   Teacher Screen Sharing — Student Minimize & Dock Controls
+   ========================================================================== */
+
+/* Hero screen minimize state */
+body.ck-screen-minimized .ck-hero.is-minimized,
+.ck-hero.is-minimized {
+    display: none !important;
+}
+
+/* Sharing banner header with minimize and close controls */
+.ck-hero .ck-sharing-banner {
+    position: absolute;
+    top: 14px;
+    left: 14px;
+    z-index: 10;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    background: rgba(15, 23, 42, 0.88);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    padding: 6px 12px;
+    border-radius: 999px;
+    border: 1px solid rgba(255, 255, 255, 0.16);
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
+    color: #f8fafc;
+    pointer-events: auto;
+}
+
+.ck-sb-info {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 0.82rem;
+    font-weight: 600;
+}
+
+.ck-sb-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: #22c55e;
+    box-shadow: 0 0 8px #22c55e;
+    flex-shrink: 0;
+}
+
+.ck-sb-title {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 220px;
+}
+
+.ck-sb-actions {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin-left: 6px;
+    padding-left: 8px;
+    border-left: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.ck-sb-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    border: none;
+    background: rgba(255, 255, 255, 0.12);
+    color: #e2e8f0;
+    font-size: 0.72rem;
+    cursor: pointer;
+    transition: all 0.15s ease;
+}
+
+.ck-sb-btn:hover {
+    background: rgba(255, 255, 255, 0.25);
+    color: #ffffff;
+    transform: scale(1.08);
+}
+
+.ck-sb-btn.ck-sb-close-btn:hover {
+    background: rgba(239, 68, 68, 0.85);
+    color: #ffffff;
+}
+
+/* Dedicated top-right close / minimize button on the hero container */
+.ck-hero .ck-hero-close-btn {
+    position: absolute;
+    top: 14px;
+    right: 14px;
+    z-index: 10;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    background: rgba(15, 23, 42, 0.85);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    color: #f1f5f9;
+    font-size: 0.85rem;
+    cursor: pointer;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+    transition: all 0.15s ease;
+    pointer-events: auto;
+}
+
+.ck-hero .ck-hero-close-btn:hover {
+    background: rgba(239, 68, 68, 0.85);
+    border-color: rgba(239, 68, 68, 0.9);
+    color: #ffffff;
+    transform: scale(1.1);
+}
+
+/* Minimized Teacher Screen Dock (Floating at bottom center) */
+.ck-screen-min-dock {
+    position: fixed;
+    bottom: 24px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 950;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    min-width: 320px;
+    max-width: 460px;
+    padding: 10px 18px;
+    background: rgba(15, 23, 42, 0.92);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border: 1.5px solid rgba(59, 130, 246, 0.45);
+    border-radius: 999px;
+    box-shadow: 0 12px 36px rgba(0, 0, 0, 0.6), 0 0 20px rgba(59, 130, 246, 0.25);
+    color: #f8fafc;
+    cursor: pointer;
+    user-select: none;
+    transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+    animation: ckDockSlideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.ck-screen-min-dock[hidden] {
+    display: none !important;
+}
+
+.ck-screen-min-dock:hover {
+    transform: translateX(-50%) translateY(-2px);
+    border-color: #3b82f6;
+    box-shadow: 0 16px 42px rgba(0, 0, 0, 0.7), 0 0 28px rgba(59, 130, 246, 0.35);
+}
+
+.ck-screen-min-dock .ck-smd-info {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.ck-screen-min-dock .ck-smd-pulse {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background: #22c55e;
+    box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.7);
+    animation: ckPulseGreen 2s infinite;
+    flex-shrink: 0;
+}
+
+.ck-screen-min-dock .ck-smd-info i {
+    font-size: 1.25rem;
+    color: #60a5fa;
+}
+
+.ck-screen-min-dock .ck-smd-text {
+    display: flex;
+    flex-direction: column;
+    line-height: 1.2;
+}
+
+.ck-screen-min-dock .ck-smd-title {
+    font-size: 0.85rem;
+    font-weight: 700;
+    color: #ffffff;
+    letter-spacing: 0.2px;
+}
+
+.ck-screen-min-dock .ck-smd-sub {
+    font-size: 0.7rem;
+    color: #94a3b8;
+}
+
+.ck-screen-min-dock .ck-smd-actions {
+    display: flex;
+    align-items: center;
+}
+
+.ck-screen-min-dock .ck-smd-restore-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 7px 14px;
+    border-radius: 999px;
+    border: none;
+    background: linear-gradient(135deg, #2563eb, #4f46e5);
+    color: #ffffff;
+    font-size: 0.8rem;
+    font-weight: 600;
+    cursor: pointer;
+    box-shadow: 0 2px 8px rgba(37, 99, 235, 0.35);
+    transition: all 0.15s ease;
+    white-space: nowrap;
+}
+
+.ck-screen-min-dock .ck-smd-restore-btn:hover {
+    filter: brightness(1.15);
+    transform: scale(1.04);
+    box-shadow: 0 4px 14px rgba(37, 99, 235, 0.5);
+}
+
+@keyframes ckPulseGreen {
+    0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.7); }
+    70% { transform: scale(1.1); box-shadow: 0 0 0 8px rgba(34, 197, 94, 0); }
+    100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(34, 197, 94, 0); }
+}
+
+@keyframes ckDockSlideUp {
+    from { opacity: 0; transform: translate(-50%, 20px); }
+    to { opacity: 1; transform: translate(-50%, 0); }
+}
+
+/* Tablet & Mobile responsive positioning */
+@media (max-width: 860px) {
+    .ck-screen-min-dock {
+        bottom: 72px; /* Positioned above mobile bottom dock bar */
+        min-width: 0;
+        width: calc(100% - 32px);
+        max-width: 380px;
+        padding: 8px 14px;
+        gap: 10px;
+    }
+    .ck-screen-min-dock .ck-smd-title {
+        font-size: 0.8rem;
+    }
+    .ck-screen-min-dock .ck-smd-sub {
+        display: none;
+    }
+    .ck-screen-min-dock .ck-smd-restore-btn {
+        padding: 6px 12px;
+        font-size: 0.75rem;
+    }
+}

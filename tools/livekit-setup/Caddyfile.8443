@@ -1,0 +1,14 @@
+{
+    auto_https off
+    servers {
+        protocols h1 h2
+    }
+}
+
+# Default: LiveKit still on the Docker network.
+# After host-network, use reverse_proxy 127.0.0.1:7880
+# (fix-signal-8443.sh writes the correct line).
+:8443 {
+    tls /certs/fullchain.pem /certs/privkey.pem
+    reverse_proxy livekit:7880
+}

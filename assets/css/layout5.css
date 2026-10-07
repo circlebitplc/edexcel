@@ -1,0 +1,30 @@
+.hp-l5 { margin: 0; font-family: Nunito, sans-serif; background: #ecfdf5; color: #064e3b; }
+.l5-top { display: flex; justify-content: space-between; align-items: center; padding: 1rem 5vw; flex-wrap: wrap; gap: .6rem; }
+.l5-top button { background: #0f766e; color: #fff; border: 0; border-radius: 999px; padding: .5rem .9rem; font: inherit; cursor: pointer; }
+.l5-hint { text-align: center; color: #0f766e; margin: 0 1rem 1rem; }
+.l5-map { max-width: 1100px; margin: 0 auto; padding: 0 4vw; position: relative; }
+.l5-map svg { width: 100%; height: auto; filter: drop-shadow(0 18px 30px rgba(4,47,46,.18)); }
+.l5-bldg { cursor: pointer; transition: transform .2s ease; transform-box: fill-box; transform-origin: center; }
+.l5-bldg:hover, .l5-bldg.is-on { filter: brightness(1.08); transform: translateY(-6px); }
+.l5-label { font-size: 20px; font-weight: 800; fill: #042f2e; pointer-events: none; }
+.l5-pins { position: absolute; inset: 8% 6% 18%; pointer-events: none; }
+.l5-pin {
+    position: absolute; pointer-events: auto; border: 0; background: #fff; color: #0f766e;
+    font-weight: 800; border-radius: 999px; padding: .35rem .7rem; box-shadow: 0 8px 20px rgba(4,47,46,.18); cursor: pointer;
+}
+.l5-stats {
+    display: flex; flex-wrap: wrap; justify-content: center; gap: 1.5rem;
+    background: #fff; margin: 1.2rem 5vw 2rem; padding: 1rem; border-radius: 18px;
+    box-shadow: 0 10px 28px rgba(4,47,46,.08);
+}
+.l5-stats strong { font-size: 1.5rem; margin-right: .3rem; }
+.l5-panel {
+    position: fixed; right: 1rem; bottom: 5.5rem; width: min(380px, calc(100vw - 2rem));
+    max-height: min(70vh, 520px); overflow: auto;
+    background: #fff; border-radius: 22px; padding: 1.1rem 1.2rem; z-index: 40;
+    box-shadow: 0 20px 50px rgba(4,47,46,.2);
+}
+.l5-panel button { float: right; border: 0; background: none; font-size: 1.4rem; cursor: pointer; }
+@media (max-width: 700px) {
+    .l5-pins { display: none; }
+}

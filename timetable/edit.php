@@ -1,6 +1,8 @@
 <?php
 require_once __DIR__ . '/../config/bootstrap.php';
-require_login();
+require_once __DIR__ . '/../includes/class_fee_summary.php';
+require_staff();
+\Edexcel\Services\ClassSessionFeeCalculator::ensureSchema($pdo);
 
 $id = (int)($_GET['id'] ?? 0);
 if (!$id) {
@@ -21,6 +23,11 @@ if (!$entry) {
 
 $is_admin = is_admin();
 $teacher_id = $_SESSION['teacher_id'] ?? null;
+if (!$is_admin && (int)$teacher_id !== (int)$entry['teacher_id']) {
+    $_SESSION['error'] = 'You can only open your own lessons.';
+    header('Location: index.php');
+    exit();
+}
 $can_delete = ($is_admin || ($teacher_id && $entry['teacher_id'] == $teacher_id)) && !$entry['is_locked'] && !$entry['deleted_at'];
 
 // --- DELETE HANDLER (service-backed) ---
@@ -92,6 +99,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !isset($_POST['delete_entry'])) {
                 $_POST['student_count'] ?? 0,
                 'int'
             );
+
+            $class_fee_per_student = (float)($_POST['class_fee_per_student'] ?? 0);
+
             $payment_status = validate_input(
                 $_POST['payment_status'] ?? 'pending',
                 'string'
@@ -124,6 +134,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !isset($_POST['delete_entry'])) {
 
             if ($student_count < 0) {
                 throw new RuntimeException('Student count cannot be negative.');
+            }
+
+            if ($class_fee_per_student < 0) {
+                throw new RuntimeException('Class fee per student cannot be negative.');
             }
 
             if (
@@ -161,11 +175,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !isset($_POST['delete_entry'])) {
                 'class_id' => $class_id,
                 'room_id' => $room_id,
                 'student_count' => $student_count,
+                'class_fee_per_student' => $class_fee_per_student,
                 'date' => $date,
                 'start_time' => $start_time,
                 'end_time' => $end_time,
                 'payment_status' => $payment_status,
                 'payment_date' => $payment_date,
+                'delivery_mode' => classroom_normalize_delivery_mode((string)($_POST['delivery_mode'] ?? $entry['delivery_mode'] ?? 'physical')),
             ];
 
             $services = TimetableServiceFactory::services($pdo);
@@ -187,11 +203,50 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !isset($_POST['delete_entry'])) {
                 $repeat_until
             );
 
+            try {
+                require_once __DIR__ . '/../config/notifications.php';
+                $lookup = $pdo->prepare("
+                    SELECT s.name AS subject_name, c.name AS class_name, r.name AS room_name
+                    FROM subjects s, student_classes c, rooms r
+                    WHERE s.id = ? AND c.id = ? AND r.id = ?
+                ");
+                $lookup->execute([$subject_id, $class_id, $room_id]);
+                $timetable_data = $lookup->fetch(PDO::FETCH_ASSOC) ?: [];
+                $timetable_data['date'] = $date;
+                $timetable_data['start_time'] = $start_time;
+                $timetable_data['end_time'] = $end_time;
+                notify_class_change($pdo, $postedTeacherId, 'edit', $timetable_data);
+                notify_class_students($pdo, $class_id, 'edit', $timetable_data);
+            } catch (Throwable $e) {
+                error_log('Timetable edit notify: ' . $e->getMessage());
+            }
+
+            $smsNote = '';
+            if (
+                $is_admin
+                && (($entry['payment_status'] ?? '') !== 'paid')
+                && $payment_status === 'paid'
+            ) {
+                try {
+                    $sms = \Edexcel\Services\TeacherPaymentSmsService::notifyTimetablePaid(
+                        $pdo,
+                        $id,
+                        (int)($_SESSION['user_id'] ?? 0),
+                        false
+                    );
+                    $smsNote = ' Payment marked as PAID. ' . (string)($sms['sms_notice'] ?? 'Payment SMS could not be sent.');
+                } catch (Throwable $smsError) {
+                    error_log('Lesson edit payment SMS failed: ' . $smsError->getMessage());
+                    $smsNote = ' Payment marked as PAID. Payment SMS could not be sent.';
+                }
+            }
+
             $_SESSION['success'] =
                 'Timetable entry updated successfully.' .
                 ($repeat
                     ? " (repeats weekly until $repeat_until)"
-                    : '');
+                    : '') .
+                $smsNote;
 
             header('Location: index.php');
             exit();
@@ -281,6 +336,14 @@ if ($is_admin) {
 $subjects = $pdo->query("SELECT id, name FROM subjects WHERE deleted_at IS NULL ORDER BY name")->fetchAll();
 $classes = $pdo->query("SELECT id, name FROM student_classes WHERE deleted_at IS NULL ORDER BY name")->fetchAll();
 $rooms = $pdo->query("SELECT id, name FROM rooms WHERE deleted_at IS NULL ORDER BY name")->fetchAll();
+$bankReady = \Edexcel\Services\TeacherBankAccountService::publicSummaries(
+    $pdo,
+    array_map(static fn(array $row): int => (int)$row['id'], $teachers)
+);
+$bankDetailsUrl = $is_admin
+    ? rtrim((string)BASE_URL, '/') . '/admin/teacher_banks.php?teacher='
+    : rtrim((string)BASE_URL, '/') . '/teachers/bank_details.php';
+$entryAlreadyOnline = classroom_normalize_delivery_mode((string)($entry['delivery_mode'] ?? 'physical')) === 'online';
 
 // Check if this entry already has a recurring schedule
 $has_recurring = false;
@@ -381,6 +444,41 @@ include __DIR__ . '/../includes/header.php';
                 <small class="text-muted">Update after class</small>
             </div>
         </div>
+        <div class="col-md-3">
+            <div class="mb-3">
+                <label for="delivery_mode" class="form-label">How this class runs</label>
+                <?php $mode = classroom_normalize_delivery_mode((string)($entry['delivery_mode'] ?? 'physical')); ?>
+                <select class="form-select" id="delivery_mode" name="delivery_mode" <?= $is_deleted ? 'disabled' : '' ?>>
+                    <option value="physical" <?= $mode === 'physical' ? 'selected' : '' ?>>In college</option>
+                    <option value="online" <?= $mode === 'online' ? 'selected' : '' ?>>Online</option>
+                    <option value="hybrid" <?= $mode === 'hybrid' ? 'selected' : '' ?>>Online and in college</option>
+                </select>
+            </div>
+        </div>
+
+        <div class="col-md-3">
+            <div class="mb-3">
+                <label for="class_fee_per_student" class="form-label">
+                    Class Fee / Student / Session
+                </label>
+                <div class="input-group">
+                    <span class="input-group-text">Rs.</span>
+                    <input
+                        type="number"
+                        class="form-control"
+                        id="class_fee_per_student"
+                        name="class_fee_per_student"
+                        min="0"
+                        step="0.01"
+                        value="<?= htmlspecialchars((string)($entry['class_fee_per_student'] ?? '0.00')) ?>"
+                        <?= $is_deleted ? 'disabled' : '' ?>
+                    >
+                </div>
+                <small class="text-muted">
+                    Amount charged to each student for this session.
+                </small>
+            </div>
+        </div>
     </div>
     <div class="row">
         <div class="col-md-4">
@@ -420,6 +518,23 @@ include __DIR__ . '/../includes/header.php';
                     <small class="text-muted">Payment status can only be changed by admin.</small>
                 <?php endif; ?>
             </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-lg-8">
+            <div id="onlineBankNotice" class="alert alert-warning" hidden>
+                <p class="mb-1 fw-semibold">Bank account details are required before creating an online class.</p>
+                <p class="mb-2">Online classes require a completed bank account profile so that your class earnings can be settled.</p>
+                <a class="btn btn-sm btn-primary" id="onlineBankLink" href="<?= htmlspecialchars($bankDetailsUrl, ENT_QUOTES, 'UTF-8') ?>">Add Bank Details</a>
+            </div>
+            <div id="onlineBankReady" class="alert alert-success" hidden>
+                <p class="mb-2 fw-semibold">Bank details completed. You can create online classes.</p>
+                <div data-bank-lines class="bank-saved-lines"></div>
+                <a class="btn btn-sm btn-outline-success mt-2" id="onlineBankEdit" href="<?= htmlspecialchars($bankDetailsUrl, ENT_QUOTES, 'UTF-8') ?>">Update bank details</a>
+            </div>
+            <?php class_fee_summary_assets($pdo); ?>
+            <?php class_fee_summary_card('onlineFeeSummary', $entry); ?>
         </div>
     </div>
 
@@ -499,5 +614,21 @@ document.addEventListener('DOMContentLoaded', function() {
         document.getElementById(id).addEventListener('input', function() { clearTimeout(timeout); timeout = setTimeout(checkConflicts, 300); });
     });
 });
+if (window.ClassSessionFee) {
+    ClassSessionFee.mount({
+        feeId: 'class_fee_per_student',
+        modeId: 'delivery_mode',
+        cardId: 'onlineFeeSummary',
+        teacherId: 'teacher_id',
+        bankMap: <?= json_encode($bankReady, JSON_UNESCAPED_SLASHES) ?>,
+        bankNoticeId: 'onlineBankNotice',
+        bankReadyId: 'onlineBankReady',
+        bankLinkId: 'onlineBankLink',
+        bankEditId: 'onlineBankEdit',
+        bankUrl: <?= json_encode($bankDetailsUrl, JSON_UNESCAPED_SLASHES) ?>,
+        bankUrlNeedsTeacher: <?= $is_admin ? 'true' : 'false' ?>,
+        alreadyOnline: <?= $entryAlreadyOnline ? 'true' : 'false' ?>
+    });
+}
 </script>
 <?php include __DIR__ . '/../includes/footer.php'; ?>

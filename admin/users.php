@@ -15,7 +15,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         if (isset($_POST['create_user'])) {
             $username = validate_input($_POST['username'] ?? '', 'string');
             $password = $_POST['password'] ?? '';
-            $role = validate_input($_POST['role'] ?? 'teacher', 'string');
+            $role = strtolower(trim((string)validate_input($_POST['role'] ?? 'teacher', 'string')));
+            if (!in_array($role, ['admin', 'teacher'], true)) {
+                $role = 'teacher';
+            }
             $teacher_id = (int)($_POST['teacher_id'] ?? 0);
             
             if (empty($username) || empty($password)) {
@@ -104,7 +107,7 @@ include __DIR__ . '/../includes/header.php';
             </div>
             <div class="mb-3">
                 <label for="password" class="form-label">Password <span class="text-danger">*</span></label>
-                <input type="text" class="form-control" id="password" name="password" required minlength="6">
+                <input type="password" class="form-control" id="password" name="password" required minlength="6">
                 <small class="text-muted">Minimum 6 characters.</small>
             </div>
             <div class="mb-3">
@@ -128,8 +131,11 @@ include __DIR__ . '/../includes/header.php';
     </div>
     <div class="col-md-8">
         <h4>Existing Users</h4>
+        <div class="mb-3">
+            <input type="search" class="form-control" placeholder="Search username, role, or teacher..." data-table-search="#userTable" autocomplete="off">
+        </div>
         <div class="table-responsive">
-            <table class="table table-bordered table-hover">
+            <table class="table table-bordered table-hover" id="userTable">
                 <thead class="table-dark">
                     <tr>
                         <th>ID</th>
@@ -142,7 +148,7 @@ include __DIR__ . '/../includes/header.php';
                 </thead>
                 <tbody>
                     <?php foreach ($users as $u): ?>
-                        <tr>
+                        <tr data-search="<?= htmlspecialchars(strtolower($u['id'].' '.$u['username'].' '.$u['role'].' '.($u['teacher_name'] ?? '').' '.($u['deleted_at'] ? 'disabled' : 'active'))) ?>">
                             <td><?= $u['id'] ?></td>
                             <td><?= htmlspecialchars($u['username']) ?></td>
                             <td><span class="badge <?= $u['role'] == 'admin' ? 'bg-danger' : 'bg-info' ?>"><?= ucfirst($u['role']) ?></span></td>
@@ -184,7 +190,7 @@ include __DIR__ . '/../includes/header.php';
                                             <input type="hidden" name="user_id" value="<?= $u['id'] ?>">
                                             <div class="mb-3">
                                                 <label for="new_password_<?= $u['id'] ?>" class="form-label">New Password</label>
-                                                <input type="text" class="form-control" id="new_password_<?= $u['id'] ?>" name="new_password" required minlength="6">
+                                                <input type="password" class="form-control" id="new_password_<?= $u['id'] ?>" name="new_password" required minlength="6">
                                                 <small class="text-muted">Minimum 6 characters.</small>
                                             </div>
                                         </div>

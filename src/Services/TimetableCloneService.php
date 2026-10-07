@@ -1,9 +1,9 @@
 <?php
 declare(strict_types=1);
 
-namespace App\Services;
+namespace Edexcel\Services;
 
-use App\Repositories\TimetableRepository;
+use Edexcel\Repositories\TimetableRepository;
 use PDO;
 use RuntimeException;
 
@@ -43,7 +43,7 @@ final class TimetableCloneService
             )) {
                 throw new RuntimeException('The cloned lesson conflicts with an existing teacher lesson.');
             }
-            if ($this->repository->conflict(
+            if ((string)($entry['delivery_mode'] ?? 'physical') !== 'online' && $this->repository->conflict(
                 'room_id',
                 (int)$entry['room_id'],
                 $date,
@@ -65,6 +65,9 @@ final class TimetableCloneService
             }
 
             $newId=$this->repository->cloneForDate($id,$date);
+            if (function_exists('classroom_sync_lesson_meeting')) {
+                classroom_sync_lesson_meeting($this->pdo, $newId);
+            }
 
             if($this->audit) {
                 $this->audit->log(
@@ -73,7 +76,9 @@ final class TimetableCloneService
                 );
             }
 
-            $this->pdo->commit();
+            if ($this->pdo->inTransaction()) {
+                $this->pdo->commit();
+            }
             return $newId;
         } catch(\Throwable $e) {
             if($this->pdo->inTransaction()) $this->pdo->rollBack();

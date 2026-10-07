@@ -1,7 +1,7 @@
 <?php
 require_once __DIR__ . '/../config/bootstrap.php';
 header('Cache-Control: no-store, no-cache, must-revalidate, max-age=0');
-require_login();
+require_staff();
 
 $subject_id = (int)($_GET['subject_id'] ?? 0);
 if (!$subject_id) {

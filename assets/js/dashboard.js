@@ -64,116 +64,140 @@
 
 
     /* ========================================================
-       DARK / LIGHT MODE
+       GLOBAL DARK / LIGHT MODE
     ======================================================== */
 
     function initDarkMode() {
 
-        const toggle =
-            document.getElementById(
-                'darkModeToggle'
-            );
-
-        const icon =
-            document.getElementById(
-                'darkModeIcon'
-            );
+        if (window.EckTheme) {
+            return;
+        }
 
         const html =
             document.documentElement;
 
+        const toggle =
+            document.getElementById(
+                'globalThemeToggle'
+            );
 
-        if (!toggle) {
-            return;
+        const icon =
+            document.getElementById(
+                'globalThemeIcon'
+            );
+
+        const label =
+            document.getElementById(
+                'globalThemeLabel'
+            );
+
+        function updateButton(theme) {
+
+            const dark =
+                theme === 'dark';
+
+            if (icon) {
+
+                icon.className =
+                    dark
+                        ? 'bi bi-sun-fill'
+                        : 'bi bi-moon-stars-fill';
+
+            }
+
+            if (label) {
+
+                label.textContent =
+                    dark
+                        ? 'Light Mode'
+                        : 'Dark Mode';
+
+            }
+
+            if (toggle) {
+
+                toggle.title =
+                    dark
+                        ? 'Switch to light mode'
+                        : 'Switch to dark mode';
+
+                toggle.setAttribute(
+                    'aria-label',
+                    dark
+                        ? 'Switch to light mode'
+                        : 'Switch to dark mode'
+                );
+
+            }
+
         }
 
+        function applyTheme(theme) {
 
-        function applyTheme(
-            dark
-        ) {
-
-            const theme =
-                dark
-                    ? 'dark'
-                    : 'light';
-
+            if (
+                theme !== 'dark' &&
+                theme !== 'light'
+            ) {
+                theme = 'light';
+            }
 
             html.setAttribute(
                 'data-bs-theme',
                 theme
             );
 
+            html.style.colorScheme =
+                theme;
 
             document.cookie =
                 'dark_mode=' +
-                (dark ? 'true' : 'false') +
+                (
+                    theme === 'dark'
+                        ? 'true'
+                        : 'false'
+                ) +
                 ';path=/;max-age=31536000;SameSite=Lax';
 
+            updateButton(theme);
 
-            if (icon) {
-
-                icon.classList.remove(
-                    'bi-moon-fill',
-                    'bi-sun-fill'
-                );
-
-
-                icon.classList.add(
-                    dark
-                        ? 'bi-sun-fill'
-                        : 'bi-moon-fill'
-                );
-
-            }
-
-
-            toggle.checked =
-                dark;
         }
 
-
-        /*
-         * Read the current HTML theme first.
-         * This prevents a flash/change when the page loads.
-         */
-
-        const initialDark =
+        const current =
             html.getAttribute(
                 'data-bs-theme'
-            ) === 'dark';
+            ) || 'light';
 
+        updateButton(current);
 
-        toggle.checked =
-            initialDark;
+        if (
+            toggle &&
+            toggle.dataset.dashboardThemeBound !== '1'
+        ) {
 
+            toggle.dataset.dashboardThemeBound =
+                '1';
 
-        if (icon) {
+            toggle.addEventListener(
+                'click',
+                function (event) {
 
-            icon.classList.remove(
-                'bi-moon-fill',
-                'bi-sun-fill'
-            );
+                    event.preventDefault();
 
+                    const currentTheme =
+                        html.getAttribute(
+                            'data-bs-theme'
+                        ) || 'light';
 
-            icon.classList.add(
-                initialDark
-                    ? 'bi-sun-fill'
-                    : 'bi-moon-fill'
+                    applyTheme(
+                        currentTheme === 'dark'
+                            ? 'light'
+                            : 'dark'
+                    );
+
+                }
             );
 
         }
-
-
-        toggle.addEventListener(
-            'change',
-            function () {
-
-                applyTheme(
-                    this.checked
-                );
-
-            }
-        );
 
     }
 
@@ -1112,11 +1136,14 @@
                         'input',
                         function () {
 
-                            const term =
+                            const tokens =
                                 this.value
                                     .trim()
-                                    .toLowerCase();
+                                    .toLowerCase()
+                                    .split(/\s+/)
+                                    .filter(Boolean);
 
+                            let visible = 0;
 
                             tbody
                                 .querySelectorAll(
@@ -1125,24 +1152,52 @@
                                 .forEach(
                                     function (row) {
 
+                                        if (row.classList.contains('live-search-empty-row')) {
+                                            return;
+                                        }
+
                                         const text =
-                                            row
-                                                .textContent
+                                            (
+                                                row.getAttribute('data-search') ||
+                                                row.textContent ||
+                                                ''
+                                            )
                                                 .toLowerCase();
 
+                                        const show =
+                                            !tokens.length ||
+                                            tokens.every(function (token) {
+                                                return text.indexOf(token) !== -1;
+                                            });
 
                                         row.style.display =
-                                            (
-                                                !term ||
-                                                text.includes(
-                                                    term
-                                                )
-                                            )
-                                                ? ''
-                                                : 'none';
+                                            show ? '' : 'none';
+
+                                        if (show) {
+                                            visible += 1;
+                                        }
 
                                     }
                                 );
+
+                            let emptyRow =
+                                tbody.querySelector(
+                                    '.live-search-empty-row'
+                                );
+
+                            if (!emptyRow) {
+                                emptyRow = document.createElement('tr');
+                                emptyRow.className = 'live-search-empty-row';
+                                const cell = document.createElement('td');
+                                cell.colSpan = 20;
+                                cell.className = 'text-center text-muted py-4';
+                                cell.textContent = 'No matching rows.';
+                                emptyRow.appendChild(cell);
+                                tbody.appendChild(emptyRow);
+                            }
+
+                            emptyRow.style.display =
+                                visible ? 'none' : '';
 
                         }
                     );

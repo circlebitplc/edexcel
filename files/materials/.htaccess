@@ -1,0 +1,4 @@
+# Deny PHP execution in uploaded papers
+<FilesMatch "\.(php|phtml|phar)$">
+    Require all denied
+</FilesMatch>

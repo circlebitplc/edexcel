@@ -2,8 +2,10 @@
 declare(strict_types=1);
 
 require_once __DIR__ . '/../config/bootstrap.php';
+require_once __DIR__ . '/../includes/class_fee_summary.php';
+\Edexcel\Services\ClassSessionFeeCalculator::ensureSchema($pdo);
 require_once __DIR__ . '/../config/notifications.php';
-require_login();
+require_staff();
 
 $is_admin = is_admin();
 $teacher_id = $_SESSION['teacher_id'] ?? null;
@@ -21,6 +23,13 @@ if ($is_admin) {
 $all_subjects = $pdo->query("SELECT id, name FROM subjects WHERE deleted_at IS NULL ORDER BY name")->fetchAll();
 $all_classes = $pdo->query("SELECT id, name FROM student_classes WHERE deleted_at IS NULL ORDER BY name")->fetchAll();
 $all_rooms = $pdo->query("SELECT id, name, capacity FROM rooms WHERE deleted_at IS NULL ORDER BY name")->fetchAll();
+$bankReady = \Edexcel\Services\TeacherBankAccountService::publicSummaries(
+    $pdo,
+    array_map(static fn(array $row): int => (int)$row['id'], $teachers)
+);
+$bankDetailsUrl = $is_admin
+    ? rtrim((string)BASE_URL, '/') . '/admin/teacher_banks.php?teacher='
+    : rtrim((string)BASE_URL, '/') . '/teachers/bank_details.php';
 
 $error = '';
 $success = '';
@@ -57,8 +66,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $start_time = substr(trim((string)($_POST['start_time'] ?? '')), 0, 5);
             $end_time = substr(trim((string)($_POST['end_time'] ?? '')), 0, 5);
             $student_count = (int)($_POST['student_count'] ?? 0);
+            $class_fee_per_student = (float)($_POST['class_fee_per_student'] ?? 0);
             $repeat = isset($_POST['repeat_weekly']);
             $repeat_until = trim((string)($_POST['repeat_until'] ?? ''));
+
+            if ($class_fee_per_student < 0) {
+                throw new RuntimeException('Class fee per student cannot be negative.');
+            }
 
             if (empty($day_of_week)) {
                 throw new RuntimeException('Please select a day of the week.');
@@ -75,12 +89,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 'class_id' => $class_id,
                 'room_id' => $room_id,
                 'student_count' => $student_count,
+                'class_fee_per_student' => $class_fee_per_student,
                 'date' => $date,
                 'start_time' => $start_time,
                 'end_time' => $end_time,
                 'payment_status' => 'pending',
                 'payment_date' => null,
                 'day_of_week' => $day_of_week,
+                'delivery_mode' => classroom_normalize_delivery_mode((string)($_POST['delivery_mode'] ?? 'physical')),
             ];
 
             $services = TimetableServiceFactory::services($pdo);
@@ -120,6 +136,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
                     try {
                         notify_class_change($pdo, $teacher_id, 'add', $timetable_data);
+                        notify_class_students($pdo, (int)$class_id, 'add', $timetable_data);
                     } catch (Throwable $notificationError) {
                         error_log(
                             "WhatsApp notification failed for new class (ID $new_id): "
@@ -178,7 +195,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         <?php endforeach; ?>
                     </select>
                 <?php else: ?>
-                    <input type="hidden" name="teacher_id" value="<?= $teacher_id ?>">
+                    <input type="hidden" id="teacher_id" name="teacher_id" value="<?= (int)$teacher_id ?>">
                     <p class="form-control-static"><strong><?= htmlspecialchars($teachers[0]['name'] ?? 'Your Teacher') ?></strong></p>
                 <?php endif; ?>
             </div>
@@ -251,6 +268,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         </div>
     </div>
 
+    <div class="row">
+        <div class="col-md-6">
+            <div class="mb-3">
+                <label for="delivery_mode" class="form-label">How will this class run?</label>
+                <select class="form-select" id="delivery_mode" name="delivery_mode">
+                    <option value="physical">In college</option>
+                    <option value="online">Online</option>
+                    <option value="hybrid">Online and in college</option>
+                </select>
+                <small class="text-muted">Online lessons appear on student and teacher home screens with Join / Start class. For online, choose the <strong>Online classroom</strong> room.</small>
+            </div>
+        </div>
+    </div>
+
     <!-- Row 4: Students & Repeat -->
     <div class="row">
         <div class="col-md-4">
@@ -260,7 +291,48 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 <small class="text-muted">Default 0. You can update this after the class.</small>
             </div>
         </div>
-        <div class="col-md-8">
+
+        <div class="col-md-4">
+            <div class="mb-3">
+                <label for="class_fee_per_student" class="form-label">
+                    Class Fee / Student / Session
+                </label>
+                <div class="input-group">
+                    <span class="input-group-text">Rs.</span>
+                    <input
+                        type="number"
+                        class="form-control"
+                        id="class_fee_per_student"
+                        name="class_fee_per_student"
+                        min="0"
+                        step="0.01"
+                        value="0.00"
+                    >
+                </div>
+                <small class="text-muted">
+                    Amount the teacher charges each student for this session.
+                </small>
+            </div>
+        </div>
+
+    </div>
+
+    <div id="onlineBankNotice" class="alert alert-warning" hidden>
+        <p class="mb-1 fw-semibold">Bank account details are required before creating an online class.</p>
+        <p class="mb-2">Online classes require a completed bank account profile so that your class earnings can be settled.</p>
+        <a class="btn btn-sm btn-primary" id="onlineBankLink" href="<?= htmlspecialchars($bankDetailsUrl, ENT_QUOTES, 'UTF-8') ?>">Add Bank Details</a>
+    </div>
+    <div id="onlineBankReady" class="alert alert-success" hidden>
+        <p class="mb-2 fw-semibold">Bank details completed. You can create online classes.</p>
+        <div data-bank-lines class="bank-saved-lines"></div>
+        <a class="btn btn-sm btn-outline-success mt-2" id="onlineBankEdit" href="<?= htmlspecialchars($bankDetailsUrl, ENT_QUOTES, 'UTF-8') ?>">Update bank details</a>
+    </div>
+
+    <?php class_fee_summary_assets($pdo); ?>
+    <?php class_fee_summary_card('onlineFeeSummary'); ?>
+
+    <div class="row">
+        <div class="col-md-6">
             <div class="mb-3">
                 <div class="form-check">
                     <input class="form-check-input" type="checkbox" id="repeat_weekly" name="repeat_weekly" onchange="toggleRepeat()">
@@ -516,5 +588,20 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
 });
+if (window.ClassSessionFee) {
+    ClassSessionFee.mount({
+        feeId: 'class_fee_per_student',
+        modeId: 'delivery_mode',
+        cardId: 'onlineFeeSummary',
+        teacherId: 'teacher_id',
+        bankMap: <?= json_encode($bankReady, JSON_UNESCAPED_SLASHES) ?>,
+        bankNoticeId: 'onlineBankNotice',
+        bankReadyId: 'onlineBankReady',
+        bankLinkId: 'onlineBankLink',
+        bankEditId: 'onlineBankEdit',
+        bankUrl: <?= json_encode($bankDetailsUrl, JSON_UNESCAPED_SLASHES) ?>,
+        bankUrlNeedsTeacher: <?= $is_admin ? 'true' : 'false' ?>
+    });
+}
 </script>
 <?php include __DIR__ . '/../includes/footer.php'; ?>

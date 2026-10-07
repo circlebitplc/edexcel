@@ -3,7 +3,7 @@ declare(strict_types=1);
 
 require_once __DIR__.'/../src/Services/TimetableInputValidator.php';
 
-use App\Services\TimetableInputValidator;
+use Edexcel\Services\TimetableInputValidator;
 
 $valid=[
  'teacher_id'=>1,'subject_id'=>1,'class_id'=>1,'room_id'=>1,

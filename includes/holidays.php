@@ -1,22 +1,25 @@
 <?php
 function is_holiday($pdo, $date) {
-    $stmt = $pdo->prepare("SELECT id FROM holidays WHERE date = ?");
+    $stmt = $pdo->prepare("SELECT id FROM holidays WHERE date = ? LIMIT 1");
     $stmt->execute([$date]);
-    return $stmt->rowCount() > 0;
+    return (bool)$stmt->fetchColumn();
 }
 
 function get_holidays($pdo, $start = null, $end = null) {
-    $sql = "SELECT * FROM holidays ORDER BY date";
+    $sql = "SELECT * FROM holidays";
+    $params = [];
     if ($start) {
         $sql .= " WHERE date >= ?";
+        $params[] = $start;
         if ($end) {
             $sql .= " AND date <= ?";
-            $stmt = $pdo->prepare($sql);
-            $stmt->execute([$start, $end]);
-        } else {
-            $stmt = $pdo->prepare($sql);
-            $stmt->execute([$start]);
+            $params[] = $end;
         }
+    }
+    $sql .= " ORDER BY date";
+    if ($params !== []) {
+        $stmt = $pdo->prepare($sql);
+        $stmt->execute($params);
     } else {
         $stmt = $pdo->query($sql);
     }

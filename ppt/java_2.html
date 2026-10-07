@@ -1,0 +1,189 @@
+<!doctype html>
+<html lang='en'>
+<head>
+<!-- Global site tag (gtag.js) - Google Analytics -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=UA-117524735-1"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+
+  gtag('config', 'UA-117524735-1');
+</script>
+
+<script async src="//pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"></script>
+<script>
+  (adsbygoogle = window.adsbygoogle || []).push({
+    google_ad_client: "ca-pub-6345478157963217",
+    enable_page_level_ads: true
+  });
+</script>
+	<meta charset='utf-8'>
+
+	<title class='hightlight-blue'>Programming 1</title>
+
+	<meta name='description' content='Computer Architecture'>
+	<meta name='author' content='Enidu Batuwanthudawe'>
+
+	<meta name='apple-mobile-web-app-capable' content='yes' />
+	<meta name='apple-mobile-web-app-status-bar-style' content='black-translucent' />
+
+	<meta name='viewport' content='width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no'>
+
+	<link rel='stylesheet' href='css/reveal.min.css'>
+	<link rel='stylesheet' href='css/theme/default.css' id='theme'>
+	<link rel='stylesheet' href='css/custom.css'>
+
+	<!-- For syntax highlighting -->
+	<link rel='stylesheet' href='lib/css/zenburn.css'>
+
+	<!-- If the query includes 'print-pdf', use the PDF print sheet -->
+	<link rel="stylesheet" href="css/print/pdf.css">
+
+		<!--[if lt IE 9]>
+		<script src='lib/js/html5shiv.js'></script>
+		<![endif]-->
+		<script src='js/moment.min.js'></script>
+	</head>
+
+	<body>
+
+		<div class='reveal'>
+			<div class='slides'>
+				<section>
+					<h2>Programming 1</h2>
+					<p>
+					<h3><a href='http://www.hodamapanthiya.com/enidu/' target="_blank">primitive data types</a><font size="3" color="white"></font></h3>
+						by <a href='http://www.hodamapanthiya.com/enidu/' target="_blank">Enidu Batuwanthudawe </a><font size="3" color="white">C&nbsp;&nbsp;i&nbsp;&nbsp;v&nbsp;&nbsp;i&nbsp;&nbsp;l&nbsp;&nbsp;&nbsp;&nbsp;E&nbsp;&nbsp;n&nbsp;&nbsp;g&nbsp;&nbsp;.&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;| &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;B&nbsp;&nbsp;.&nbsp;&nbsp;S&nbsp;&nbsp;c&nbsp;&nbsp;.&nbsp;&nbsp;&nbsp;&nbsp;i&nbsp;&nbsp;n&nbsp;&nbsp;&nbsp;&nbsp;I&nbsp;&nbsp;T </font>
+					</p>
+					<p>
+						<small>
+							. . . . . . . . . . . . . . . . . . . .. . . . . . . . . . . . . . . . . . . . <br>
+							<script type='text/javascript'>
+								document.write(moment().format('dddd, MMMM D, YYYY'));
+							</script>
+						</small>
+					</p>
+				</section>
+		<section>
+			<section>
+			<h1>byte</h1>
+			</section>
+			<section>
+			<p><ul><li>Byte data type is a 8-bit signed two's complement integer.
+</li><li>Minimum value is -128 (-2^7)
+</li><li>Maximum value is 127 (inclusive)(2^7 -1)
+</li><li>Default value is 0
+</li><li>Byte data type is used to save space in large arrays, mainly in place of integers, since
+a byte is four times smaller than an int.
+</li><li>Example : byte a = 100 , byte b = -50</li></ul></p>
+			</section>
+			<section>
+			  <h3>short</h3>
+				   <p><ul><li>Short data type is a 16-bit signed two's complement integer.
+</li><li>Minimum value is -32,768 (-2^15)
+</li><li>Maximum value is 32,767(inclusive) (2^15 -1)
+</li><li>Short data type can also be used to save memory as byte data type. A short is 2 times
+smaller than an int
+</li><li>Default value is 0.
+</li><li>Example : short s= 10000 , short r = -20000</ul></p>
+			</section>
+			<section>
+			  <h3>int</h3>
+				   <p><ul><li>Int data type is a 32-bit signed two's complement integer.
+</li><li>Minimum value is - 2,147,483,648.(-2^31)
+</li><li>Maximum value is 2,147,483,647(inclusive).(2^31 -1)
+</li><li>Int is generally used as the default data type for integral values unless there is a
+concern about memory.
+</li><li>The default value is 0.</li></ul></p>
+			</section>
+			<section>
+			  <h3>long</h3>
+				   <p><ul><li>Long data type is a 64-bit signed two's complement integer.
+					</li><li>Minimum value is -9,223,372,036,854,775,808.(-2^63)
+					</li><li>Maximum value is 9,223,372,036,854,775,807 (inclusive). (2^63 -1)
+					</li><li>This type is used when a wider range than int is needed.
+								Default value is 0L.
+					</li><li>Example : int a = 100000L, int b = -200000L</li></ul></p>
+			</section>
+			<section>
+			  <h3>float</h3>
+				   <P>
+				   <ul><li>Float data type is a single-precision 32-bit IEEE 754 floating point.
+					</li><li>Float is mainly used to save memory in large arrays of floating point numbers.
+					</li><li>Default value is 0.0f.
+					</li><li>Float data type is never used for precise values such as currency.
+					</li><li>Example : float f1 = 234.5f</li></ul>
+				</P>
+			</section>
+			<section>
+			  <h3>double</h3>
+				   <P>
+				   <ul><li>double data type is a double-precision 64-bit IEEE 754 floating point.
+					</li><li>This data type is generally used as the default data type for decimal values. generally the default choice.
+					</li><li>Double data type should never be used for precise values such as currency.
+					</li><li>Default value is 0.0d.
+					</li><li>Example : double d1 = 123.4</li></ul>
+				</P>
+			</section>
+			<section>
+			  <h3>boolean</h3>
+				   <P>
+				   <ul><li>boolean data type represents one bit of information.
+					</li><li>There are only two possible values : true and false.
+					</li><li>This data type is used for simple flags that track true/false conditions.
+					</li><li>Default value is false.
+					</li><li>Example : boolean one = true</li></ul>
+				</P>
+			</section>
+			<section>
+			  <h3>char</h3>
+				   <P>
+				   <ul><li>char data type is a single 16-bit Unicode character.
+					</li><li>Minimum value is '\u0000' (or 0).
+					</li><li>Maximum value is '\uffff' (or 65,535 inclusive).
+					</li><li>Char data type is used to store any character.</li>
+					<li>Example . char letterA ='A'</li></ul>
+				</P>
+			</section>
+	</section>	
+			</div>
+
+		</div>
+
+		<script src="lib/js/head.min.js"></script>
+		<script src="js/reveal.min.js"></script>
+
+		<script>
+
+			// Full list of configuration options available here:
+			// https://github.com/hakimel/reveal.js#configuration
+			Reveal.initialize({
+				controls: true,
+				progress: true,
+				history: true,
+				center: true,
+
+				theme: Reveal.getQueryHash().theme, // available themes are in /css/theme
+				transition: Reveal.getQueryHash().transition || 'default', // default/cube/page/concave/zoom/linear/fade/none
+
+				// Parallax scrolling
+				// parallaxBackgroundImage: 'https://s3.amazonaws.com/hakim-static/reveal-js/reveal-parallax-1.jpg',
+				// parallaxBackgroundSize: '2100px 900px',
+
+				// Optional libraries used to extend on reveal.js
+				dependencies: [
+					{ src: 'lib/js/classList.js', condition: function() { return !document.body.classList; } },
+					{ src: 'plugin/markdown/marked.js', condition: function() { return !!document.querySelector( '[data-markdown]' ); } },
+					{ src: 'plugin/markdown/markdown.js', condition: function() { return !!document.querySelector( '[data-markdown]' ); } },
+					{ src: 'plugin/highlight/highlight.js', async: true, callback: function() { hljs.initHighlightingOnLoad(); } },
+					{ src: 'plugin/zoom-js/zoom.js', async: true, condition: function() { return !!document.body.classList; } },
+					
+				]
+			});
+
+		</script>
+
+	</body>
+</html>
+

@@ -1,0 +1,61 @@
+.bank-search {
+    position: relative;
+}
+
+.bank-search-list {
+    position: absolute;
+    z-index: 30;
+    left: 0;
+    right: 0;
+    top: calc(100% + 4px);
+    max-height: 240px;
+    margin: 0;
+    padding: 0.35rem;
+    overflow: auto;
+    list-style: none;
+    border-radius: 12px;
+    border: 1px solid rgba(125, 211, 252, 0.35);
+    background: #0f172a;
+    box-shadow: 0 12px 28px rgba(0, 0, 0, 0.35);
+}
+
+.bank-search-list[hidden] {
+    display: none !important;
+}
+
+.bank-search-list button {
+    display: block;
+    width: 100%;
+    margin: 0;
+    padding: 0.5rem 0.65rem;
+    border: 0;
+    border-radius: 8px;
+    background: transparent;
+    color: #e8eef7;
+    text-align: left;
+    font: inherit;
+    line-height: 1.35;
+}
+
+.bank-search-list button[aria-selected="true"],
+.bank-search-list button:hover {
+    background: rgba(59, 130, 246, 0.28);
+}
+
+.bank-search-empty {
+    margin: 0;
+    padding: 0.5rem 0.65rem;
+    color: rgba(226, 232, 240, 0.75);
+    font-size: 0.9rem;
+}
+
+[data-theme="light"] .bank-search-list,
+[data-bs-theme="light"] .bank-search-list {
+    background: #fff;
+    border-color: rgba(15, 23, 42, 0.15);
+}
+
+[data-theme="light"] .bank-search-list button,
+[data-bs-theme="light"] .bank-search-list button {
+    color: #0f172a;
+}

@@ -3,8 +3,10 @@
 require_once __DIR__ . '/../config/database.php';
 require_once __DIR__ . '/../config/auth.php';
 require_once __DIR__ . '/../config/payment.php';
+require_once __DIR__ . '/../vendor/autoload.php';
 
 require_admin();
+\Edexcel\Services\ClassSessionFeeCalculator::ensureSchema($pdo);
 
 
 /* ============================================================
@@ -140,6 +142,8 @@ $sql = "
          * Do not include future classes.
          */
         AND tbl.date <= CURDATE()
+
+        AND (tbl.fee_rule IS NULL OR tbl.fee_rule NOT IN ('online_v1', 'in_college_v1'))
 
     WHERE
         t.deleted_at IS NULL
@@ -1438,6 +1442,120 @@ include __DIR__ .
 
         </div>
 
+    </section>
+
+    <?php
+    $onlineReport = [
+        'lessons' => 0,
+        'students' => 0,
+        'student_fees' => 0,
+        'institute_fees' => 0,
+        'handling_fees' => 0,
+        'teacher_net' => 0,
+    ];
+    try {
+        $onlineStmt = $pdo->query("
+            SELECT
+                COUNT(*) AS lessons,
+                COALESCE(SUM(student_count), 0) AS students,
+                COALESCE(SUM(student_count * class_fee_per_student), 0) AS student_fees,
+                COALESCE(SUM(student_count * institute_online_fee), 0) AS institute_fees,
+                COALESCE(SUM(student_count * transaction_handling_fee), 0) AS handling_fees,
+                COALESCE(SUM(student_count * teacher_net_amount), 0) AS teacher_net
+            FROM timetable
+            WHERE deleted_at IS NULL
+              AND fee_rule = 'online_v1'
+              AND date <= CURDATE()
+        ");
+        $onlineReport = $onlineStmt->fetch(PDO::FETCH_ASSOC) ?: $onlineReport;
+    } catch (Throwable $e) {
+        $onlineReport = $onlineReport;
+    }
+    ?>
+    <section class="mt-4">
+        <h2 class="h4">Online class fees</h2>
+        <p class="text-muted">
+            Older lessons stay in the duration-based totals above.
+            Online classes saved with the online fee rule are listed here and are left out of those totals.
+            New in-college classes use the flat institute fee and are listed with that rule.
+            Past payments keep the amounts that applied when they were taken.
+        </p>
+        <div class="table-responsive">
+            <table class="table revenue-table">
+                <thead>
+                    <tr>
+                        <th>Lessons</th>
+                        <th>Students</th>
+                        <th>Student fee</th>
+                        <th>Institute online fee</th>
+                        <th>Transaction &amp; handling</th>
+                        <th>Teacher net</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><?= number_format((int)$onlineReport['lessons']) ?></td>
+                        <td><?= number_format((int)$onlineReport['students']) ?></td>
+                        <td>Rs <?= number_format((float)$onlineReport['student_fees'], 2) ?></td>
+                        <td>Rs <?= number_format((float)$onlineReport['institute_fees'], 2) ?></td>
+                        <td>Rs <?= number_format((float)$onlineReport['handling_fees'], 2) ?></td>
+                        <td>Rs <?= number_format((float)$onlineReport['teacher_net'], 2) ?></td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </section>
+    <?php
+    $inCollegeReport = [
+        'lessons' => 0,
+        'students' => 0,
+        'student_fees' => 0,
+        'institute_fees' => 0,
+        'teacher_net' => 0,
+    ];
+    try {
+        $inCollegeStmt = $pdo->query("
+            SELECT
+                COUNT(*) AS lessons,
+                COALESCE(SUM(student_count), 0) AS students,
+                COALESCE(SUM(student_count * class_fee_per_student), 0) AS student_fees,
+                COALESCE(SUM(student_count * institute_online_fee), 0) AS institute_fees,
+                COALESCE(SUM(student_count * teacher_net_amount), 0) AS teacher_net
+            FROM timetable
+            WHERE deleted_at IS NULL
+              AND fee_rule = 'in_college_v1'
+              AND date <= CURDATE()
+        ");
+        $inCollegeReport = $inCollegeStmt->fetch(PDO::FETCH_ASSOC) ?: $inCollegeReport;
+    } catch (Throwable $e) {
+        $inCollegeReport = $inCollegeReport;
+    }
+    ?>
+    <section class="mt-4">
+        <h2 class="h4">In-college class fees</h2>
+        <p class="text-muted">New in-college classes use the flat institute fee stored on the lesson. There is no handling fee. Older in-college lessons remain in the duration totals above.</p>
+        <div class="table-responsive">
+            <table class="table revenue-table">
+                <thead>
+                    <tr>
+                        <th>Lessons</th>
+                        <th>Students</th>
+                        <th>Student fee</th>
+                        <th>Institute fee</th>
+                        <th>Teacher net</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><?= number_format((int)$inCollegeReport['lessons']) ?></td>
+                        <td><?= number_format((int)$inCollegeReport['students']) ?></td>
+                        <td>Rs <?= number_format((float)$inCollegeReport['student_fees'], 2) ?></td>
+                        <td>Rs <?= number_format((float)$inCollegeReport['institute_fees'], 2) ?></td>
+                        <td>Rs <?= number_format((float)$inCollegeReport['teacher_net'], 2) ?></td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
     </section>
 
 </div>

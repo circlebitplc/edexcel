@@ -2,7 +2,7 @@
 namespace Edexcel\Models;
 
 use PDO;
-use App\Repositories\TimetableRepository;
+use Edexcel\Repositories\TimetableRepository;
 
 class Timetable
 {
@@ -25,7 +25,7 @@ class Timetable
     {
         // Compatibility adapter: authoritative mutation lives in the repository.
         require_once __DIR__ . '/../Repositories/TimetableRepository.php';
-        $repository = new \App\Repositories\TimetableRepository($this->pdo);
+        $repository = new \Edexcel\Repositories\TimetableRepository($this->pdo);
 
         return $repository->create([
             'teacher_id' => $data['teacher_id'],
@@ -33,6 +33,7 @@ class Timetable
             'class_id' => $data['class_id'],
             'room_id' => $data['room_id'],
             'student_count' => $data['student_count'] ?? 0,
+            'class_fee_per_student' => $data['class_fee_per_student'] ?? 0,
             'date' => $data['date'],
             'start_time' => $data['start_time'],
             'end_time' => $data['end_time'],

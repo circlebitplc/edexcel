@@ -2,8 +2,7 @@
 declare(strict_types=1);
 
 require_once __DIR__ . '/../config/bootstrap.php';
-require_once __DIR__ . '/../config/notifications.php';
-require_login();
+require_staff();
 
 header('Content-Type: application/json; charset=utf-8');
 
@@ -18,19 +17,10 @@ try {
                 if (!is_admin()) throw new RuntimeException('Only an administrator can mark a lesson as paid.');
             });
 
-    $notificationSent=false;
-    $notificationMessage=null;
-    try {
-        $notificationSent=(bool)notify_payment(
-            $pdo,(int)$result['teacher_id'],(float)$result['amount']
-        );
-        if(!$notificationSent) {
-            $notificationMessage='Payment was marked as paid, but the WhatsApp notification was not sent.';
-        }
-    } catch(Throwable $notificationError) {
-        error_log('Payment notification failed for timetable ID '.$id.': '.$notificationError->getMessage());
-        $notificationMessage='Payment was marked as paid, but the WhatsApp notification failed.';
-    }
+    $sms = is_array($result['sms'] ?? null) ? $result['sms'] : [];
+    $smsStatus = (string)($sms['status'] ?? 'failed');
+    $smsNotice = (string)($sms['sms_notice'] ?? 'Payment SMS could not be sent.');
+    $smsSent = $smsStatus === 'sent' || $smsStatus === 'resent' || $smsStatus === 'already_sent';
 
     echo json_encode([
         'success'=>true,
@@ -38,8 +28,11 @@ try {
         'payment_status'=>'paid',
         'payment_date'=>$result['payment_date'],
         'amount'=>$result['amount'],
-        'notification_sent'=>$notificationSent,
-        'notification_message'=>$notificationMessage
+        'sms_status'=>$smsStatus,
+        'sms_notice'=>$smsNotice,
+        'sms_detail'=>(string)($sms['sms_detail'] ?? ''),
+        'notification_sent'=>$smsSent,
+        'notification_message'=>$smsSent ? null : $smsNotice
     ]);
 } catch(Throwable $e) {
     http_response_code(400);

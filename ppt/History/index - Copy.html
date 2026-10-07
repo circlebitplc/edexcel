@@ -1,0 +1,206 @@
+<!doctype html>
+<html lang='en'>
+<head>
+	<meta charset='utf-8'>
+
+	<title class='hightlight-blue'>Database</title>
+
+<meta name='description' content='Hodamapanthiya.com'>
+	<meta name='author' content='Enidu Batuwanthudawe'>
+
+	<meta name='apple-mobile-web-app-capable' content='yes' />
+	<meta name='apple-mobile-web-app-status-bar-style' content='black-translucent' />
+
+	<meta name='viewport' content='width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no'>
+
+	<link rel='stylesheet' href='css/reveal.min.css'>
+	<link rel='stylesheet' href='css/theme/default.css' id='theme'>
+	<link rel='stylesheet' href='css/custom.css'>
+
+	<!-- For syntax highlighting -->
+	<link rel='stylesheet' href='lib/css/zenburn.css'>
+
+	<!-- If the query includes 'print-pdf', use the PDF print sheet -->
+	<link rel="stylesheet" href="css/print/pdf.css">
+
+		<!--[if lt IE 9]>
+		<script src='lib/js/html5shiv.js'></script>
+		<![endif]-->
+		<script src='js/moment.min.js'></script>
+	</head>
+
+	<body>
+
+		<div class='reveal'>
+			<div class='slides'>
+				<section>
+					<h2>Database</h2>
+					<p>
+						Presented by <a href='http//www.hodamapanthiaya.com/enidu'>Enidu Batuwanthudawe</a>
+					</p>
+					<p>
+						<small>
+							. . . . . . . . . . . . . . . . . . . .. . . . . . . . . . . . . . . . . . . . <br>
+							<script type='text/javascript'>
+								document.write(moment().format('dddd, MMMM D, YYYY'));
+							</script>
+						</small>
+					</p>
+				</section>
+
+				<section>
+				<section>
+					<h1>Experiment 1</h1>
+				</section>
+				<section>
+					<p> 1.	Get MySQL Command mode and login </p>
+				</section>		 
+				<section>
+					 	<p> 2.	Get the available databases using “show databases;”.</p>
+					</section>
+				<section>
+					    <p> 3.	Check whether the “school” database exits.</p>
+				</section>
+				<section>
+					    <p> 4.	If not, create databases using “create database school;”.</p>
+				</section>
+				<section>
+					    <p> 5.	Open the database by giving the command “use school;”.</p>
+				</section>
+				<section>
+					    <p> 6.	Check the available tables in the school database using “show tables;” SQL statement.</p>
+				</section>
+				<section>
+					    <p> 7.	Use the following DDL to create the student table.<br>
+						        create table student;</p>
+				</section>
+				</section>
+				
+				<section>
+					
+					<section>
+					
+						<h1> Experiment 3</h1>										
+					</section>
+				
+					<section>
+	1.	Update the sid of the student table created in the Experiment-2 using
+update table (use: help update for the syntax).
+											 
+					</section>
+					
+					<section>
+					2.	Write your observations.
+						
+					</section>
+					
+					<section>
+						3.	Discuss the weakness of the table.
+						
+					</section>
+					
+					<section>
+						4.	Write your conclusion.
+						
+					</section>										
+				</section>
+			<section>
+					
+					<section>
+					
+						<h1> Experiment 4</h1>										
+					</section>
+				
+					<section>
+						1.	Repeat the Experiment 3 to update only one record.
+											 
+					</section>
+					
+					<section>
+					2.	Hint: use LIMIT parameter in update DML.
+						
+					</section>																	
+				</section>	
+			<section>
+					
+					<section>
+					
+						<h1> Experiment 5</h1>										
+					</section>
+				
+					<section>
+						1.	Use the following DML to add  the primary key to the student table.
+											 
+					</section>
+					
+					<section>
+					2.	alter table student add primary key(sid);
+						
+					</section>	
+					<section>
+					3.	Write your observation.
+					</section>	
+					<section>
+					4.	Write your conclusion.
+					</section>					
+				</section>	
+			<section>
+					
+					<section>
+					
+						<h1> Experiment 6</h1>										
+					</section>
+				
+					<section>
+						1.	Update sid of the student table by unique values.
+											 
+					</section>
+					
+					<section>
+					2.	Repeat the experiment 6.
+					</section>
+								
+				</section>
+				
+			</section>	
+				
+			</div>
+
+		</div>
+
+		<script src="lib/js/head.min.js"></script>
+		<script src="js/reveal.min.js"></script>
+
+		<script>
+
+			// Full list of configuration options available here:
+			// https://github.com/hakimel/reveal.js#configuration
+			Reveal.initialize({
+				controls: true,
+				progress: true,
+				history: true,
+				center: true,
+
+				theme: Reveal.getQueryHash().theme, // available themes are in /css/theme
+				transition: Reveal.getQueryHash().transition || 'default', // default/cube/page/concave/zoom/linear/fade/none
+
+				// Parallax scrolling
+				// parallaxBackgroundImage: 'https://s3.amazonaws.com/hakim-static/reveal-js/reveal-parallax-1.jpg',
+				// parallaxBackgroundSize: '2100px 900px',
+
+				// Optional libraries used to extend on reveal.js
+				dependencies: [
+					{ src: 'lib/js/classList.js', condition: function() { return !document.body.classList; } },
+					{ src: 'plugin/markdown/marked.js', condition: function() { return !!document.querySelector( '[data-markdown]' ); } },
+					{ src: 'plugin/markdown/markdown.js', condition: function() { return !!document.querySelector( '[data-markdown]' ); } },
+					{ src: 'plugin/highlight/highlight.js', async: true, callback: function() { hljs.initHighlightingOnLoad(); } },
+					{ src: 'plugin/zoom-js/zoom.js', async: true, condition: function() { return !!document.body.classList; } },
+					
+				]
+			});
+
+		</script>
+
+	</body>
+</html>
+

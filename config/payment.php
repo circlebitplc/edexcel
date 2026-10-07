@@ -12,6 +12,27 @@
  * 5 hours     = Rs 1100 per student
  */
 require_once __DIR__ . '/database.php';
+require_once __DIR__ . '/payment_controls.php';
+
+if (!function_exists('payment_normalize_currency_symbol')) {
+    function payment_normalize_currency_symbol(string $raw): string
+    {
+        $raw = trim($raw);
+        // "Rshtt" is "Rs" + truncated "http" from the 5-character settings field.
+        if ($raw === '' || preg_match('/https?:|www\.|htt/i', $raw)) {
+            if (preg_match('/^rs/i', $raw)) {
+                return 'Rs';
+            }
+            return 'Rs';
+        }
+        $raw = preg_replace('/[^\p{L}\p{Sc}.]/u', '', $raw) ?? $raw;
+        $raw = trim($raw);
+        if ($raw === '' || mb_strlen($raw) > 5) {
+            return 'Rs';
+        }
+        return $raw;
+    }
+}
 
 if (!function_exists('payment_settings')) {
     function payment_settings(PDO $pdo): array {
@@ -31,7 +52,17 @@ if (!function_exists('payment_settings')) {
                 if ($key === 'class_duration') {
                     $defaults[$key] = max(1, (int)$value);
                 } else {
-                    $defaults[$key] = (string)$value;
+                    $defaults[$key] = payment_normalize_currency_symbol((string)$value);
+                    if ($defaults[$key] !== (string)$value) {
+                        try {
+                            $fix = $pdo->prepare(
+                                "UPDATE settings SET setting_value = ? WHERE setting_key = 'currency_symbol'"
+                            );
+                            $fix->execute([$defaults[$key]]);
+                        } catch (Throwable $e) {
+                            // Display the clean symbol even if the row cannot be updated.
+                        }
+                    }
                 }
             }
         } catch (Throwable $e) {
@@ -101,6 +132,57 @@ if (!function_exists('payment_settings')) {
     }
 
     /**
+     * SQL minutes between two TIME columns, including lessons that cross midnight.
+     */
+    function lesson_duration_sql(string $startExpr = 'start_time', string $endExpr = 'end_time'): string {
+        return "(CASE
+            WHEN TIME_TO_SEC({$endExpr}) >= TIME_TO_SEC({$startExpr})
+            THEN (TIME_TO_SEC({$endExpr}) - TIME_TO_SEC({$startExpr})) / 60
+            ELSE (TIME_TO_SEC({$endExpr}) + 86400 - TIME_TO_SEC({$startExpr})) / 60
+        END)";
+    }
+
+    /**
+     * SQL rate per student. Must stay aligned with lesson_rate_per_student().
+     */
+    function lesson_rate_sql(string $startExpr = 'start_time', string $endExpr = 'end_time'): string {
+        $duration = lesson_duration_sql($startExpr, $endExpr);
+        return "(CASE
+            WHEN {$duration} <= 150 THEN 500
+            WHEN {$duration} <= 210 THEN 700
+            WHEN {$duration} <= 270 THEN 900
+            ELSE 1100
+        END)";
+    }
+
+    /**
+     * SQL amount for a lesson row.
+     */
+    function lesson_amount_sql(
+        string $countExpr = 'COALESCE(student_count, 0)',
+        string $startExpr = 'start_time',
+        string $endExpr = 'end_time'
+    ): string {
+        return "(({$countExpr}) * " . lesson_rate_sql($startExpr, $endExpr) . ')';
+    }
+
+    /**
+     * Monday–Sunday of the week containing $date (Y-m-d).
+     *
+     * @return array{0:string,1:string}
+     */
+    function week_bounds(?string $date = null): array {
+        $ts = $date ? strtotime($date) : time();
+        if ($ts === false) {
+            $ts = time();
+        }
+        $isoDay = (int)date('N', $ts);
+        $monday = date('Y-m-d', strtotime('-' . ($isoDay - 1) . ' days', $ts));
+        $sunday = date('Y-m-d', strtotime($monday . ' +6 days'));
+        return [$monday, $sunday];
+    }
+
+    /**
      * Backwards-compatible helper.
      *
      * Used by pages that already have a duration value.
@@ -111,6 +193,71 @@ if (!function_exists('payment_settings')) {
     ): float {
         return max(0, $studentCount)
             * lesson_rate_per_student($durationMinutes);
+    }
+}
+
+if (!function_exists('bank_transfer_config')) {
+    /**
+     * @return array{
+     *   enabled:bool,
+     *   bank_name:string,
+     *   account_name:string,
+     *   account_number:string,
+     *   branch:string,
+     *   instructions:string
+     * }
+     */
+    function bank_transfer_config(?PDO $pdo = null): array
+    {
+        $cfg = [
+            'enabled' => true,
+            'bank_name' => '',
+            'account_name' => '',
+            'account_number' => '',
+            'branch' => '',
+            'instructions' => 'Transfer the class fee and upload a clear photo or PDF of the bank slip. Access unlocks after the office confirms the payment.',
+        ];
+        if (!$pdo instanceof PDO) {
+            return $cfg;
+        }
+        try {
+            $stmt = $pdo->query("
+                SELECT setting_key, setting_value
+                FROM settings
+                WHERE setting_key IN (
+                    'bank_transfer_enabled',
+                    'bank_name',
+                    'bank_account_name',
+                    'bank_account_number',
+                    'bank_branch',
+                    'bank_instructions'
+                )
+            ");
+            $rows = $stmt ? ($stmt->fetchAll(PDO::FETCH_KEY_PAIR) ?: []) : [];
+            $cfg['enabled'] = !isset($rows['bank_transfer_enabled']) || (string)$rows['bank_transfer_enabled'] === '1';
+            $cfg['bank_name'] = trim((string)($rows['bank_name'] ?? ''));
+            $cfg['account_name'] = trim((string)($rows['bank_account_name'] ?? ''));
+            $cfg['account_number'] = trim((string)($rows['bank_account_number'] ?? ''));
+            $cfg['branch'] = trim((string)($rows['bank_branch'] ?? ''));
+            $note = trim((string)($rows['bank_instructions'] ?? ''));
+            if ($note !== '') {
+                $cfg['instructions'] = $note;
+            }
+        } catch (Throwable $e) {
+            // Older installs still allow the upload form; staff can save details later.
+        }
+        if ($cfg['account_number'] === '' && $cfg['account_name'] === '' && $cfg['bank_name'] === '') {
+            $cfg['enabled'] = $cfg['enabled'] && true;
+        }
+        return $cfg;
+    }
+}
+
+if (!function_exists('bank_transfer_ready')) {
+    function bank_transfer_ready(?PDO $pdo = null): bool
+    {
+        $cfg = bank_transfer_config($pdo);
+        return !empty($cfg['enabled']);
     }
 }
 

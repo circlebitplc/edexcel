@@ -1,0 +1,9 @@
+<?php
+declare(strict_types=1);
+require_once __DIR__ . '/../config/bootstrap.php';
+require_once __DIR__ . '/../vendor/autoload.php';
+use Edexcel\Services\TeacherAssistantService;
+require_teacher();$teacherId=(int)($_SESSION['teacher_id']??0);$result=null;$error='';
+if($_SERVER['REQUEST_METHOD']==='POST'){if(!verify_csrf_token($_POST['csrf_token']??''))$error='Session expired.';else try{$result=(new TeacherAssistantService($pdo))->generate($teacherId,(int)$_POST['class_id'],(string)$_POST['request']);}catch(Throwable $e){$error=$e->getMessage();}}
+$s=$pdo->prepare("SELECT DISTINCT c.id,c.name FROM timetable tt JOIN student_classes c ON c.id=tt.class_id WHERE tt.teacher_id=? AND tt.deleted_at IS NULL ORDER BY c.name");$s->execute([$teacherId]);$classes=$s->fetchAll(PDO::FETCH_ASSOC)?:[];include __DIR__ . '/../includes/header.php';?>
+<div class="container py-4"><h1 class="h3">Teacher planning assistant</h1><p class="text-muted">Drafts are based only on classes you teach and require your review.</p><?php if($error):?><div class="alert alert-danger"><?=e($error)?></div><?php endif;?><?php if($result):?><div class="card border-0 shadow-sm mb-3"><div class="card-body"><h2 class="h5">Draft recommendation</h2><?=nl2br(e($result['recommendation']))?></div></div><?php endif;?><form method="post" class="card border-0 shadow-sm p-3"><?=csrf_field()?><select class="form-select mb-2" name="class_id" required><option value="">Choose class</option><?php foreach($classes as $c):?><option value="<?= (int)$c['id']?>"><?=e($c['name'])?></option><?php endforeach;?></select><textarea class="form-control mb-2" name="request" rows="5" placeholder="Example: create a revision lesson for weak topics" required></textarea><button class="btn btn-primary">Generate draft</button></form></div><?php include __DIR__ . '/../includes/footer.php';?>

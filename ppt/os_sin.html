@@ -1,0 +1,309 @@
+<!doctype html>
+<html lang='en'>
+<head>
+<!-- Global site tag (gtag.js) - Google Analytics -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=UA-117524735-1"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+
+  gtag('config', 'UA-117524735-1');
+</script>
+
+<script async src="//pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"></script>
+<script>
+  (adsbygoogle = window.adsbygoogle || []).push({
+    google_ad_client: "ca-pub-6345478157963217",
+    enable_page_level_ads: true
+  });
+</script>
+	<meta charset='utf-8'>
+
+	<title class='hightlight-blue'>Enidu Batuwanthudawe</title>
+
+	<meta name='description' content='Computer Architecture'>
+	<meta name='author' content='Enidu Batuwanthudawe'>
+
+	<meta name='apple-mobile-web-app-capable' content='yes' />
+	<meta name='apple-mobile-web-app-status-bar-style' content='black-translucent' />
+
+	<meta name='viewport' content='width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no'>
+
+	<link rel='stylesheet' href='css/reveal.min.css'>
+	<link rel='stylesheet' href='css/theme/default.css' id='theme'>
+	<link rel='stylesheet' href='css/custom.css'>
+
+	<!-- For syntax highlighting -->
+	<link rel='stylesheet' href='lib/css/zenburn.css'>
+
+	<!-- If the query includes 'print-pdf', use the PDF print sheet -->
+	<link rel="stylesheet" href="css/print/pdf.css">
+
+		<!--[if lt IE 9]>
+		<script src='lib/js/html5shiv.js'></script>
+		<![endif]-->
+		<script src='js/moment.min.js'></script>
+	</head>
+
+	<body>
+
+		<div class='reveal'>
+			<div class='slides'>
+				<section>
+					<h2> පරිගණක මෙහෙයුම් පද්ධතිය <br><br>(Operating System)</h2>
+					<p>
+						 by <a href='http://www.hodamapanthiya.com/enidu/' target="_blank">Enidu Batuwanthudawe </a><font size="3" color="white">C&nbsp;&nbsp;i&nbsp;&nbsp;v&nbsp;&nbsp;i&nbsp;&nbsp;l&nbsp;&nbsp;&nbsp;&nbsp;E&nbsp;&nbsp;n&nbsp;&nbsp;g&nbsp;&nbsp;.&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;| &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;B&nbsp;&nbsp;.&nbsp;&nbsp;S&nbsp;&nbsp;c&nbsp;&nbsp;.&nbsp;&nbsp;&nbsp;&nbsp;i&nbsp;&nbsp;n&nbsp;&nbsp;&nbsp;&nbsp;I&nbsp;&nbsp;T </font>
+					</p>
+					<p>
+						<small>
+							. . . . . . . . . . . . . . . . . . . .. . . . . . . . . . . . . . . . . . . . <br>
+							<script type='text/javascript'>
+								document.write(moment().format('dddd, MMMM D, YYYY'));
+							</script>
+						</small>
+					</p>
+				</section>
+
+				<section>
+				<section>
+					<h3>පරිගණක මෙහෙයුම් පද්ධතියක් <br><br>යනු කුමක්ද​?</h3>
+				</section>
+				<section>
+				<p>මෙහෙයුම් පද්ධතියක් යනු <br>පරිශීලකයා හා පරිගණකයේ දෘඩාංග අතර <br>සන්නිවේදනය සිදු කරන<br> අතුරුමුහුණත වේ (interface).</p>		
+				</section>
+					<section>
+						<p>පරිගණකයට තේරුම් ගත හැක්කේ යන්ත්‍ර භාෂාව (machine language) පමණකි.</p>
+						<img src="img/Machine_language.jpeg" height=450px >
+					</section>
+					<section>
+						<p>විධාන පේලි අතුරුමුහුණත (Command Line Interface/ CLI) යතුරු පුවරුව භාවිතයෙන් විධාන ලබා දෙයි.</p>
+						<img src="img/cmd.jpg" height=450px >
+					</section>
+					<section>
+						<p>චිත්‍රක පරිශීලක අතුරුමුහුණත (Graphical User Interface/ GUI) තිරයේ දිස්වන චිත්‍රක හරහා ගොස් අවශ්‍ය කාර්යය ඉටු කරගත හැකියි.</p>
+						<img src="img/gui.jpg" height=450px >
+					</section>
+				</section>
+				<section>
+				<section>
+				<p>පරිගණක මෙහෙයුම් පද්ධතියකින් ඉටු කරන ප්‍රධාන <br><br> කාර්‍යයන් 2 නම් කරන්න​?</p>
+				</section>
+				<section>
+				<h2>සම්පත් කළමණාකරණය (resource manager)</h2>
+				<p>එකම සම්පතට අයැදුම් (request) එකකට වඩා පැමිණි විට කාර්යක්ෂමතාව හා සාධාරණ භාවිතය පිලිබඳ සලකා බලා එය වෙන් කර දෙයි.</p>
+				</section>
+				<section>
+					<h2>පාලන ක්‍රමලේඛය <br><br>(control program) </h2>
+					<p>දෝෂ වැලැක්වීම සඳහා හා පරිගණකය අවිධිමත් භාවිතයෙන් වලක්වා ගැනීම සඳහා ක්‍රමලේඛවල ක්‍රියාකාරීත්වය පාලනය කිරීම.</p>
+				</section>
+				</section>
+				<section>
+					<section>
+						<p>දෘඩාංග පාලනය හා මෘදුකාංග කළමනාකරණයේ ප්‍රධාන කොටස් (6) විස්තර කරන්න​</p>
+					</section>
+                    <section>   
+                        <h2>- 1 -<br>ක්‍රියායන කළමනාකරණය​</h2>
+                        <a href="process_sin.html" target="_blank">විස්තර​</a>
+					</section>
+                     <section>
+                           <h2>- 2 -<br>මතක කළමනාකරණය​</h2>
+                           <a href="process_sin.html" target="_blank">විස්තර​</a>
+                     </section>
+                     <section>
+                          <h2>- 3 -<br>උපාංග කළමනාකරණය​</h2>
+                          <a href="process_sin.html" target="_blank">විස්තර​</a>
+                     </section> 
+                          <section>    
+                            <h2>- 4 -<br>ගොනු කළමනාකරණය​</h2>
+                            <a href="process_sin.html" target="_blank">විස්තර​</a>
+                      </section>
+                          <section>
+                           <h2>- 5 -<br>ආරක්‍ෂක කළමනාකරණය​</h2>
+                           <a href="process_sin.html" target="_blank">විස්තර​</a>
+					</section>
+                       <section>
+                             <h2>- 6 -<br> පරිගණක ජාල කළමනාකරණය​</h2>
+                             <a href="process_sin.html" target="_blank">විස්තර​</a>
+                     </section>
+                    </section>
+				<section>
+					<section>
+						<h3>පරිගණක ඇරඹුම් ක්‍රියා වලිය විස්තර <br><br>කරන්න​?<br><br>(Computer Boot Process)  </h3>
+						 
+					</section>
+					<section>
+						 <img src="img/boot_process.png" height="100%" >
+					</section>
+					<section>
+					<h3>BIOS (Basic inputoutput system)</H3>
+						<p>පරිගණකයේ ස්විචය ක්‍රියාත්මක කල විගස <br> හෝරා යන්ත්‍රය (system clock) ක්‍රියාත්මක වී එයින් නිපදවෙන හෝරා ස්පන්ද (clock pulses) මඟින් මධ්‍ය සැකසුම් ඒකකය (CPU) ක්‍රියාරම්භ (initialize) වේ.<br> <br>මධ්‍ය සැකසුම් ඒකකය ක්‍රියාරම්භ වීමේ එක් කොටසක් වනුයේ මූලික ආදාන/ ප්‍රතිදාන පද්ධතියේ (BIOS) ඇති ඇරඹුම් ක්‍රමලේඛයේ (startup program) පළමුවන උපදෙස (instruction) සොයා ගැනීමයි.<br><br> මෙය Power-On Self Test (POST) වැඩසටහන ධාවනය කිරීම සඳහා උපදෙසයි. මූලික ආදාන/ ප්‍රතිදාන පද්ධතිය මඟින් මෙම උපදෙස සසම්භාවී ප්‍රවේශ මතකයට (RAM) ප්‍රවේශනය කරගනී (load).</p>
+					</section>
+					<section>
+					<h3>POST (power-on self-test )</h3>
+						<p>ඉන්පසු සන්නායක <br>(CMOS – Complementary Metal Oxide Semiconductor) මතකය පරීක්ෂා කිරීම මඟින් POST වැඩසටහන ආරම්භ වේ. සන්නායක බැටරිය ඇනහිට නොමැති නම් POST වැඩසටහන දිගටම ක්‍රියාත්මක වේ.<br><br> POST මඟින් පරිගණකයට සවි කර ඇති සියළුම දෘඩාංග පරීක්ෂා කර බලා ඒවා නියමිත පරිදි ක්‍රියාත්මක වන බවට තහවුරු කරගනී.</p>
+					</section>
+					<section>
+					<h3>bootstrap loader</h3>
+						<p>ඊට පසු BIOS මඟින් පරිගණකයේ පාලනය ස්වාරම්භක වැඩසටහනට (bootstrap program/ bootstrap loader) ලබාදෙනවා.<BR><BR> මෙම වැඩසටහන මඟින් කලින් POST වැඩසටහනෙන් හඳුනා ගත් ආචයන උපක්‍රම (storage devices) එකින් එක ඇරඹුම් පටිපාටියේ (boot sequence) පිලිවෙලට සොයා බලනවා. ඒ Master Boot Record (MBR) එක සඳහායි.</p>
+					</section>
+					<section>
+					<h3>MBR ( Master Boot Record )</h3>
+						<p>මේ විදියට හමුවන MBR එකක් සහිත පලමුවන ආචයන උපක්‍රමය ඇරඹුම් ධාවකය වේ (boot drive). එහි ඇති MBR එක සසම්භාවී ප්‍රවේශ මතකයට (RAM) ප්‍රවේශනය කරගනී. එහි මෙහෙයුම් පද්ධතියේ මදය ආචිත ස්ථානය (stored location) සඳහන් වේ.</p>
+					</section>
+					<section>
+					<h3>kernal</h3>
+						<p>මෙම ස්ථානයෙන් මදය සසම්භාවී ප්‍රවේශ මතකයට ප්‍රවේශනය කරගෙන ක්‍රියාකරවීම (execute) සිදු කරනු ලබයි. පරිගණකය ධාවනය වෙනවා යනුවෙන් හඳුන්වන්නේ මේ අවස්ථාවේදියි.</p>
+					</section>
+					<section>
+					<h3>OS</h3>
+						<p>මින්පසු මෙහෙයුම් පද්ධතිය විසින් නැවතත් දෘඩාංග සෙවුමක් (hardware search) ක්‍රියාත්මක කරයි. මෙම සෙවුම මඟින් මතකය හා එහි වැඩෙහි යෙදිය හැකි ප්‍රමාණය නිර්ණය කරනවා. ඒ වගේම මවු පුවරුවට (mother board) සම්බන්ධව ඇති සියළුම පර්යන්ත උපක්‍රම (peripheral devices) පාලනය සඳහා අවශ්‍ය උපක්‍රම ධාවක ප්‍රවේශනය කරගනී.</p>
+					</section>
+					<section>
+					<h3>gui</h3>
+						<p>අවසානයේ මෙහෙයුම් පද්ධතිය මුලින් ක්‍රියාත්මක කල යුතු විධානයන් ක්‍රියාත්මක කර චිත්‍රක පරිශීලක අතුරුමුහුණත (GUI) තිරයේ දිස් කොට පරිශීලකයාගේ විධානයක් බලාපොරොත්තුවෙන් සිටියි.</p>
+					</section>
+				</section>
+				<section>
+					<section>
+						<p>කලින් සඳහන් කල (BIOS) වැඩසටහන පිහිටා ඇත්තේ පඨන මාත්‍ර මතකයෙහියි (ROM). එයට පඨන මාත්‍ර මතකයක් යොදා ගැනීම සඳහා හේතු දක්වන්න​ ?</p>
+					</section>
+					<section>
+					<div align="left"><p>- 1 - එය ස්ථීර මතකයක් වීම (සසම්භාවී ප්‍රවේශ මතකය තාවකාලිකයි)<br><br>
+- 2 - එය ක්‍රියාරම්භ කිරීමට අවශ්‍ය නොවීම<br><br>
+- 3 - වෛරසයන්ට පහසුවෙන් එයට ලඟා වීමට හැකි නොවීම දැක්විය හැකියි.</p></div>
+						
+					</section>
+				</section>
+				<section>
+					<section>
+						<p>බහුලව භාවිතා වන ස්වාරම්භක වැඩසටහන් දෙකක් නම් කරන්න​.? </p>
+					</section>
+					<section>
+						<div align="left">
+							<p>- 1 - GNU grand unified boot loader (GRUB): ලිනක්ස් පාදක OS සඳහා විවෘත කේත (open source) ස්වාරම්භක වැඩසටහනක්.</p><br>
+							<p>- 2 - NT loader (NTLDR): Windows NT සිට Windows XP දක්වා වූ ස්වාරම්භක වැඩසටහන.</p>
+						</div>
+					</section>
+				</section>
+				<section>
+					<section>
+						<p>මෙහෙයුම් පද්ධති වර්ගීකරණය ආකාරයන් ලියා විස්තර කරන්න​</p>
+					</section>
+					<section>
+						<h2>තනි පරිශීලක – තනි කාර්ය (single user – single task)</h2><br>
+						<div align="left">එක වෙලාවකට එක පරිශීලකයෙකු පමණයි.<br> එම පරිශීලකයාට කල හැක්කේද එක වැඩකි.
+						</div>
+						<img src="img/plamos.jpg" height=350px >
+					</section>
+					<section>
+						<h2>තනි පරිශීලක – බහු කාර්ය (single user – multi task) </h2><br>
+						<div align="center">එක වෙලාවකට එක පරිශීලකයෙකුට වැඩ කිහිපයක් කල හැකියි. අද බහුලව ඩෙස්ක්ටොප් පරිගණකයේ හෝ ලැප්ටොප් පරිගණකයේ භාවිතා වන මෙහෙයුම් පද්ධති මේවාට අයිති වේ. මධ්‍ය සැකසුම් ඒකකය ඇත්තටම හසුරුවන්නේ වරකට එක් ක්‍රමලේඛයක් වුවත් එහි වේගය හා කාර්යක්ෂමතාවය නිසා ඔබට දිස්වන්නේ ක්‍රමලේඛ සමගාමීව ධාවනය වෙන ලෙසයි. මෙවැනි මෙහෙයුම් පද්ධතිනිර්මාණය වී ඇත්තේ පරිශීලක හිතෛෂී බාවය සිත්හි තබාගෙනයි. සම්පත් භාවිතය පිලිබඳ වැඩි අවධානයක් මෙහි යොමු කර නැත.
+						</div>
+					</section>
+					<section>
+							<img src="img/winappand.jpg" height=450px >
+					</section>
+						<section>
+						<h2>බහු පරිශීලක – බහු කාර්ය(multi user – multi task) </h2><br>
+						<div align="center">මේ වර්ගයේ මෙහෙයුම් පද්ධති බොහෝ විට භාවිතා වන්නේ මහා පරිගණක (Mainframe computers)වලයි. ජාලගත පද්ධති මඟින් බොහෝ පරිශීලකයන්ට එකවර මහා පරිගණකයින් වැඩ කිරීමට හැකියි. මෙහෙයුම් පද්ධතිය මඟින් පරිගණකයේ සම්පත් පරිශීලකයන්හට වෙන් කර දෙනු ලබයි. මධ්‍ය සැකසුම් ඒකකටය වරකට හසුරුවන්නේ එක් පරිශීලකයෙකු පමණක් නමුත් එහි වේගය හා කාර්යක්ෂමතාවය නිසා ඔබට දිස්වන්නේ එකවර පරිශීලකයන් ගොඩක් හසුරුවන ආකාරයටයි. මෙම මෙහෙයුම් පද්ධති සම්පත් කාර්යක්ෂමව භාවිතා කිරීම ගැන වැඩි අවධානයක් යොමු කරයි.
+						</div>
+					</section>
+					<section>
+							<img src="img/winsev.jpg" height=450px >
+					</section>
+					<section>
+							<img src="img/linuxser.jpg" height=450px >
+					</section>
+						<section>
+						<h2>බහුපොට (multithreading)</h2><br>
+						<div align="center">එක් මෘදුකාංගයක කොටස් වෙන් වෙන් වශයෙන් සමගාමීව ධාවනය කිරීම සිදුවේ. අද භාවිතා වන මෙහෙයුම් පද්ධති සියල්ලම වාගේ multithreading සඳහා ආධාර කරයි.
+						<img src="img/multitaskos.jpg" height=400px >
+						</div>
+					</section>
+					<section>
+					<h3>තථ්‍ය කාල (real time operating system – RTOS)</h3><br>
+						<div align="center">RTOS යොදා ගැනෙන්නේ තථ්‍ය කාල යෙදුම් අයැදුම් (application requests)ඉටු කිරීම සඳහායි. එයට ආදානයක් ලැබුනු විගස අන්තරා පමාවකින් (buffering delay) තොරව දත්ත සැකසීමේ හැකියාව තිබිය යුතුයි. මේවා බොහෝ විට යොදා ගන්නේ යන්තසූත්‍ර, කාර්මික පද්ධති, විද්‍යාත්මක පද්ධති වැනි සංකීර්ණ පද්ධති පාලනය කිරීම සඳහායි.
+						<img src="img/atm.jpg" height=250px >
+						</div>
+					</section>
+					</section>
+					<section>
+						<section>
+							<h3>ක්‍රියා යන​ පෙළගැ ස්වීමේ ආකාර <br><br>ලියා  දක්වන්න (CPU scheduling) ?​</h3>
+						</section>
+						<section>
+							<div align="left"><p>- 1 - දීර්ඝ කාලීන පෙළගැ ස්වීම්</p>
+							<p>- 2 - මධ්ය කාලීන හෝ මධ්ය කාලීන පෙළගැ ස්වීම්</p>
+							<p>- 3 - කෙටි කාලීන පෙළගැ ස්වීම්</p>
+						    </div>
+							</section>
+					</section>
+					<section>
+						<section>
+							<h3>ක්‍රියා යන​ පෙළගැ ස්වීම සඳහා  යොදා <br><br> ගන්න ඇල්ගොරිතම නම්‍ කරන්න​ ?</h3>
+						</section>
+						<section>
+							
+								First in first out<br><br><img src="img/fifo.png" height=400px >
+								 
+						</section>
+						<section>
+							 
+								Shortest remaining time first <br><br><img src="img/srtf.jpg" height=400px >
+						</section>
+						<section>
+							 	Fixed priority pre-emptive scheduling<br><br><img src="img/fpps.jpg" height=400px >
+														
+						</section>
+						<section>
+								Round-robin scheduling<br><br><img src="img/rr.png" height=400px >
+								
+						</section>
+						<section>
+								Multilevel queue scheduling<br><br><img src="img/mlqp.jpg" height=400px >
+								 
+						</section>
+					</section>	
+						
+				</section>
+			</div>
+
+		</div>
+
+		<script src="lib/js/head.min.js"></script>
+		<script src="js/reveal.min.js"></script>
+
+		<script>
+
+			// Full list of configuration options available here:
+			// https://github.com/hakimel/reveal.js#configuration
+			Reveal.initialize({
+				controls: true,
+				progress: true,
+				history: true,
+				center: true,
+
+				theme: Reveal.getQueryHash().theme, // available themes are in /css/theme
+				transition: Reveal.getQueryHash().transition || 'default', // default/cube/page/concave/zoom/linear/fade/none
+
+				// Parallax scrolling
+				// parallaxBackgroundImage: 'https://s3.amazonaws.com/hakim-static/reveal-js/reveal-parallax-1.jpg',
+				// parallaxBackgroundSize: '2100px 900px',
+
+				// Optional libraries used to extend on reveal.js
+				dependencies: [
+					{ src: 'lib/js/classList.js', condition: function() { return !document.body.classList; } },
+					{ src: 'plugin/markdown/marked.js', condition: function() { return !!document.querySelector( '[data-markdown]' ); } },
+					{ src: 'plugin/markdown/markdown.js', condition: function() { return !!document.querySelector( '[data-markdown]' ); } },
+					{ src: 'plugin/highlight/highlight.js', async: true, callback: function() { hljs.initHighlightingOnLoad(); } },
+					{ src: 'plugin/zoom-js/zoom.js', async: true, condition: function() { return !!document.body.classList; } },
+					
+				]
+			});
+
+		</script>
+
+	</body>
+</html>
+

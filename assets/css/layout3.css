@@ -1,0 +1,23 @@
+/* Layout 3 = classic index.php portal (home.css). Keep hp chrome out of the way. */
+.hp-l3 { margin: 0; }
+body.hp.hp-l3 .hp-auth-inline {
+    max-width: none;
+    margin: 0;
+}
+body.hp.hp-l3 .hp-auth-inline .hp-auth-panel.login-panel {
+    max-width: 440px;
+    margin: 0 auto 1.5rem;
+}
+body.hp.hp-l3 .teacher-profile-card .hp-teacher-rank {
+    display: block;
+    margin: .2rem 0 .6rem;
+    font-size: .78rem;
+}
+body.hp.hp-l3 .eck-theme-picker--floating {
+    bottom: calc(var(--nav-height, 76px) + 18px);
+    top: auto;
+}
+body.hp:has(.hp-preview-banner).hp-l3 .eck-theme-picker--floating {
+    top: 62px;
+    bottom: auto;
+}

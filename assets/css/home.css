@@ -1,5 +1,5 @@
 /* ============================================================
-   EDEXCEL COLLEGE KANDY
+   EDEXCEL COLLEGE
    HOMEPAGE / PUBLIC PORTAL
    home.css
    ============================================================ */
@@ -2462,6 +2462,11 @@ select {
         18px;
 }
 
+.login-panel form > .js-pass-wrap[hidden],
+.login-panel form > .js-phone-wrap[hidden] {
+    display: none !important;
+}
+
 .login-panel form input[type="text"],
 .login-panel form input[type="password"] {
 
@@ -2639,6 +2644,38 @@ select {
             206,
             0.22
         ) !important;
+}
+
+.student-register-link {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    width: 100%;
+    min-height: 52px;
+    margin-top: 12px;
+    padding: 0 16px;
+    box-sizing: border-box;
+    border: 1px solid var(--panel-border-strong, rgba(81, 97, 206, 0.45));
+    border-radius: 13px;
+    background: transparent;
+    color: var(--text);
+    font-size: 0.95rem;
+    font-weight: 800;
+    text-decoration: none;
+    transition: background-color 0.2s ease, border-color 0.2s ease, color 0.2s ease;
+}
+
+.student-register-link:hover,
+.student-register-link:focus {
+    background: var(--primary-soft, rgba(81, 97, 206, 0.12));
+    border-color: var(--primary);
+    color: var(--primary);
+    text-decoration: none;
+}
+
+.student-register-link i {
+    font-size: 0.95rem;
 }
 
 
@@ -4015,10 +4052,9 @@ select {
             0;
     }
 
-    .bottom-navbar,
     .standalone-theme-toggle {
-        display:
-            none !important;
+        top: 8px;
+        right: 8px;
     }
 
     .app-section[hidden] {
@@ -4027,6 +4063,149 @@ select {
     }
 }
 
+
+/* ============================================================
+   ICON-ONLY BOTTOM NAV
+   Matches the five-icon mobile bar:
+   dark strip, grey icons, yellow active tile.
+   ============================================================ */
+
+.bottom-navbar {
+    display: flex !important;
+    align-items: center;
+    justify-content: center;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    transform: none;
+    width: 100%;
+    max-width: 100%;
+    min-height: 64px;
+    margin: 0;
+    padding: 8px 10px 10px;
+    gap: 0;
+    grid-template-columns: none;
+    border-radius: 16px 16px 0 0;
+    background: #12141a;
+    color: #d5dde4;
+    box-shadow: 0 -10px 28px rgba(0, 0, 0, 0.35);
+}
+
+.bottom-navbar-brand {
+    display: none !important;
+}
+
+.bottom-navbar-menu {
+    width: auto;
+    min-width: 0;
+    overflow: visible;
+    border-radius: 0;
+}
+
+.bottom-navbar .nav-selector,
+.bottom-navbar .selector-corner {
+    display: none !important;
+}
+
+.bottom-nav-list {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: auto;
+    margin: 0;
+    padding: 0;
+    gap: 6px;
+    list-style: none;
+}
+
+.bottom-nav-item {
+    flex: 0 0 auto;
+    display: flex;
+    justify-content: center;
+}
+
+.bottom-nav-link {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 48px;
+    min-width: 48px;
+    height: 48px;
+    padding: 0;
+    gap: 0;
+    border-radius: 12px;
+    color: #c5ced6;
+    transition: background-color 0.2s ease, color 0.2s ease;
+}
+
+.bottom-nav-link i {
+    min-width: 0;
+    font-size: 1.28rem;
+    line-height: 1;
+}
+
+.bottom-nav-link span {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+}
+
+.bottom-nav-item.active .bottom-nav-link,
+.bottom-nav-item.active .bottom-nav-link i {
+    color: #f6ad55;
+}
+
+.bottom-nav-item.active .bottom-nav-link {
+    background: #2a3139;
+}
+
+.bottom-nav-link:hover,
+.bottom-nav-link:focus-visible {
+    color: #ffffff;
+}
+
+@media (max-width: 1024px) {
+    .bottom-navbar {
+        padding: 6px 8px 8px;
+        border-radius: 14px 14px 0 0;
+    }
+}
+
+@media (max-width: 640px) {
+    .bottom-navbar-menu,
+    .bottom-nav-list {
+        width: 100%;
+    }
+
+    .bottom-nav-list {
+        justify-content: space-around;
+        gap: 0;
+    }
+
+    .bottom-navbar {
+        padding: 5px 6px 8px;
+        border-radius: 12px 12px 0 0;
+        min-height: 58px;
+    }
+
+    .bottom-nav-link {
+        width: 44px;
+        min-width: 44px;
+        height: 44px;
+        border-radius: 11px;
+    }
+
+    .bottom-nav-link i {
+        font-size: 1.18rem;
+    }
+}
 
 /* ============================================================
    REDUCED MOTION

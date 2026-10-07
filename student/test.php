@@ -1,10 +1,15 @@
 <?php
 // diagnostic script – check timetable data
+if (PHP_SAPI !== 'cli') {
+    http_response_code(404);
+    exit;
+}
 
-require_once __DIR__ . '/../config/database.php';
+require_once '../config/database.php';
+require_once '../config/auth.php';
+require_admin();
 
-error_reporting(E_ALL);
-ini_set('display_errors', 1);
+ini_set('display_errors', '0');
 
 $today = date('Y-m-d');
 $weekStart = date('Y-m-d', strtotime('monday this week'));
@@ -35,7 +40,7 @@ echo "<p>Found " . count($rows) . " active classes this week.</p>";
 if (count($rows) > 0) {
     echo "<table border='1'><tr><th>Date</th><th>Time</th><th>Class</th><th>Subject</th><th>Teacher</th><th>Room</th></tr>";
     foreach ($rows as $r) {
-        echo "<tr><td>{$r['date']}</td><td>{$r['start_time']}–{$r['end_time']}</td><td>{$r['class_name']}</td><td>{$r['subject_name']}</td><td>{$r['teacher_name']}</td><td>{$r['room_name']}</td></tr>";
+        echo "<tr><td>" . htmlspecialchars((string)$r['date']) . "</td><td>" . htmlspecialchars((string)$r['start_time']) . "–" . htmlspecialchars((string)$r['end_time']) . "</td><td>" . htmlspecialchars((string)$r['class_name']) . "</td><td>" . htmlspecialchars((string)$r['subject_name']) . "</td><td>" . htmlspecialchars((string)$r['teacher_name']) . "</td><td>" . htmlspecialchars((string)$r['room_name']) . "</td></tr>";
     }
     echo "</table>";
 } else {
@@ -46,7 +51,7 @@ if (count($rows) > 0) {
 $classes = $pdo->query("SELECT id, name FROM student_classes WHERE deleted_at IS NULL ORDER BY name")->fetchAll();
 echo "<h3>Available Classes (" . count($classes) . ")</h3><ul>";
 foreach ($classes as $c) {
-    echo "<li>ID {$c['id']}: {$c['name']}</li>";
+    echo "<li>ID " . (int)$c['id'] . ": " . htmlspecialchars((string)$c['name']) . "</li>";
 }
 echo "</ul>";
 

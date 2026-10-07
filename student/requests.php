@@ -1,0 +1,10 @@
+<?php
+declare(strict_types=1);
+require_once __DIR__ . '/../config/bootstrap.php';
+require_once __DIR__ . '/../vendor/autoload.php';
+
+use Edexcel\Services\ServiceRequestService;
+require_student();$svc=new ServiceRequestService($pdo);$error='';$success='';
+if($_SERVER['REQUEST_METHOD']==='POST'){if(!verify_csrf_token($_POST['csrf_token']??''))$error='Session expired.';else try{$svc->create('student',(int)$_SESSION['user_id'],(string)$_POST['request_type'],$_POST);$success='Request submitted.';}catch(Throwable $e){$error=$e->getMessage();}}
+$rows=$svc->list('student',(int)$_SESSION['user_id']);include __DIR__ . '/../includes/header.php';?>
+<div class="container py-4"><h1 class="h3">Service requests</h1><p class="text-muted">One request history for timetable, academic, finance, document, and support help.</p><?php if($error):?><div class="alert alert-danger"><?=e($error)?></div><?php endif;?><?php if($success):?><div class="alert alert-success"><?=e($success)?></div><?php endif;?><form method="post" class="card border-0 shadow-sm p-3 mb-4"><?=csrf_field()?><select class="form-select mb-2" name="request_type"><option value="general_support">General support</option><option value="timetable_change">Timetable change</option><option value="academic_support">Academic support</option><option value="fee_query">Fee query</option><option value="document_request">Document request</option></select><input class="form-control mb-2" name="subject" placeholder="Subject" required><textarea class="form-control mb-2" name="description" rows="4" placeholder="Describe what you need" required></textarea><button class="btn btn-primary">Submit request</button></form><div class="card border-0 shadow-sm"><div class="table-responsive"><table class="table"><thead><tr><th>Request</th><th>Subject</th><th>Status</th><th>Updated</th></tr></thead><tbody><?php foreach($rows as $r):?><tr><td><?=e($r['request_type']??$r['category'])?></td><td><?=e($r['subject'])?></td><td><?=e($r['status'])?></td><td><?=e($r['updated_at']??$r['created_at'])?></td></tr><?php endforeach;?></tbody></table></div></div></div><?php include __DIR__ . '/../includes/footer.php';?>

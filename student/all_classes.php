@@ -4,7 +4,8 @@ require_once __DIR__ . '/../config/database.php';
 
 // ---- GET FILTERS ----
 $selected_class = (int)($_GET['class_id'] ?? 0);
-$teacher_filter = $_GET['teacher'] ?? '';
+$teacher_filter = trim((string)($_GET['teacher'] ?? ''));
+$search_query = trim((string)($_GET['q'] ?? ''));
 
 // Current week
 $week_start = date('Y-m-d', strtotime('monday this week'));
@@ -40,10 +41,10 @@ if (!empty($class_ids)) {
                    c.name as class_name,
                    t.class_id
             FROM timetable t
-            JOIN teachers tc ON t.teacher_id = tc.id
+            JOIN teachers tc ON t.teacher_id = tc.id AND tc.deleted_at IS NULL
             JOIN subjects s ON t.subject_id = s.id
             JOIN student_classes c ON t.class_id = c.id
-            JOIN rooms r ON t.room_id = r.id
+            LEFT JOIN rooms r ON t.room_id = r.id
             WHERE t.class_id IN ($placeholders)
             AND t.deleted_at IS NULL
             AND t.date BETWEEN ? AND ?
@@ -59,11 +60,27 @@ if (!empty($class_ids)) {
 
 // ---- APPLY FILTERS ----
 if ($teacher_filter) {
-    $entries = array_filter($entries, function($e) use ($teacher_filter) {
+    $entries = array_values(array_filter($entries, function($e) use ($teacher_filter) {
         return $e['teacher_name'] === $teacher_filter;
-    });
+    }));
 }
-$entries = array_values($entries);
+if ($search_query !== '') {
+    $tokens = preg_split('/\s+/', strtolower($search_query)) ?: [];
+    $entries = array_values(array_filter($entries, static function ($e) use ($tokens) {
+        $hay = strtolower(
+            ($e['teacher_name'] ?? '') . ' ' .
+            ($e['subject_name'] ?? '') . ' ' .
+            ($e['room_name'] ?? '') . ' ' .
+            ($e['class_name'] ?? '')
+        );
+        foreach ($tokens as $token) {
+            if ($token !== '' && strpos($hay, $token) === false) {
+                return false;
+            }
+        }
+        return true;
+    }));
+}
 
 // Group by day
 $days_of_week = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
@@ -139,7 +156,11 @@ foreach ($classes as $c) {
     <!-- Filter Bar -->
     <div class="filter-bar">
         <form method="GET" class="w-100 d-flex flex-wrap gap-2 align-items-end">
-            <divclass="flex-grow-1 inline-css-04c6a0a4e8">
+            <div class="flex-grow-1">
+                <label for="q" class="form-label">Search</label>
+                <input type="search" id="q" name="q" class="form-control form-control-sm" placeholder="Subject, teacher, room..." value="<?= htmlspecialchars($search_query) ?>" onchange="this.form.submit()">
+            </div>
+            <div class="flex-grow-1 inline-css-04c6a0a4e8">
                 <label for="classSelect" class="form-label">Class</label>
                 <select id="classSelect" name="class_id" class="form-select form-select-sm" onchange="this.form.submit()">
                     <option value="0" <?= ($selected_class == 0) ? 'selected' : '' ?>>All Classes</option>
@@ -150,7 +171,7 @@ foreach ($classes as $c) {
                     <?php endforeach; ?>
                 </select>
             </div>
-            <divclass="flex-grow-1 inline-css-04c6a0a4e8">
+            <div class="flex-grow-1 inline-css-04c6a0a4e8">
                 <label for="teacher" class="form-label">Teacher</label>
                 <select id="teacher" name="teacher" class="form-select form-select-sm" onchange="this.form.submit()">
                     <option value="">All Teachers</option>
@@ -162,7 +183,7 @@ foreach ($classes as $c) {
                 </select>
             </div>
             <div>
-                <a href="index.php" class="btn btn-outline-secondary btn-sm"><i class="bi bi-arrow-clockwise"></i> Reset</a>
+                <a href="all_classes.php" class="btn btn-outline-secondary btn-sm"><i class="bi bi-arrow-clockwise"></i> Reset</a>
             </div>
             <div class="ms-auto text-muted small">
                 <i class="bi bi-list-ul"></i> <?= count($entries) ?> classes
@@ -213,7 +234,7 @@ foreach ($classes as $c) {
                         $whatsapp_link = $whatsapp_links[$e['class_id']] ?? '';
                     ?>
                     <div class="class-card">
-                        <divclass="accent-bar inline-css-0bdc38a1fd"></div>
+                    <div class="accent-bar inline-css-0bdc38a1fd"></div>
                         <div class="card-content">
                             <div class="time-section">
                                 <span class="start-time"><?= date('g:i A', strtotime($e['start_time'])) ?></span>

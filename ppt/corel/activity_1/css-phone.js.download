@@ -1,0 +1,76 @@
+(function( cssPhoneInfo, $, undefined ) {
+
+	cssPhoneInfo.insert = function () {
+		var css_headerInfo = [{currencies: 'en-US,en-CA', phoneText: 'Purchase by Phone:<span class="number":>%phonenumber%</span>', hoursText: '<strong>%hours%</strong>', extraInfo: ''},
+		{currencies: 'en-GB', phoneText: 'Purchase by Phone:<span class="number">%phonenumber%</span>', hoursText: '<strong>%hours%</strong>', extraInfo: '<a href="http://www.corel.com/privacy/#cookies" target="_blank">Cookie Policy</a>'},
+		{currencies: 'en-RW,en-IE,se-SE,nb-NO,da-DK,de-LI,en-ZA', phoneText: 'Purchase by Phone:<span class="number">%phonenumber%</span>', hoursText: '<strong>%hours%</strong>', extraInfo: '<a href="http://www.corel.com/privacy/#cookies" target="_blank">Cookie Policy</a>'},
+		{currencies: 'de-DE', phoneText: 'Telefonische Bestellungen:<span class="number">%phonenumber%</span>', hoursText: '<strong>%hours%</strong>', extraInfo: '<a href="http://www.corel.com/privacy/#cookies" target="_blank">Cookie-Richtlinie – Neu</a>'},
+		{currencies: 'fr-FR', phoneText: 'Acheter par téléphone:<span class="number">%phonenumber%</span>', hoursText: '<strong>%hours%</strong>', extraInfo: '<a href="http://www.corel.com/privacy/#cookies" target="_blank">Cookies : nouvelle politique</a>'},
+		{currencies: 'it-IT', phoneText: 'Acquisti telefonici:<span class="number">%phonenumber%</span>', hoursText: '<strong>%hours%</strong>', extraInfo: '<a href="http://www.corel.com/privacy/#cookies" target="_blank">Informativa sui cookie – Novità</a>'},
+		{currencies: 'nl-NL', phoneText: 'Telefonisch kopen:<span class="number">%phonenumber%</span>', hoursText: '<strong>%hours%</strong>', extraInfo: '<a href="http://www.corel.com/privacy/#cookies" target="_blank">Cookiebeleid – Nieuw</a>'},
+		{currencies: 'cs-CZ', phoneText: 'Nákup po telefonu:<span class="number">%phonenumber%</span>', hoursText: '<strong>%hours%</strong>', extraInfo: '<a href="http://www.corel.com/privacy/#cookies" target="_blank">Nové – zásady cookies</a>'}];
+		//{currencies: 'pl-PL', phoneText: 'Zamów przez telefon:<span class="number">%phonenumber%</span>', hoursText: '<strong>%hours%</strong>', extraInfo: '<a href="http://www.corel.com/privacy/#cookies" target="_blank">Pliki cookie (nowe zasady)</a>'}];
+		var css_genericInfo = {phoneText: '<a href="tel:%phonenumber%">%phonenumber%</a>', hoursText: '%hours%'}
+						
+	// Insert CSS Phone numbers into header
+	for (var i=0; i < css_headerInfo.length; i++) {
+		var currencyList = css_headerInfo[i].currencies.split(",");
+		if ($.inArray(pricing.getCurrency(), currencyList) != -1) {
+			if (null != $("#phone-holder")[0]) {
+				$(".orderByPhone")[0].innerHTML = replaceToken(css_headerInfo[i].phoneText) + css_headerInfo[i].extraInfo;
+				$(".popup-frame")[0].innerHTML = replaceToken(css_headerInfo[i].hoursText);
+				$("#phone-holder").show();
+			}
+			break;
+		}
+	}
+	
+	// Insert any other CSS phone numbers on the page
+	$(".phoneNumber").html(replaceToken(css_genericInfo.phoneText));
+	$(".callHours").html(replaceToken(css_genericInfo.hoursText));
+}
+
+var css_phoneInfo = {'en-US':{phonenumber: '1-877-582-6735', hours: 'Mon-Fri: 9am-10pm EST<br>Sat-Sun: 9am-6pm EST'},
+					 'en-CA':{phonenumber: '1-877-582-6735', hours: 'Mon-Fri: 9am-10pm EST<br>Sat-Sun: 9am-6pm EST'},
+					 'en-GB':{phonenumber: '0800-026-0663', hours: 'Mon-Fri: 8am-5pm GMT'},
+					 'en-RW':{phonenumber: '+44 1793 20 3800', hours: 'Mon-Fri: 9am-5pm GMT'},
+					 'en-IE':{phonenumber: '+44 1793 20 3800', hours: 'Mon-Fri: 9am-5pm GMT'},
+					 'en-ZA':{phonenumber: '+44 1793 20 3800', hours: 'Mon-Fri: 9am-5pm GMT'},
+					 'se-SE':{phonenumber: '+44 1793 20 3800', hours: 'Mon-Fri: 9am-5pm GMT'},
+					 'nb-NO':{phonenumber: '+44 1793 20 3800', hours: 'Mon-Fri: 9am-5pm GMT'},
+					 'da-DK':{phonenumber: '+44 1793 20 3800', hours: 'Mon-Fri: 9am-5pm GMT'},
+					 'de-LI':{phonenumber: '+44 1793 20 3800', hours: 'Mon-Fri: 9am-5pm GMT'},
+					 'de-DE':{phonenumber: '+49 8007238455', hours: 'Mo-Fr 9.00 bis 05.00 GMT & CET (auf Englisch)'},
+					 'fr-FR':{phonenumber: '+33 805087928', hours: 'Lundi-vendredi 8h-17h GMT & CET (en anglais)'},
+					 'it-IT':{phonenumber: '+44 1793 20 3800', hours: 'Lun-Ven 08:00-17:00 GMT & CET (in inglese)'},
+					 'nl-NL':{phonenumber: '+44 1793 20 3800', hours: 'Ma. - vr. 08:00 tot 17:00 uur GMT en CET (in het Engels)'},
+					 'cs-CZ':{phonenumber: '+44 1793 20 3800', hours: 'Mon-Fri: 9AM-5PM GMT (v angličtině)'}};
+					 //'pl-PL':{phonenumber: '+48 71 738 24 38', hours: 'Pn-pt w godzinach 9-17 CET'}};
+
+function replaceToken (str){
+	var result = str;
+	var tokens = str.match(/%\w*%/ig);
+	if (null != tokens) {
+		var phoneInfo = {};
+		if (css_phoneInfo.hasOwnProperty(pricing.getCurrency())) {
+			phoneInfo = css_phoneInfo[pricing.getCurrency()];
+		}
+		else {
+			phoneInfo = css_phoneInfo['en-US'];
+		}
+		for (var i=0; i < tokens.length; i++) {
+			if (tokens[i] == "%phonenumber%") {
+				result = result.replace(tokens[i], phoneInfo.phonenumber);
+			}
+			else if (tokens[i] == "%hours%") {
+				result = result.replace(tokens[i], phoneInfo.hours);
+			}
+		}
+	}
+	return result;
+}
+}( window.cssPhoneInfo = window.cssPhoneInfo || {}, jQuery ));
+
+$( window ).ready(function() {
+	cssPhoneInfo.insert();
+});

@@ -24,18 +24,18 @@ $largest = $rooms ? max(array_map(fn($r) => (int)$r['capacity'], $rooms)) : 0;
         <div class="ops-stat"><span class="label">Average</span><span class="value"><?= $rooms ? round($total_capacity / count($rooms)) : 0 ?></span><span class="hint">Seats per room</span></div>
     </div>
 
-    <div class="ops-card">
+    <div class="ops-card" data-live-scope>
         <div class="ops-card-body">
             <div class="ops-toolbar">
-                <div class="ops-search"><input type="search" id="roomSearch" class="form-control" placeholder="Search rooms..."></div>
-                <span class="ops-chip"><i class="bi bi-building"></i> <?= count($rooms) ?> active</span>
+                <div class="ops-search"><input type="search" id="roomSearch" class="form-control" placeholder="Search rooms..." data-live-search></div>
+                <span class="ops-chip"><i class="bi bi-building"></i> <span data-live-count><?= count($rooms) ?></span> matching</span>
             </div>
             <?php if (!$rooms): ?>
                 <div class="ops-empty"><i class="bi bi-door-closed"></i><strong>No rooms yet</strong><div>Add your first classroom to use it in the timetable.</div></div>
             <?php else: ?>
                 <div class="ops-room-grid" id="roomGrid">
                     <?php foreach ($rooms as $r): ?>
-                        <article class="ops-room-card" data-room-name="<?= htmlspecialchars(strtolower($r['name'])) ?>">
+                        <article class="ops-room-card" data-live-item data-search="<?= htmlspecialchars(strtolower($r['name'].' '.$r['capacity'])) ?>" data-room-name="<?= htmlspecialchars(strtolower($r['name'])) ?>">
                             <div class="ops-room-icon"><i class="bi bi-door-open"></i></div>
                             <div class="ops-room-name"><?= htmlspecialchars($r['name']) ?></div>
                             <div class="ops-room-capacity"><i class="bi bi-people"></i> Capacity: <strong><?= (int)$r['capacity'] ?></strong> students</div>
@@ -50,18 +50,9 @@ $largest = $rooms ? max(array_map(fn($r) => (int)$r['capacity'], $rooms)) : 0;
                         </article>
                     <?php endforeach; ?>
                 </div>
-                <div id="roomEmpty" class="ops-empty d-none"><i class="bi bi-search"></i><strong>No matching rooms</strong><div>Try a different search term.</div></div>
+                <div id="roomEmpty" class="ops-empty d-none" data-live-empty><i class="bi bi-search"></i><strong>No matching rooms</strong><div>Try a different search term.</div></div>
             <?php endif; ?>
         </div>
     </div>
 </div>
-<script>
-document.getElementById('roomSearch')?.addEventListener('input', function () {
-    const q = this.value.trim().toLowerCase(); let visible = 0;
-    document.querySelectorAll('#roomGrid .ops-room-card').forEach(card => {
-        const show = card.dataset.roomName.includes(q); card.classList.toggle('d-none', !show); if (show) visible++;
-    });
-    document.getElementById('roomEmpty')?.classList.toggle('d-none', visible !== 0);
-});
-</script>
 <?php include __DIR__ . '/../includes/footer.php'; ?>

@@ -1,0 +1,25 @@
+# LiveKit on the host network so WebRTC UDP is not limited to docker-proxy.
+# Redis stays in Docker. Publish on 16379 so we do not collide with Evolution
+# (or anything else) already bound to 6379.
+# Requires Compose that supports !reset (Docker Compose v2.24+).
+#
+#   docker compose -f docker-compose.yml -f docker-compose.cyberpanel.yml \
+#     -f docker-compose.ws8443.yml -f docker-compose.hostnet.yml up -d
+
+services:
+  redis:
+    ports:
+      - "127.0.0.1:16379:6379"
+
+  livekit:
+    network_mode: host
+    ports: !reset []
+
+  egress:
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+
+  caddy8443:
+    network_mode: host
+    ports: !reset []
+    extra_hosts: !reset []

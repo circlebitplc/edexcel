@@ -1,0 +1,27 @@
+.hp-l9 { margin: 0; font-family: "Public Sans", sans-serif; background: #faf7f2; color: #1c1917; }
+.l9-mast { text-align: center; padding: 1.4rem 1rem .6rem; border-bottom: 3px solid #9f1239; }
+.l9-mast h1 { font-family: Newsreader, serif; font-size: clamp(2.2rem, 6vw, 4.2rem); margin: .2rem 0 .6rem; }
+.l9-mast nav { display: flex; flex-wrap: wrap; justify-content: center; gap: .8rem; padding: 0 3.5rem; }
+.l9-mast a, .l9-mast button { background: none; border: 0; font: inherit; cursor: pointer; color: #9f1239; text-decoration: none; }
+.l9-date { letter-spacing: .14em; text-transform: uppercase; font-size: .75rem; }
+.l9-wrap { display: grid; grid-template-columns: 1.6fr .7fr; gap: 2rem; max-width: 1180px; margin: 0 auto; padding: 1.5rem 4vw 3rem; }
+.l9-feature { display: grid; grid-template-columns: 1.1fr .9fr; gap: 1rem; align-items: center; }
+.l9-feature img, .l9-grid img, .l9-side img { width: 100%; height: 220px; object-fit: cover; border-radius: 8px; }
+.l9-feature h2 { font-family: Newsreader, serif; font-size: clamp(1.8rem, 3vw, 2.8rem); margin: .3rem 0; }
+.l9-cat { color: #9f1239; font-weight: 800; text-transform: uppercase; letter-spacing: .08em; font-size: .75rem; }
+.l9-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 1rem; margin: 1.5rem 0; }
+.l9-grid article { background: #fff; padding: .8rem; }
+.l9-grid img { height: 120px; }
+.l9-wrap aside { background: #fff; padding: 1.1rem; border-left: 1px solid #e7e5e4; }
+.l9-wrap aside h2 { font-size: 1.05rem; border-bottom: 1px solid #e7e5e4; padding-bottom: .4rem; }
+.l9-side, .l9-spot { display: flex; gap: .6rem; align-items: flex-start; text-decoration: none; color: inherit; margin: .6rem 0; min-width: 0; }
+.l9-side img { width: 64px; height: 48px; flex: 0 0 64px; }
+.l9-spot small, .l9-side small { display: block; color: #78716c; }
+.l9-event { display: flex; gap: .7rem; align-items: center; }
+.l9-event b { min-width: 42px; background: #9f1239; color: #fff; border-radius: 10px; text-align: center; padding: .25rem; display: grid; }
+.l9-event small { display: block; font-size: .7rem; }
+.l9-ava, .hp-l9 .hp-avatar-fallback { width: 40px; height: 40px; border-radius: 50%; object-fit: cover; flex: 0 0 40px; }
+#teachers { max-height: 50vh; overflow: auto; }
+@media (max-width: 900px) {
+    .l9-wrap, .l9-grid, .l9-feature { grid-template-columns: 1fr; }
+}
