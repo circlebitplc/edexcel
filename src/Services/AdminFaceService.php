@@ -607,15 +607,19 @@ final class AdminFaceService
     }
 
     /**
-     * Guards that the operation targets a valid, active user account (admin, teacher, student).
+     * Guards that the operation targets a valid, active user account.
      */
     public function ensureValidUser(int $userId): void
     {
         if ($userId <= 0) {
             throw new RuntimeException('Unauthorized: Invalid user ID provided.');
         }
-        if (!$this->biometricService->validateUser($userId)) {
-            throw new RuntimeException('Unauthorized: User account not found, deactivated, or deleted.');
+        if (method_exists($this->biometricService, 'validateUser')) {
+            if (!$this->biometricService->validateUser($userId)) {
+                throw new RuntimeException('Unauthorized: User account not found, deactivated, or deleted.');
+            }
+        } elseif (!$this->biometricService->validateIsAdminUser($userId)) {
+            throw new RuntimeException('Unauthorized: Biometric operations are restricted to the administrator account.');
         }
     }
 
@@ -624,6 +628,9 @@ final class AdminFaceService
      */
     public function ensureAdminUser(int $userId): void
     {
+        if ($userId <= 0) {
+            throw new RuntimeException('Unauthorized: Invalid user ID provided.');
+        }
         if (!$this->biometricService->validateIsAdminUser($userId)) {
             throw new RuntimeException('Unauthorized: Biometric operations are restricted to the administrator account.');
         }
