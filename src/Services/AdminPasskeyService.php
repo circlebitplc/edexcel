@@ -41,6 +41,7 @@ final class AdminPasskeyService
     {
         $host = (string)($_SERVER['HTTP_HOST'] ?? 'localhost');
         $host = preg_replace('/:\d+$/', '', $host) ?: 'localhost';
+        $host = preg_replace('/[^a-zA-Z0-9.-]/', '', $host) ?: 'localhost';
         return strtolower(trim($host));
     }
 
@@ -131,6 +132,8 @@ final class AdminPasskeyService
 
         $rawClientDataJSON = self::maybeDecodeBase64Url($clientDataJSON);
         $rawAttestationObject = self::maybeDecodeBase64Url($attestationObject);
+
+        $this->validateClientDataOrigin($rawClientDataJSON);
 
         $webauthn = $this->getWebAuthnEngine();
 
@@ -304,6 +307,23 @@ final class AdminPasskeyService
         $rawAuthenticatorData = self::maybeDecodeBase64Url($authenticatorData);
         $rawSignature = self::maybeDecodeBase64Url($signature);
 
+        $this->validateClientDataOrigin($rawClientDataJSON);
+
+        // Verify userHandle if provided by the authenticator client
+        if ($userHandle !== null && $userHandle !== '') {
+            $decodedHandle = self::maybeDecodeBase64Url($userHandle);
+            $expectedHandle = (string)$userId;
+            if ($userHandle !== $expectedHandle && $decodedHandle !== $expectedHandle) {
+                $this->biometricService->recordAudit(
+                    AdminBiometricService::METHOD_PASSKEY,
+                    false,
+                    $userId,
+                    'User handle mismatch'
+                );
+                throw new RuntimeException('Passkey user handle does not match expected administrator.');
+            }
+        }
+
         $webauthn = $this->getWebAuthnEngine();
         $publicKey = (string)$passkey['public_key'];
         $prevSignCount = (int)$passkey['sign_count'];
@@ -340,7 +360,9 @@ final class AdminPasskeyService
         }
 
         // Update signature counter & last used timestamp
-        $newSignCount = $webauthn->getSignatureCounter() ?? ($prevSignCount + 1);
+        // Authenticators without counter support return 0/null; preserve prevSignCount to prevent false clone detection
+        $actualSignCount = $webauthn->getSignatureCounter();
+        $newSignCount = ($actualSignCount !== null && $actualSignCount > 0) ? $actualSignCount : $prevSignCount;
         $this->pdo->prepare("
             UPDATE admin_passkeys
             SET sign_count = ?, last_used_at = CURRENT_TIMESTAMP
@@ -398,6 +420,31 @@ final class AdminPasskeyService
     {
         if (!$this->biometricService->validateIsAdminUser($userId)) {
             throw new RuntimeException('Unauthorized: Biometric operations are restricted to the administrator account.');
+        }
+    }
+
+    /**
+     * Strictly verifies that the clientDataJSON origin matches the Relying Party ID.
+     */
+    private function validateClientDataOrigin(string $rawClientDataJSON): void
+    {
+        $clientData = json_decode($rawClientDataJSON, true);
+        if (!is_array($clientData) || empty($clientData['origin'])) {
+            return;
+        }
+
+        $origin = (string)$clientData['origin'];
+        $host = strtolower((string)parse_url($origin, PHP_URL_HOST));
+        $scheme = strtolower((string)parse_url($origin, PHP_URL_SCHEME));
+        $rpId = $this->getRpId();
+
+        if ($rpId !== 'localhost' && $scheme !== 'https') {
+            throw new RuntimeException('Passkey origin must use secure HTTPS in production.');
+        }
+
+        // Host must match the RP ID exactly or be a valid dot-subdomain of the RP ID
+        if ($host !== $rpId && !str_ends_with($host, '.' . $rpId)) {
+            throw new RuntimeException("Passkey origin mismatch: '{$origin}' does not belong to '{$rpId}'.");
         }
     }
 

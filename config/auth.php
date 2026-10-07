@@ -3,6 +3,7 @@
 require_once __DIR__ . '/error_handler.php'; // Load error handler first
 require_once __DIR__ . '/security.php';
 require_once __DIR__ . '/config.php';
+require_once __DIR__ . '/ops.php';
 
 if (session_status() === PHP_SESSION_NONE) {
     session_start();
@@ -89,6 +90,16 @@ function session_user_is_valid($pdo): bool
         }
         $_SESSION['can_teach'] = true;
         $_SESSION['has_teacher_role'] = true;
+
+        // Invalidate admin session if all sessions were revoked globally
+        if (function_exists('ops_setting')) {
+            $revokedAt = (int)ops_setting($pdo, 'admin_sessions_revoked_at', '0');
+            $sessionCreated = (int)($_SESSION['login_time'] ?? 0);
+            if ($revokedAt > 0 && $sessionCreated > 0 && $sessionCreated < $revokedAt) {
+                $_SESSION['_kick_reason'] = 'admin_session_revoked';
+                return false;
+            }
+        }
     } elseif (isset($_SESSION['teacher_id'])) {
         unset($_SESSION['teacher_id']);
     }

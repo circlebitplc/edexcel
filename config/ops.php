@@ -46,6 +46,11 @@ function ops_setting(PDO $pdo, string $key, string $default = ''): string
     }
 }
 
+function ops_get_setting(PDO $pdo, string $key, string $default = ''): string
+{
+    return ops_setting($pdo, $key, $default);
+}
+
 function ops_save_setting(PDO $pdo, string $key, string $value): void
 {
     $stmt = $pdo->prepare("

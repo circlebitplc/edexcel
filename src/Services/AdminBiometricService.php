@@ -107,6 +107,17 @@ final class AdminBiometricService
     }
 
     /**
+     * Strictly verifies that the given user ID belongs to the authorized administrator account.
+     * Throws RuntimeException if not authorized.
+     */
+    public function ensureAdminUser(int $userId): void
+    {
+        if (!$this->validateIsAdminUser($userId)) {
+            throw new RuntimeException('Unauthorized: Administrator privilege required for biometric authentication.');
+        }
+    }
+
+    /**
      * Creates an ephemeral, single-use biometric challenge token.
      *
      * @param string $type 'passkey_reg'|'passkey_auth'|'face_enrol'|'face_auth'
@@ -116,6 +127,19 @@ final class AdminBiometricService
      */
     public function createChallenge(string $type, int $userId, array $payload = []): string
     {
+        // Opportunistic cleanup: prune expired challenge rows older than 2 hours
+        if (random_int(1, 10) === 1) {
+            try {
+                $pruneCutoff = date('Y-m-d H:i:s', time() - 7200);
+                $this->pdo->prepare("
+                    DELETE FROM admin_biometric_challenges
+                    WHERE expires_at < ?
+                ")->execute([$pruneCutoff]);
+            } catch (Throwable) {
+                // Ignore non-fatal cleanup failure
+            }
+        }
+
         $token = bin2hex(random_bytes(32));
         $ip = function_exists('eck_client_ip') ? eck_client_ip() : ($_SERVER['REMOTE_ADDR'] ?? '');
         $expiresAt = date('Y-m-d H:i:s', time() + self::CHALLENGE_TTL_SECONDS);
@@ -197,34 +221,46 @@ final class AdminBiometricService
         $ip = function_exists('eck_client_ip') ? eck_client_ip() : ($_SERVER['REMOTE_ADDR'] ?? '');
         $cutoff = date('Y-m-d H:i:s', time() - (self::LOCKOUT_MINUTES * 60));
 
-        $stmt = $this->pdo->prepare("
+        // 1. Hard lockout strictly enforced against the client IP address (prevents external DoS targeting user_id 1)
+        $stmtIp = $this->pdo->prepare("
             SELECT COUNT(*) FROM authentication_audit
-            WHERE (ip_address = ? OR user_id = 1)
+            WHERE ip_address = ?
               AND success = 0
               AND created_at >= ?
         ");
-        $stmt->execute([$ip, $cutoff]);
-        $failures = (int)$stmt->fetchColumn();
+        $stmtIp->execute([$ip, $cutoff]);
+        $ipFailures = (int)$stmtIp->fetchColumn();
 
-        if ($failures >= self::MAX_CONSECUTIVE_FAILURES) {
+        if ($ipFailures >= self::MAX_CONSECUTIVE_FAILURES) {
             return [
                 'is_locked' => true,
                 'delay_seconds' => self::LOCKOUT_MINUTES * 60,
-                'attempts_recent' => $failures,
+                'attempts_recent' => $ipFailures,
             ];
         }
 
+        // 2. Global failures on admin account to introduce progressive delays against distributed attacks
+        $stmtUser = $this->pdo->prepare("
+            SELECT COUNT(*) FROM authentication_audit
+            WHERE user_id = 1
+              AND success = 0
+              AND created_at >= ?
+        ");
+        $stmtUser->execute([$cutoff]);
+        $userFailures = (int)$stmtUser->fetchColumn();
+
         $delay = 0;
-        if ($failures >= 5) {
+        $maxFailures = max($ipFailures, $userFailures);
+        if ($maxFailures >= 5) {
             $delay = 4;
-        } elseif ($failures >= 3) {
+        } elseif ($maxFailures >= 3) {
             $delay = 1;
         }
 
         return [
             'is_locked' => false,
             'delay_seconds' => $delay,
-            'attempts_recent' => $failures,
+            'attempts_recent' => $ipFailures,
         ];
     }
 
@@ -248,6 +284,17 @@ final class AdminBiometricService
         $userAgent = substr((string)($_SERVER['HTTP_USER_AGENT'] ?? ''), 0, 255);
         $sessRef = session_id() ? hash('sha256', session_id() . 'salt_audit') : null;
 
+        // Defensive sanitation: strip any sensitive or credential keys if accidentally provided
+        $sensitiveKeys = ['password', 'secret', 'private_key', 'raw', 'descriptor', 'descriptors', 'embedding', 'token'];
+        $cleanMetadata = [];
+        foreach ($metadata as $k => $v) {
+            if (in_array(strtolower((string)$k), $sensitiveKeys, true)) {
+                $cleanMetadata[$k] = '[REDACTED]';
+            } else {
+                $cleanMetadata[$k] = $v;
+            }
+        }
+
         try {
             $stmt = $this->pdo->prepare("
                 INSERT INTO authentication_audit
@@ -262,7 +309,7 @@ final class AdminBiometricService
                 $ip,
                 $userAgent,
                 $sessRef,
-                !empty($metadata) ? json_encode($metadata, JSON_UNESCAPED_SLASHES) : null,
+                !empty($cleanMetadata) ? json_encode($cleanMetadata, JSON_UNESCAPED_SLASHES) : null,
             ]);
 
             // Also integrate into existing SecurityEventService
@@ -320,6 +367,7 @@ final class AdminBiometricService
         $_SESSION['username'] = (string)$adminUser['username'];
         $_SESSION['auth_method'] = $authMethod;
         $_SESSION['last_activity'] = time();
+        $_SESSION['login_time'] = time();
 
         // Preserve Teacher duties & permissions for the same administrator account
         if ($teacherId !== null) {

@@ -484,6 +484,7 @@ function complete_staff_portal_login(array $user): void
     }
     $_SESSION['username'] = $user['username'];
     $_SESSION['last_activity'] = time();
+    $_SESSION['login_time'] = time();
     unset($_SESSION['staff_login_otp_phone'], $_SESSION['staff_pending_2fa_user_id'], $_SESSION['staff_pending_totp_user_id'], $_SESSION['staff_pending_totp_username']);
     if (function_exists('app_theme_on_login')) {
         global $pdo;

@@ -184,6 +184,11 @@ final class AdminFaceService
             if (!is_array($descriptor) || count($descriptor) !== 128) {
                 throw new RuntimeException("Invalid descriptor vector dimension for sample '{$pose}' (expected 128 floats).");
             }
+            foreach ($descriptor as $v) {
+                if (!is_numeric($v) || is_nan((float)$v) || is_infinite((float)$v)) {
+                    throw new RuntimeException("Invalid descriptor vector values in sample '{$pose}'.");
+                }
+            }
 
             // 2. Single face & quality validation
             $faceCount = (int)($quality['face_count'] ?? 1);
@@ -296,7 +301,7 @@ final class AdminFaceService
         $challengeData = $this->biometricService->consumeChallenge('face_auth', $userId, $challengeToken);
         $expectedSequence = $challengeData['sequence'] ?? [];
 
-        // 2. Validate descriptor dimensions
+        // 2. Validate descriptor dimensions and numeric validity
         if (count($verificationDescriptor) !== 128) {
             $this->biometricService->recordAudit(
                 AdminBiometricService::METHOD_FACE,
@@ -305,6 +310,17 @@ final class AdminFaceService
                 'Invalid face descriptor dimension (expected 128)'
             );
             throw new RuntimeException('We could not verify your face. Please try again or use Passkey.');
+        }
+        foreach ($verificationDescriptor as $v) {
+            if (!is_numeric($v) || is_nan((float)$v) || is_infinite((float)$v)) {
+                $this->biometricService->recordAudit(
+                    AdminBiometricService::METHOD_FACE,
+                    false,
+                    $userId,
+                    'Non-finite or non-numeric descriptor values detected'
+                );
+                throw new RuntimeException('We could not verify your face. Please try again or use Passkey.');
+            }
         }
 
         // 3. Presentation Attack Detection (PAD) & Liveness Validation
@@ -465,10 +481,15 @@ final class AdminFaceService
             }
         }
 
-        // Verify that every required gesture in the server's sequence was performed
-        foreach ($expectedSequence as $req) {
-            if (!in_array($req, $completedActions, true)) {
-                return ['ok' => false, 'reason' => "Required gesture {$req} was not observed."];
+        // Verify that the telemetry steps match the expected challenge sequence exactly (count, actions, and order)
+        $totalExpected = count($expectedSequence);
+        if (count($completedActions) !== $totalExpected) {
+            return ['ok' => false, 'reason' => "Telemetry action count does not match the required sequence count ({$totalExpected})."];
+        }
+
+        for ($i = 0; $i < $totalExpected; $i++) {
+            if ($completedActions[$i] !== $expectedSequence[$i]) {
+                return ['ok' => false, 'reason' => "Gesture mismatch at step " . ($i + 1) . ": expected {$expectedSequence[$i]}, got {$completedActions[$i]}."];
             }
         }
 

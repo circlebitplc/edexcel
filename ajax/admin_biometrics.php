@@ -24,6 +24,7 @@ require_once __DIR__ . '/../vendor/autoload.php';
 use Edexcel\Services\AdminBiometricService;
 use Edexcel\Services\AdminPasskeyService;
 use Edexcel\Services\AdminFaceService;
+use Edexcel\Services\AdminTotpService;
 
 // Ensure database is available
 if (!isset($pdo) || !($pdo instanceof PDO)) {
@@ -363,6 +364,14 @@ try {
             }
 
             $userId = (int)$_SESSION['user_id'];
+            $totp = new AdminTotpService($pdo);
+            $recentReauth = $totp->hasValidReauth($userId, 'sensitive') || $totp->hasValidReauth($userId, 'biometrics');
+            if (!$recentReauth) {
+                http_response_code(403);
+                echo json_encode(['ok' => false, 'error' => 'Clearing biometric face data requires recent password re-authentication. Please re-authenticate on the security page.']);
+                exit;
+            }
+
             $faceService->clearFaceData($userId);
             echo json_encode(['ok' => true, 'message' => 'Biometric face data permanently cleared.']);
             exit;
@@ -373,10 +382,27 @@ try {
             exit;
     }
 } catch (Throwable $e) {
+    error_log('Biometrics AJAX error: ' . $e->getMessage());
     http_response_code(400);
+
+    $msg = $e->getMessage();
+    // Prevent disclosure of internal SQLSTATE, queries, or filesystem paths
+    if (
+        $e instanceof PDOException
+        || stripos($msg, 'SQLSTATE') !== false
+        || stripos($msg, 'SELECT') !== false
+        || stripos($msg, 'INSERT') !== false
+        || stripos($msg, 'UPDATE') !== false
+        || stripos($msg, 'DELETE') !== false
+        || stripos($msg, 'public_html') !== false
+        || stripos($msg, 'SQL syntax') !== false
+    ) {
+        $msg = 'A database or system error occurred while processing biometric request.';
+    }
+
     echo json_encode([
         'ok' => false,
-        'error' => $e->getMessage(),
+        'error' => $msg,
     ]);
     exit;
 }

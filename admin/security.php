@@ -86,6 +86,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     $success = 'Passkey credential revoked.';
                 }
             } elseif ($action === 'passkey_revoke_all') {
+                if (!$recentReauth) {
+                    throw new RuntimeException('Revoking all passkeys requires recent password verification. Please re-authenticate below.');
+                }
                 $pkeys = $passkeyService->listPasskeys($userId);
                 foreach ($pkeys as $p) {
                     $passkeyService->revokePasskey($userId, (int)$p['id']);
@@ -95,17 +98,30 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $faceService->disableFace($userId);
                 $success = 'Webcam face login disabled.';
             } elseif ($action === 'face_clear') {
+                if (!$recentReauth) {
+                    throw new RuntimeException('Clearing biometric face data requires recent password verification. Please re-authenticate below.');
+                }
                 $faceService->clearFaceData($userId);
                 $success = 'Facial biometric data permanently removed.';
             } elseif ($action === 'revoke_all_sessions') {
-                // Invalidate all sessions except current
+                // Invalidate all admin trusted devices, reauth tokens, and active sessions
                 $currSessionId = session_id();
-                $stmt = $pdo->prepare("
-                    DELETE FROM student_active_sessions WHERE user_id = ?
-                ");
-                $stmt->execute([$userId]);
-                $sec->record('sessions_revoked', 'Admin revoked all sessions', 'warning', $userId, $username, 'admin', 'security');
-                $success = 'All other active sessions have been revoked.';
+                try {
+                    $pdo->prepare("DELETE FROM admin_trusted_devices WHERE user_id = ?")->execute([$userId]);
+                } catch (Throwable) {}
+                try {
+                    $pdo->prepare("DELETE FROM admin_reauth_tokens WHERE user_id = ?")->execute([$userId]);
+                } catch (Throwable) {}
+                try {
+                    $pdo->prepare("DELETE FROM student_active_sessions WHERE user_id = ?")->execute([$userId]);
+                } catch (Throwable) {}
+                $revocationTimestamp = time();
+                if (function_exists('ops_save_setting')) {
+                    ops_save_setting($pdo, 'admin_sessions_revoked_at', (string)$revocationTimestamp);
+                }
+                $_SESSION['login_time'] = $revocationTimestamp + 1;
+                $sec->record('sessions_revoked', 'Admin revoked all active sessions and trusted devices', 'warning', $userId, $username, 'admin', 'security');
+                $success = 'All other active sessions and trusted devices have been revoked.';
             }
         } catch (Throwable $e) {
             $error = $e->getMessage();
